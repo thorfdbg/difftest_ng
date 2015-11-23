@@ -1,0 +1,85 @@
+/*************************************************************************
+** Copyright (c) 2011-2014 Accusoft Corporation                         **
+**                                                                      **
+** Written by Thomas Richter (richter@rus.uni-stuttgart.de)             **
+** Sponsored by Accusoft Corporation, Tampa, FL and                     **
+** the Computing Center of the University of Stuttgart                  **
+**************************************************************************
+
+This source file is part of difftest_ng, a universal image measuring
+and conversion framework.
+
+    difftest_ng is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    difftest_ng is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with difftest_ng.  If not, see <http://www.gnu.org/licenses/>.
+
+*************************************************************************/
+
+/*
+**
+** This image class doesn't do much useful, it only represents a blank
+** image of a given dimension.
+**
+*/
+
+/// Includes
+#include "imglayout.hpp"
+#include "std/string.hpp"
+#include "img/blankimg.hpp"
+///
+
+/// BlankImg::BlankImg
+// Copy the image from another source for later saving.
+BlankImg::BlankImg(const class ImageLayout &layout)
+  : ImageLayout(layout), m_pucImage(NULL)
+{
+}
+///
+
+/// BlankImg::~BlankImg
+BlankImg::~BlankImg(void)
+{
+  delete[] m_pucImage;
+}
+///
+
+/// BlankImg::Blank
+// Allocate all the memory and assign it to the components.
+void BlankImg::Blank(void)
+{
+  UWORD d;
+  size_t ntry = 1;
+  size_t size = WidthOf() * HeightOf();
+
+  assert(m_pucImage == NULL);
+  
+  for(d = 0;d < DepthOf();d++) {
+    size_t ms = (BitsOf(d) + 7) >> 3;
+    if (ms > ntry)
+      ntry = ms;
+  }
+
+  size *= ntry;
+
+  //
+  // It is sufficient to allocate this once and use the same memory
+  // for all components.
+  m_pucImage = new UBYTE[size];
+  memset(m_pucImage,0,size * sizeof(UBYTE));
+
+  for(d = 0;d < DepthOf();d++) {
+    m_pComponent[d].m_ulBytesPerPixel = ULONG(ntry);
+    m_pComponent[d].m_ulBytesPerRow   = ULONG(ntry * WidthOf());
+    m_pComponent[d].m_pPtr            = m_pucImage;
+  }
+}
+///
