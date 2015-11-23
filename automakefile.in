@@ -1,0 +1,41 @@
+##
+## $Id: automakefile.in,v 1.11 2014/11/20 12:20:02 thor Exp $
+##
+#######################################################################
+## Makefile for the j2k transcoder project,
+## THOR Software, 2. Jul. 2003, Thomas Richter for
+## Accusoft
+#######################################################################
+##
+##
+## The following variable defines the compiler we use
+## for running the code.
+##
+COMPILER_CMD	=	@COMPILER@
+CC_ONLY         =       @CC_ONLY@
+SETTINGS	=	@SETTINGS@
+PREFIX		=	@PREFIX@
+PTHREADCFLAGS	=	@PTHREAD_CFLAGS@
+PTHREADLDFLAGS	=	@PTHREAD_CFLAGS@
+PTHREADLIBS	=	@PTHREAD_LIBS@
+HWTYPE		=	@HARDWARE@
+HAVE_ADDONS	=	@HAVE_ADDONS@
+##
+## Additional options
+ADDOPTS		=	-DUSE_AUTOCONF @FPU_OPTS@ @HW_DEFINE@ @EXR_CFLAGS@ @PNG_CFLAGS@ @GSL_CFLAGS@
+LIB_OPTS	=	@LIB_OPTS@ @LIB_PICOPTS@ -DBUILD_LIB
+EXTRA_LIBS	=	
+##
+## Options for GSL
+GSL_LDFLAGS	=	@GSL_LDFLAGS@
+GSL_CFLAGS	=	@GSL_CFLAGS@
+##
+## Options for PNG
+PNG_LDFLAGS	=	@PNG_LDFLAGS@
+PNG_CFLAGS	=	@PNG_CFLAGS@
+##
+## Options for EXR
+EXR_LDFLAGS	=	@EXR_LDFLAGS@
+EXR_CFLAGS	=	@EXR_CFLAGS@
+
+

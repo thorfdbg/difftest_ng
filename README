@@ -1,0 +1,328 @@
+This is difftest_ng, "Difftest, the next generation".
+
+Difftest is a program/framework helping to find errors in image
+compression algorithms. It allows to measure many error measures
+between a reference image and a compressed and re-expanded
+image. Error measures are targetted not at human vision, but at
+measures that allow to automatically detect common problems in image
+codecs.
+
+In addition, difftest_ng includes a couple of convenience functions,
+including restricting the measurement only to a single component,
+computing the FFT (or weighted FFT), filtering the image, measuring
+the histogram and converting between various image formats. Currently,
+difftest_ng supports pnm (ppm,pgm,pbm), pgx (JPEG 2000 reference
+testing format), bmp, TIFF, multiple of raw formats with very flexible
+specifications, pfm, rgbe, png, exr and dpx.
+
+difftest_ng compiles under GNU/Linux and probably some other operating
+systems, it requires libpng, libgsl and libopenexr for its full
+function. Without additional libraries, some of its operations are not
+available.
+
+difftest_ng is free software: you can redistribute it and/or modify it
+under the terms of the GNU General Public License as published by the
+Free Software Foundation, either version 3 of the License, or (at your
+option) any later version.
+
+difftest_ng is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with difftest_ng.  If not, see <http://www.gnu.org/licenses/>.
+
+-----------------------------------------------------------------------------------------------
+
+Source and destination image formats are recognized by the file name extension. While this
+is certainly not the most elegant method to identify image formats, it has been proven to
+be robust enough for the purpose of difftest_ng.
+
+The following file name extensions are currently recognized:
+
+.pnm,.pgm,.ppm,.pbm,.pfm,.pfs:	   File formats from the pnm (Picture Any Map) format
+				   The precise format does not depend on the extender, but
+				   on the number of components and whether the data is float
+				   or integer. pnm is the superset, pgm is grey scale, ppm
+				   RGB, pbm binary data. While all the above represent
+				   integer samples, pfs and pfm are floating point sample
+				   formats.
+
+.bmp:				   The Windows(tm) native bitmap format, covering 4 and 8
+				   bits per sample, palette or true-color images of various
+				   bitdepths.
+
+.pgx:				   The file format defined by ISO/IEC 15444-4 (JPEG 2000)
+				   used there for conformance testing. pgx can represent any
+				   integer type of samples. A pgx file consists of a directory
+				   file - the one with the .pgx ending that is specified, and
+				   header and data files. The header files define the
+				   dimensions and bitdepths of the data files. Data and header
+				   may be concatenated together, difftest_ng understands this
+				   case, but always writes separate headers as output.
+
+.tif,.tiff			   The Tagged Image File Format, originally specified by
+				   Adobe. TIFF supports multiple formats, including YUV sub-
+				   sampling, palette files and floating-point formats.
+
+.png				   PNG is a simple lossless image compression scheme for
+				   internet images and replaced there gif images. This
+				   requires libpng available.
+
+.rgbe,.hdr			   RGBE high-dynamic range images. While rgbe and hdr are
+				   not exactly identical, they are close enough to be
+				   supported as sub-formats of the same format. When
+				   creating files, RGBE is created.
+
+.dpx				   The DPX format specified by SMTPE, used mainly to
+				   represent frame-based movie content. dpx can represent
+				   integer and floating point samples of various bit-depths,
+				   including YUV data and subsampling. Unfortunately,
+				   the format is quite underspecified and not all software
+				   seems to follow the specs (or an interpretation thereof)
+				   precisely.
+
+.exr				   The openEXR format by Industrial Light & Magic, a
+				   format for representing high-dynamic range images. This
+				   requires libopenexr to be available.
+
+.raw,.craw,.v210		   Raw formats. All raw formats are covered by a single
+				   format converter that requires the specification of the
+				   layout of the format as part of the file name. Use the
+				   --rawhelp command line option how to specify a raw
+				   format.
+
+-----------------------------------------------------------------------------------------------
+
+Usage: difftest_ng [options] original distorted
+where original and distorted are ppm,pbm,pgm,pfm,pfs,bmp,pgx,tif,png,exr,rgbe or raw images and options are one or more of
+--psnr             : measure the psnr with equal weights over all components
+--maxsnr           : measure the snr with equal weights over all components, normalize to maximum signal
+--snr              : measure the snr with equal weights over all components, normalize to source energy
+--mse              : measure the mean square error with equal weights over all components
+--minpsnr          : measure the minimum psnr over all components
+--ycbcrpsnr        : measure the psnr with weights derived from the YCbCr transformation
+--yuvpsnr          : measure the psnr with weights derived from the YUV transformation
+--mrse             : measure the log of the mean relative square error with equal weights
+--minmrse          : measure the minimum mrse over all components
+--ycbcrmrse        : measure the mrse with weights derived from the YCbCr transformation
+--yuvmrse          : measure the mrse with weights derived from the YUV transformation
+--peak             : measure the peak relative error in dB over all components
+--avgpeak          : measure the peak relative error averaged over all components, in dB
+--peakx            : find the x position of the largest pixel error
+--peaky            : find the y position of the largest pixel error
+--min              : find the minimum value of original - distorted
+--max              : find the maximum value of original - distorted
+--drift            : find the mean error (drift) between original and distorted
+--mae              : find the mean absolute error
+--pae              : find the peak absolute error
+--stripe           : measure a striping indicator that detects horizontal or vertical artifacts
+--width            : print the width of the images
+--height           : print the height of the images
+--depth            : print the number of components of the images
+--precision comp   : print the bit precision of the given component
+--signed    comp   : print the signedness of the given component (-1 = signed, +1 = unsigned)
+--float     comp   : print whether the indicated component is IEEE floating point (1 = yes, 0 = no)
+--diff target      : save the difference image (-i is an alternative form of this option)
+--rawdiff target   : similar to --diff, except that it doesn't scale the difference to maximum range
+--mask roi         : mask the source image by the mask image before applying the comparison
+--notmask roi      : mask the source image by the inverse of the mask
+--convert target   : save the original image unaltered, but possibly in a new format
+--merge target     : merge the two images together, add second as components of first
+--fft target       : save the fft of the difference image
+--wfft target      : save the windowed fft of the difference image
+--filt x y r dst   : run a radial filter around frequency x,y with radius r, saves the filtered image as dst
+--nfilt x y r dst  : similar to --filt, but the output is normalized to the full range
+--comb x y r dst   : apply a comb filter in direction x y and radius r
+--ncomb x y r dst  : similar to --comb, but the output is normalized to the full range
+--hist target      : generate a histogram plot. If "target" is -, write to stdout
+--colorhist size   : generate reduced histogram separately for each component using the given bucket size
+--maxfreqr         : locate the absolute value of the most exposed frequency in the error image
+--maxfreqx         : locate the horizontal component of the most exposed frequency in the error image
+--maxfreqy         : locate the vertical component of the most exposed frequency in the error image
+--maxfreqv         : compute the domination ratio of the most exposed frequency in the error image
+--patternidx       : scan the FFT for suspicious patterns and output the likeliness of errors
+--toflt dst        : save a floating point version of the source image
+--tohfl dst        : save a half-float version of the source image
+--touns bpp dst    : save an unsigned integer version with bpp bits per pixel of the source image
+--tosgn bpp dst    : save a signed integer version with bpp bits per pixel of the source image
+--gamma bpp gamma dst : perform a gamma correction on a floating point image to create integer output
+--invgamma gamma dst  : perform an inverse gamma correction creating a floating point image from integer
+--halflog dst      : represent a floating point image in IEEE half float format saved as 16 bit integers
+--halfexp dst      : read a 16-bit integer image using IEEE half float and save as floating point
+--togamma bpp gamma: convert both images to gamma before applying the measurement (apply as a filter)
+--fromgamma gamma  : convert both images from a gamma before applying the measurement
+--tohalflog        : convert to 16-bit integer before comparing (apply as filter)
+--fromhalflog      : convert from 16-bit integer to float before comparing (apply as filter)
+--tolog clamp      : convert to logarithmic domain with clamp value before comparing
+--topercept        : convert from absolute luminance to a perceptually uniform space
+--invert           : invert the source image before comparing
+--flipx            : flip the source horizontally before comparing
+--flipy            : flip the source vertically before comparing
+--pad bpp dst      : pad (right-aligned) a component into a larger bit-depths
+--sub x y          : subsample all components by the subsampling factors in x and y direction
+--csub x y         : subsample all but component 0 by the subsampling factors in x and y direction
+--up x y           : upsample all components by the subsampling factors in x and y direction
+--cup x y          : upsample all but component 0 by the subsampling factors in x and y direction
+--only component   : acts as a filter and restricts all following operations to the given component
+--upto component   : restricts all following operations to components 0..component-1
+--rgb              : restricts the activity to at most the first three components
+--crop x1 y1 x2 y2 : crop a rectangular image region (x1,y1)-(x2,y2). Edges are inclusive.
+--restore          : un-do the restrictions of --crop and --only or --rgb
+--toycbcr          : convert images to YCbCr before comparing
+--tosignedycbcr    : convert images to YCbCr with signed chroma components
+--fromycbcr        : convert images from YCbCr to RGB before comparing
+--toxyz            : convert images from RGB to XYZ before comparing
+--fromxyz          : convert images from XYZ to RGB before comparing
+--tolms            : convert images from RGB to LMS before comparing
+--fromlms          : convert images from LMS to RGB before comparing
+--xyztolms         : convert images from XYZ to LMS before comparing
+--lmstoxyz         : convert images from LMS to XYZ before comparing
+--raw              : encode output in raw if applicable
+--ascii            : encode output in ascii if applicable
+--interleaved      : encode output in interleaved samples if applicable
+--separate         : encode output in separate planes if applicable
+--littleendian     : use little endian output if applicable
+--toabsradiance    : multiply floating point samples by recorded radiance scale to convert to absolute radiance
+--brief            : use a brief (only numeric) output format
+>,>=,==,!=,<=,< t  : last result must be larger, larger or equal, equal, not equal,
+                     smaller or equal or smaller than given threshold t.
+                     Attention: Quoting required when used from the shell.
+
+If the distorted image file name equals '-', then the image is replaced by a blank image
+
+--help             : print this page
+--rawhelp          : print help on raw image formatting. First time users: PLEASE READ THIS.
+
+-----------------------------------------------------------------------------------------------
+
+Raw formats are unframed and hence the formatting of the file must be specified
+on the command line, here as part of the FILE NAME, not by separate options.
+
+Raw files are specified by 'filename.raw@format', with an '@' (at) sign separating
+the format specification from the file name. Note that the annex .raw is necessary.
+
+The format specification itself consists of two parts, the image dimensions and
+the layout of the data:
+
+<width>x<height>x<depth>:<datalayout>
+
+where <width> is the width, <height> the height and <depth> the number of
+components in the image, without the angle brackets (pure numerical values).
+Numbers are separated by 'x' (lower-case x).
+This part MAY be omitted for saving since image dimensions are known.
+The colon ':', however, must be present.
+
+Image data can be either represented INTERLEAVED, that is, all components of a
+single pixel are adjacent to each other, or SEPARATE, that is, each component is
+described in a separate bitplane, and the bitplanes are stored adjacent to each
+other. Additional padding bits might be present in the interleaved representation.
+A single pixel is described by one or several fields, where each field encodes
+the data of a single component or may simply be present for padding.
+Fields can be either signed or unsigned, have a bit-width and an endianness.
+
+In the interleaved presentation, fields can be bit-packed together, i.e. may share
+bits in a byte, word or longword. If fields are bit-packed, the entire number of
+bits must be either 8,16 or 32, and shares the endianness of all its components,
+i.e. all components must indicate the same endianness.
+
+In the separate presentation, bits of a component are packed near each other
+without any padding. However, some components might be subsampled, i.e. may
+contain less samples than others. This option does not exist for interleaved
+data.
+
+The format specification looks like this for interleaved data:
+
+<packing>{<sign-flag><bits><endian>=<target>}:{<sign-flag><bits><endian>=<target>}:...
+
+where <packing> is either + or -, indicating the packing order within the field
+      with +, which is the default, packing is from MSB to LSB, with '-' bits
+      are packed from LSB to MSB
+where the curly brackets indicate the interleaved format
+where <sign-flag> is an optional '+' or '-' sign indicating whether the component
+      is signed (then '-') or unsigned (then '+'). If omitted, the component is
+      unsigned.
+where <bits> is a mandatory number of bits the component takes, e.g. 8
+where <endian> is an optional endian indicator. It is '+' for big-endian and '-'
+      for little-endian data. If omitted, big-endian is assumed.
+where <target> indicates to which component the data belongs, e.g. 0 for red
+      the target is separated by an equals sign '=' from the endianness.
+      For padding data, equal-sign and target are omitted.
+where the colon ':' indicates that fields have separate endianness. This only
+      works for fields of withs 8,16,32 or 64 bits.
+
+If the colon is replaced by a comma, the fields adjacent to the comma are bit-
+packed into a single data unit. In total, up to 32 bits can be packed together,
+and the total number of bits packed must be either 8, 16 or 32. Then, the endian-
+ness of all fields packed together applies to the packed result, and must be
+identical. By default, bit-packing reads from the MSB to the LSB. With the
+optional minus sign in front, packing is from LSB to MSB.
+Components may appear multiple times in the same format specification, which implies
+subsampling. The subsampling factors are inclined from the sample count per component.
+The sample pattern is filled at each line end, potentially creating dummy samples that
+will be skipped over when reading and which are written as zero on writing.
+
+The format for the separate representation uses square brackets instead:
+
+<packing>[<sign-flag><bits><endian>=<target>]/<subx>x<suby>:...
+
+and the syntax is as above, except that subsampling factors can be added to a field
+description. They are separated by a slash '/' from the field description, followed
+by the horizontal and vertical subsampling factors, separated by an 'x'.
+
+EXAMPLES:
+
+A 640x480 RGB image with 8 bits per component encoded as RRRRRRRRGGGGGGGGBBBBBBBB
+is denoted as this:
+
+       image.raw@640x480x3:{8=0}:{8=1}:{8=2}
+
+Image dimensions can be omitted when saving, it then may be simplified to:
+
+      image.raw@:{8=0}:{8=1}:{8=2}
+
+Note both '@' and ':' must be present.
+
+
+Typical image formats:
+
+{8=2}:{8=1}:{8=0}:           24 bits, pixel layout:
+                             BBBBBBBBGGGGGGGGRRRRRRRR
+{8=2}:{8=1}:{8=0}:{8}        32 bits, plus a pad byte:
+                             BBBBBBBBGGGGGGGGRRRRRRRR00000000
+{8=2}:{8=1}:{8=0}:{8=3}      32 bits plus alpha channel:
+                             BBBBBBBBGGGGGGGGRRRRRRRRAAAAAAAA
+[1=0]                        bit-packed 1bpp black & white image
+[8=0]:[8=1]:[8=2]            YUV or RGB in separate encoding, three planes, each 8bpp
+[8=0]:[8=1]/2x2:[8=2]/2x2    YUV 420 in separate planes
+[8=0]:[8=1]/2x1:[8=2]/2x1    YUV 422 in separate planes
+{2-},{10-=2},{10-=1},{10-=0} 32 bits, pixel layout is ten bits per component with
+                             two padding bits in front, packed into 32 bits which
+                             is written in little-endian format. Represented as
+                             little endian, this format reads
+                             00BBBBBBBBBBGGGGGGGGGGRRRRRRRRRR
+                             but in the file, bytes are shuffled around:
+                             RRRRRRRR GGGGGGRR BBBBGGGG 00BBBBBB
+{1-},{5-=2},{5-=1},{5-=0}    16 bits, pixel layout is five bits per component with
+                             a single pad-bit upfront, packed into a 16-bit word
+                             which is written in little-endian format. On a little
+                             endian machine, this reads as
+                             0BBBBBGGGGGRRRRR
+                             but in the file, bytes are ordered reversely:
+                             GGGRRRRR 0BBBBBGG
+-{10-=1},{10-=0},{10-=2},{2-}:-{10-=0},{10-=1},{10-=0},{2-}:
+-{10-=2},{10-=0},{10-=1},{2-}:-{10-=0},{10-=2},{10-=0},{2-}
+                             This (single) line creates a raw format that complies to the
+                             V210 pixel format. Each component is 10 bits wide,
+                             three samples are left-aligned into one 32 bit word
+                             causing two padding bits per 32 bit word. Each 32 bit
+                             word is in little endian, and filled from LSB to MSB.
+                             The samping order is UYV - YUY - VYU - YVY.
+                             Subsampling factors are derived from the sample counts
+                             and padding is applied at the end of each line to one
+                             complete cycle.
+
+
+
+-----------------------------------------------------------------------------------------------

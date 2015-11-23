@@ -1,0 +1,41 @@
+##
+## $Id: automakefile.in,v 1.11 2014/11/20 12:20:02 thor Exp $
+##
+#######################################################################
+## Makefile for the j2k transcoder project,
+## THOR Software, 2. Jul. 2003, Thomas Richter for
+## Accusoft
+#######################################################################
+##
+##
+## The following variable defines the compiler we use
+## for running the code.
+##
+COMPILER_CMD	=	g++
+CC_ONLY         =       gcc -std=gnu99
+SETTINGS	=	gcc
+PREFIX		=	/home/thor/bin/wavelet
+PTHREADCFLAGS	=	-pthread
+PTHREADLDFLAGS	=	-pthread
+PTHREADLIBS	=	 
+HWTYPE		=	x86_64
+HAVE_ADDONS	=	no
+##
+## Additional options
+ADDOPTS		=	-DUSE_AUTOCONF -mfpmath=387 -D__IS_x86_64__ -pthread -I/usr/include/OpenEXR  -I/usr/include/libpng12 -I/usr/include
+LIB_OPTS	=	-fvisibility=internal -fPIC -DBUILD_LIB
+EXTRA_LIBS	=	
+##
+## Options for GSL
+GSL_LDFLAGS	=	-L/usr/lib -lgsl -lgslcblas -lm
+GSL_CFLAGS	=	-I/usr/include
+##
+## Options for PNG
+PNG_LDFLAGS	=	-lpng12
+PNG_CFLAGS	=	-I/usr/include/libpng12
+##
+## Options for EXR
+EXR_LDFLAGS	=	-L/usr/lib -lIlmImf -lz -pthread -lImath -lHalf -lIex -lIlmThread 
+EXR_CFLAGS	=	-pthread -I/usr/include/OpenEXR 
+
+
