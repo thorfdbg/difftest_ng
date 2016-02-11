@@ -26,7 +26,7 @@ and conversion framework.
 /*
  * This class saves and loads images in the dpx format.
  *
- * $Id: simpledpx.cpp,v 1.12 2015/10/21 08:28:57 thor Exp $
+ * $Id: simpledpx.cpp,v 1.13 2015/12/10 21:19:46 thor Exp $
  */
 
 /// Includes
@@ -935,6 +935,7 @@ void SimpleDPX::AssociateComponents(ULONG offset,ULONG planes[9])
 	  break;
 	default:
 	  assert(!"padding set even though not required");
+	  bytesperrow = w * el->m_ucDepth * el->m_ucBitDepth >> 3;
 	  break;
 	}
       } else {

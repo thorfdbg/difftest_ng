@@ -4,7 +4,7 @@
 #** Makefile for the difftest_ng project,
 #** THOR Software, Thomas Richter for Accusoft
 #**
-#** $Id: configure.in,v 1.12 2014/01/04 13:44:46 thor Exp $
+#** $Id: configure.in,v 1.13 2015/12/10 21:19:46 thor Exp $
 #**
 #** In this module: autoconf script for difftest_ng
 #**********************************************************************************/
@@ -33,7 +33,7 @@ AC_ARG_ENABLE(PNG,
 [ac_arg_PNG=$enableval],[ac_arg_PNG='yes'])
 #
 # Checks for programs.
-AC_PROG_CXX([g++-4.7 g++-4.5 g++-4.4 g++-4.3 g++-4.2 g++-4.1 g++-4.0 g++-3.4 g++-3.3 g++-3.2 g++ icc c++ gpp cxx cc++])
+AC_PROG_CXX([g++-4.9 g++-4.7 g++-4.5 g++-4.4 g++-4.3 g++-4.2 g++-4.1 g++-4.0 g++-3.4 g++-3.3 g++-3.2 g++ icc c++ gpp cxx cc++])
 AC_PROG_CC
 AC_PROG_CC_STDC
 AC_C_BIGENDIAN([AC_DEFINE(J2K_BIG_ENDIAN,[1],[Define to 1 for big endian])],[AC_DEFINE(J2K_LIL_ENDIAN,[1],[Define to 1 for little endian])])

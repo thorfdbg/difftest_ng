@@ -26,7 +26,7 @@ and conversion framework.
 /*
  * Main program
  * 
- * $Id: main.cpp,v 1.68 2015/10/13 20:36:00 thor Exp $
+ * $Id: main.cpp,v 1.69 2016/02/04 14:26:04 thor Exp $
  *
  * This class defines the main program and argument parsing.
  */
@@ -142,6 +142,8 @@ void Usage(const char *progname)
 	  "--fromhalflog      : convert from 16-bit integer to float before comparing (apply as filter)\n"
 	  "--tolog clamp      : convert to logarithmic domain with clamp value before comparing\n"
 	  "--topercept        : convert from absolute luminance to a perceptually uniform space\n"
+	  "--topq bits        : convert floating point to SMPTE 2084 quantized to the given bits\n"
+	  "--frompq           : convert SMPTE 2084 quantized data to luminances\n"
 	  "--invert           : invert the source image before comparing\n"
 	  "--flipx            : flip the source horizontally before comparing\n"
 	  "--flipy            : flip the source vertically before comparing\n"
@@ -684,6 +686,18 @@ int main(int argc,char **argv)
 	  argv += 1;
 	} else if (!strcmp(arg,"--topercept")) {
 	  m     = new class Mapping(NULL,Mapping::PU2,0.0,false,32,true,specout);
+	} else if (!strcmp(arg,"--topq")) {
+	  long bits;
+	  if (argc < 3)
+	    throw "--topq requires a bit depth as argument";
+	  bits  = ParseLong(argv[2]);
+	  if (bits < 8 || bits > 32)
+	    throw "--topq requires a bit depth between 8 and 32 bits";
+	  m     = new class Mapping(NULL,Mapping::PQ,1.0,false,bits,true,specout);
+	  argc -= 1;
+	  argv += 1;
+	} else if (!strcmp(arg,"--frompq")) {
+	  m   = new class Mapping(NULL,Mapping::PQ,1.0,true, 0, true,specout);
 	} else if (!strcmp(arg,"--invert")) {
 	  m   = new class Invert();
 	} else if (!strcmp(arg,"--flipx")) {

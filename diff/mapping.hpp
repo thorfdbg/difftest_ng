@@ -26,7 +26,7 @@ and conversion framework.
 
 /*
 **
-** $Id: mapping.hpp,v 1.5 2014/10/17 19:57:11 thor Exp $
+** $Id: mapping.hpp,v 1.6 2016/02/04 13:55:50 thor Exp $
 **
 ** This class works like the scaler, but more elaborate as it allows a couple
 ** of less trivial conversions: gamma mapping, log mapping and half-log mapping.
@@ -53,7 +53,8 @@ public:
     Gamma,   // perform a gamma mapping
     HalfLog, // perform a half-logarithmic map
     Log,     // perform a logarithmic map with clamp value.
-    PU2      // Rafal's percetually uniform map.
+    PU2,     // Rafal's percetually uniform map.
+    PQ       // backwards PQ aka SMTPE-2084, compute PQ values from luminances
   };
   //
 private:
@@ -135,6 +136,18 @@ private:
   void ToPU2(const FLOAT *org ,ULONG obytesperpixel,ULONG obytesperrow,
 	     FLOAT *dst       ,ULONG dbytesperpixel,ULONG dbytesperrow,
 	     ULONG w, ULONG h);
+  //
+  // Apply a mapping from luminances to PQ, this is the backwards PQ map.
+  template<typename T>
+  void ToPQ(const FLOAT *org ,ULONG obytesperpixel,ULONG obytesperrow,
+	    T *dst           ,ULONG dbytesperpixel,ULONG dbytesperrow,
+	    ULONG w, ULONG h, double scale);
+  //
+  // Apply a mapping from PQ values to luminances, this is the forwards PQ map.
+  template<typename T>
+  void FromPQ(const T *org ,ULONG obytesperpixel,ULONG obytesperrow,
+	      FLOAT *dst   ,ULONG dbytesperpixel,ULONG dbytesperrow,
+	      ULONG w, ULONG h, double scale);
   //
   // Apply a map from the source image to the target image that must be
   // already initialized.
