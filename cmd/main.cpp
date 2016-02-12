@@ -26,7 +26,7 @@ and conversion framework.
 /*
  * Main program
  * 
- * $Id: main.cpp,v 1.69 2016/02/04 14:26:04 thor Exp $
+ * $Id: main.cpp,v 1.70 2016/02/12 16:12:40 thor Exp $
  *
  * This class defines the main program and argument parsing.
  */
@@ -132,6 +132,8 @@ void Usage(const char *progname)
 	  "--tohfl dst        : save a half-float version of the source image\n"
 	  "--touns bpp dst    : save an unsigned integer version with bpp bits per pixel of the source image\n"
 	  "--tosgn bpp dst    : save a signed integer version with bpp bits per pixel of the source image\n"
+	  "--asuns bpp        : convert the two input images to unsigned bpp before further procesing\n"
+	  "--assgn bpp        : convert the two input images to signed bpp before further processing\n"
 	  "--gamma bpp gamma dst : perform a gamma correction on a floating point image to create integer output\n"
 	  "--invgamma gamma dst  : perform an inverse gamma correction creating a floating point image from integer\n"
 	  "--halflog dst      : represent a floating point image in IEEE half float format saved as 16 bit integers\n"
@@ -148,6 +150,7 @@ void Usage(const char *progname)
 	  "--flipx            : flip the source horizontally before comparing\n"
 	  "--flipy            : flip the source vertically before comparing\n"
 	  "--pad bpp dst      : pad (right-aligned) a component into a larger bit-depths\n"
+	  "--asprec bpp       : set the bit-depth to bpp, padding input and output into the target bitdepth\n"
 	  "--sub x y          : subsample all components by the subsampling factors in x and y direction\n"
 	  "--csub x y         : subsample all but component 0 by the subsampling factors in x and y direction\n"
 	  "--up x y           : upsample all components by the subsampling factors in x and y direction\n"
@@ -616,6 +619,14 @@ int main(int argc,char **argv)
 	  m   = new class Scale(argv[3],true,false,true,false,bpp,false,specout);
 	  argc -= 2;
 	  argv += 2;
+	} else if (!strcmp(arg,"--asuns")) {
+	  long bpp;
+	  if (argc < 3)
+	    throw "--asuns requires a bit depth as argument";
+	  bpp = ParseLong(argv[2]);
+	  m   = new class Scale(NULL,true,false,true,false,bpp,false,specout);
+	  argc--;
+	  argv++;
 	} else if (!strcmp(arg,"--tosgn")) {
 	  long bpp;
 	  if (argc < 4)
@@ -624,6 +635,14 @@ int main(int argc,char **argv)
 	  m   = new class Scale(argv[3],true,false,false,true,bpp,false,specout);
 	  argc -= 2;
 	  argv += 2;
+	} else if (!strcmp(arg,"--assgn")) {
+	  long bpp;
+	  if (argc < 3)
+	    throw "--assgn requires a bit depth as argument";
+	  bpp = ParseLong(argv[2]);
+	  m   = new class Scale(NULL,true,false,false,true,bpp,false,specout);
+	  argc--;
+	  argv++;
 	} else if (!strcmp(arg,"--gamma")) {
 	  long bpp;
 	  double gamma;
@@ -712,6 +731,14 @@ int main(int argc,char **argv)
 	  m   = new class Scale(argv[3],true,false,false,false,bpp,true,specout);
 	  argc -= 2;
 	  argv += 2;
+	} else if (!strcmp(arg,"--asprec")) {
+	  long bpp;
+	  if (argc < 3)
+	    throw "--asprec requires a bit depth as argument";
+	  bpp = ParseLong(argv[2]);
+	  m   = new class Scale(NULL,true,false,false,false,bpp,true,specout);
+	  argc--;
+	  argv++;
 	} else if (!strcmp(arg,"--sub")) {
 	  long sx,sy;
 	  if (argc < 4)

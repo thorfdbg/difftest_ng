@@ -26,7 +26,7 @@ and conversion framework.
 
 /*
 **
-** $Id: scale.cpp,v 1.13 2014/01/04 11:35:28 thor Exp $
+** $Id: scale.cpp,v 1.14 2016/02/12 16:12:43 thor Exp $
 **
 ** This class scales images, converts them from and to float
 */
@@ -79,12 +79,15 @@ Scale::~Scale(void)
     }
     delete[] m_ppucImage;
   }
+
+  delete m_pDest;
 }
 ///
 
-/// Scale::Measure
-double Scale::Measure(class ImageLayout *src,class ImageLayout *,double in)
-{ 
+/// Scale::ApplyScaling
+// Apply a scaling from the source to the image stored here.
+void Scale::ApplyScaling(class ImageLayout *src)
+{
   UWORD comp;
 
   CreateComponents(*src);
@@ -566,9 +569,34 @@ double Scale::Measure(class ImageLayout *src,class ImageLayout *,double in)
       }
     }
   }
-  
-  SaveImage(m_pTargetFile,m_TargetSpecs);
+}
+///
 
+/// Scale::Measure
+double Scale::Measure(class ImageLayout *src,class ImageLayout *dst,double in)
+{
+  //
+  // Apply as a filter?
+  if (m_pTargetFile == NULL) {
+    // First apply on this image.
+    ApplyScaling(src);
+    //
+    // Create a destination image.
+    assert(m_pDest == NULL);
+    m_pDest = new class Scale(m_pTargetFile,m_bMakeInt,m_bMakeFloat,m_bMakeUnsigned,m_bMakeSigned,
+			      m_ucTargetDepth,m_bPad,m_TargetSpecs);
+    //
+    // Also map the destination image.
+    m_pDest->ApplyScaling(dst);
+    //
+    // Replace the original images with the modified versions.
+    src->Swap(*this);
+    dst->Swap(*m_pDest);
+  } else {
+    ApplyScaling(src);
+    
+    SaveImage(m_pTargetFile,m_TargetSpecs);
+  }
   return in;
 }
 ///

@@ -26,7 +26,7 @@ and conversion framework.
 
 /*
 **
-** $Id: scale.hpp,v 1.4 2014/01/04 11:35:28 thor Exp $
+** $Id: scale.hpp,v 1.5 2016/02/12 16:12:43 thor Exp $
 **
 ** This class scales images, converts them from and to float
 */
@@ -48,29 +48,32 @@ struct ImgSpecs;
 class Scale : public Meter, private ImageLayout {
   //
   // The file name under which the difference image shall be saved.
-  const char *m_pTargetFile;
+  const char  *m_pTargetFile;
   //
   // The component memory itself.
-  UBYTE     **m_ppucImage;
+  UBYTE      **m_ppucImage;
   //
   // Convert to integer (from float)?
-  bool        m_bMakeInt;
+  bool         m_bMakeInt;
   //
   // Convert to float (from int)?
-  bool        m_bMakeFloat;
+  bool         m_bMakeFloat;
   //
   // Convert to unsigned (from signed)?
-  bool        m_bMakeUnsigned;
+  bool         m_bMakeUnsigned;
   //
   // Convert to signed (from unsigned)?
-  bool        m_bMakeSigned;
+  bool         m_bMakeSigned;
   //
   // The desired output bitdepth. Only if ToInt is given,
   // zero if no scaling is considered.
-  UBYTE       m_ucTargetDepth;
+  UBYTE        m_ucTargetDepth;
   //
   // Right-aligned padding into a higher bit-depths.
-  bool        m_bPad;
+  bool         m_bPad;
+  //
+  // In case we map two images, here is a second buffer
+  class Scale *m_pDest;
   //
   // Output specifications of the destination file.
   const struct ImgSpecs &m_TargetSpecs;
@@ -81,15 +84,21 @@ class Scale : public Meter, private ImageLayout {
 	       ULONG w, ULONG h,
 	       double scale ,double shift,double min,double max);
   //
+  //
+  // Apply a scaling from the source to the image stored here.
+  void ApplyScaling(class ImageLayout *src);
+  //
 public:
   //
-  // Scale the difference image. Takes a file name.
+  // Scale the difference image. Takes a file name. If the file name is NULL,
+  // the scaler is run as a filter and the output is not saved to a file,
+  // but changes the image in place.
   Scale(const char *filename,bool toint,bool tofloat,
 	bool mkunsign,bool mksign,UBYTE targetdepth,bool pad,const struct ImgSpecs &specs)
     : m_pTargetFile(filename), m_ppucImage(NULL), 
       m_bMakeInt(toint), m_bMakeFloat(tofloat), 
       m_bMakeUnsigned(mkunsign), m_bMakeSigned(mksign),
-      m_ucTargetDepth(targetdepth), m_bPad(pad),
+      m_ucTargetDepth(targetdepth), m_bPad(pad), m_pDest(NULL),
       m_TargetSpecs(specs)
   {
   }
