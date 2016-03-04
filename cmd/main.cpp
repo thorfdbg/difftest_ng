@@ -26,7 +26,7 @@ and conversion framework.
 /*
  * Main program
  * 
- * $Id: main.cpp,v 1.70 2016/02/12 16:12:40 thor Exp $
+ * $Id: main.cpp,v 1.71 2016/03/04 17:09:43 thor Exp $
  *
  * This class defines the main program and argument parsing.
  */
@@ -268,6 +268,11 @@ void RawHelp(void)
 	  "and the syntax is as above, except that subsampling factors can be added to a field\n"
 	  "description. They are separated by a slash '/' from the field description, followed\n"
 	  "by the horizontal and vertical subsampling factors, separated by an 'x'.\n"
+	  "The separate format also allows to pack several components together into one field,\n"
+	  "similar to the above, packed fields are separated by a comma instead of a semicolon.\n"
+	  "In such a case, the subsampling of the packed channels must be consistent and\n"
+	  "identical within the same plane.\n"
+	  "A padding channel is indicated by a missing target specification.\n"
 	  "\n"
 	  "EXAMPLES:\n"
 	  "\n"
@@ -295,6 +300,12 @@ void RawHelp(void)
 	  "[8=0]:[8=1]:[8=2]            YUV or RGB in separate encoding, three planes, each 8bpp\n"
 	  "[8=0]:[8=1]/2x2:[8=2]/2x2    YUV 420 in separate planes\n"
 	  "[8=0]:[8=1]/2x1:[8=2]/2x1    YUV 422 in separate planes\n"
+	  "[4],[12=0]:[4]/2x1,[12=1]/2x1:[4]/2x1,[12=2]/2x1\n"
+	  "                             YUV 422 in separate planes, 12 bits per component\n"
+	  "                             where each component is packed into 16 bits with\n"
+	  "                             padding bits upfront, represented in big-endian\n"
+	  "[4-],[12-=0]:[4-]/2x1,[12-=1]/2x1:[4-]/2x1,[12-=2]/2x1\n"
+	  "                             YUV 422 12 bits/component as above, but little-endian.\n"
 	  "{2-},{10-=2},{10-=1},{10-=0} 32 bits, pixel layout is ten bits per component with\n"
 	  "                             two padding bits in front, packed into 32 bits which\n"
 	  "                             is written in little-endian format. Represented as\n"

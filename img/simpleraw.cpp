@@ -26,7 +26,7 @@ and conversion framework.
 /*
  * This class saves and loads images in any header-less format.
  *
- * $Id: simpleraw.cpp,v 1.14 2015/10/13 20:40:18 thor Exp $
+ * $Id: simpleraw.cpp,v 1.15 2016/03/04 17:09:43 thor Exp $
  */
 
 /// Includes
@@ -102,8 +102,8 @@ void SimpleRaw::ComponentLayoutFromFileName(const char *filename)
     return;
   }
 
-  len = sep - filename;
-  m_pcFilename = new char[len + 1];
+  len               = sep - filename;
+  m_pcFilename      = new char[len + 1];
   memcpy(m_pcFilename,filename,len);
   m_pcFilename[len] = '\0'; // terminate here.
   sep++;
@@ -369,7 +369,7 @@ void SimpleRaw::ComponentLayoutFromFileName(const char *filename)
       if (packedbits > 32) {
 	PostError("cannot pack more than 32 bits into a field");
 	return;
-      } else if (!m_bSeparate && packedbits != 0 && packedbits != 8 && packedbits != 16 && packedbits != 32) {
+      } else if (packedbits != 0 && packedbits != 8 && packedbits != 16 && packedbits != 32) {
 	PostError("the number of bits packed together in interleaved planes must be either 8,16 or 32");
 	return;
       }
@@ -379,6 +379,11 @@ void SimpleRaw::ComponentLayoutFromFileName(const char *filename)
 	if (packstart->m_bLittleEndian != rl->m_bLittleEndian) {
 	  PostError("the endianness of fields bit-packed together must be consistent");
 	  return;
+	}
+	// Check whether subsampling is consistent.
+	if (m_bSeparate) {
+	  if (packstart->m_ucSubX != rl->m_ucSubX || packstart->m_ucSubY != rl->m_ucSubY)
+	    PostError("the subsampling factors must be consistent within a group of packed pixels");
 	}
 	packstart->m_ucBitsPacked = packedbits;
 	packstart = packstart->m_pNext;
@@ -635,33 +640,74 @@ void SimpleRaw::LoadImage(const char *nameandspecs,struct ImgSpecs &specs)
       UBYTE *rptr  = (UBYTE *)rl->m_pPtr;
       ULONG width  = (rl->m_ulWidth  + rl->m_ucSubX - 1) / (rl->m_ucSubX);
       ULONG height = (rl->m_ulHeight + rl->m_ucSubY - 1) / (rl->m_ucSubY);
-      for(y = 0;y < height;y++) {
-	UBYTE *ptr = rptr;
-	for(x = 0;x < width;x++) {
-	  UQUAD data = ReadData(in,rl->m_ucBits,8,rl->m_bLittleEndian,rl->m_bSigned,rl->m_bLefty);
-	  if (!rl->m_bIsPadding) {
-	    if (rl->m_ucBits <= 8) {
-	      *(UBYTE *)ptr = UBYTE(data);
-	    } else if (rl->m_ucBits <= 16) {
-	      if (rl->m_bFloat) {
-		FLOAT dt = H2F(data);
-		// Half float is stored as float.
-		*(FLOAT *)ptr = ULONG(dt);
-	      } else {
-		*(UWORD *)ptr = UWORD(data);
+      //
+      // Are these multiple components packed together?
+      if (rl->m_bStartPacking) {
+	for(y = 0;y < height;y++) {
+	  for(x = 0;x < width;x++) {
+	    struct RawLayout *ro = rl;
+	    do {
+	      UQUAD data = ReadData(in,ro->m_ucBits,ro->m_ucBitsPacked,ro->m_bLittleEndian,
+				    ro->m_bSigned,ro->m_bLefty);
+	      if (!ro->m_bIsPadding) {
+		struct ComponentLayout *cl = m_pComponent + ro->m_usTargetChannel;
+		UBYTE *ptr = ((UBYTE *)(cl->m_pPtr)) + (y * cl->m_ulBytesPerRow) + (x * cl->m_ulBytesPerPixel);
+		if (ro->m_ucBits <= 8) {
+		  *(UBYTE *)ptr = UBYTE(data);
+		} else if (ro->m_ucBits <= 16) {
+		  if (ro->m_bFloat) {
+		    FLOAT dt = H2F(data);
+		    // Half float is stored as float.
+		    *(FLOAT *)ptr = ULONG(dt);
+		  } else {
+		    *(UWORD *)ptr = UWORD(data);
+		  }
+		} else if (ro->m_ucBits <= 32) {
+		  *(ULONG *)ptr = ULONG(data);
+		} else if (ro->m_ucBits <= 64) {
+		  *(UQUAD *)ptr = UQUAD(data);
+		} else {
+		  assert(0);
+		}
 	      }
-	    } else if (rl->m_ucBits <= 32) {
-	      *(ULONG *)ptr = ULONG(data);
-	    } else if (rl->m_ucBits <= 64) {
-	      *(UQUAD *)ptr = UQUAD(data);
-	    } else {
-	      assert(0);
-	    }
+	    } while((ro = ro->m_pNext) && ro->m_bStartPacking == false && ro->m_ucBitsPacked);
 	  }
-	  ptr += rl->m_ulBytesPerPixel;
+	  BitAlignIn();
 	}
-	BitAlignIn();
-	rptr += rl->m_ulBytesPerRow;
+	//
+	// Advance over the packed sequence.
+	while(rl->m_pNext && rl->m_pNext->m_bStartPacking == false && rl->m_pNext->m_ucBitsPacked)
+	  rl = rl->m_pNext;
+	//
+      } else {
+	for(y = 0;y < height;y++) {
+	  UBYTE *ptr = rptr;
+	  for(x = 0;x < width;x++) {
+	    UQUAD data = ReadData(in,rl->m_ucBits,8,rl->m_bLittleEndian,rl->m_bSigned,rl->m_bLefty);
+	    if (!rl->m_bIsPadding) {
+	      if (rl->m_ucBits <= 8) {
+		*(UBYTE *)ptr = UBYTE(data);
+	      } else if (rl->m_ucBits <= 16) {
+		if (rl->m_bFloat) {
+		  FLOAT dt = H2F(data);
+		  // Half float is stored as float.
+		  *(FLOAT *)ptr = ULONG(dt);
+		} else {
+		  *(UWORD *)ptr = UWORD(data);
+		}
+	      } else if (rl->m_ucBits <= 32) {
+		*(ULONG *)ptr = ULONG(data);
+	      } else if (rl->m_ucBits <= 64) {
+		*(UQUAD *)ptr = UQUAD(data);
+	      } else {
+		assert(0);
+	      }
+	    }
+	    ptr += rl->m_ulBytesPerPixel;
+	  }
+	  BitAlignIn();
+	  rptr += rl->m_ulBytesPerRow;
+	}
       }
     }
   } else {
@@ -872,12 +918,51 @@ void SimpleRaw::SaveImage(const char *nameandspecs,const struct ImgSpecs &)
   m_ulBitBuffer = 0;
   //
   if (m_bSeparate) {
-    m_ucBit     = 8;
     for(rl = m_pRawList;rl;rl = rl->m_pNext) {
       ULONG width  = (rl->m_ulWidth  + rl->m_ucSubX - 1) / (rl->m_ucSubX);
       ULONG height = (rl->m_ulHeight + rl->m_ucSubY - 1) / (rl->m_ucSubY);
       ULONG x,y;
-      if (rl->m_bIsPadding) {
+      //
+      // If multple fields are padded together, it is getting more complicated.
+      // We need to write them interleaved into one plane.
+      if (rl->m_bStartPacking) {
+	m_ucBit = rl->m_ucBitsPacked;
+	for(y = 0;y < height;y++) {
+	  for(x = 0;x < width;x++) {
+	    struct RawLayout *ro = rl;
+	    do {
+	      if (ro->m_bIsPadding) {
+		WriteData(out,0,ro->m_ucBits,ro->m_ucBitsPacked,ro->m_bLittleEndian,ro->m_bLefty);
+	      } else {
+		struct ComponentLayout *cl = m_pComponent + ro->m_usTargetChannel;
+		UBYTE *ptr = ((UBYTE *)(cl->m_pPtr)) + (y * cl->m_ulBytesPerRow) + (x * cl->m_ulBytesPerPixel);
+		UQUAD data = 0;
+		if (ro->m_ucBits <= 8) {
+		  data = *ptr;
+		} else if (ro->m_ucBits <= 16) {
+		  if (ro->m_bFloat) {
+		    FLOAT dt = *(FLOAT *)(ptr);
+		    data = F2H(dt);
+		  } else {
+		    data = *(UWORD *)(ptr);
+		  }
+		} else if (ro->m_ucBits <= 32) {
+		  data = *(ULONG *)(ptr);
+		} else if (ro->m_ucBits <= 64) {
+		  data = *(UQUAD *)(ptr);
+		}
+		WriteData(out,data,ro->m_ucBits,ro->m_ucBitsPacked,ro->m_bLittleEndian,ro->m_bLefty);
+	      }
+	    } while((ro = ro->m_pNext) && ro->m_bStartPacking == false && ro->m_ucBitsPacked);
+	  }
+	  BitAlignOut(out,8,rl->m_bLittleEndian,rl->m_bLefty);
+	}
+	// Advance over the packed sequence.
+	while(rl->m_pNext && rl->m_pNext->m_bStartPacking == false && rl->m_pNext->m_ucBitsPacked)
+	  rl = rl->m_pNext;
+	//
+      } else if (rl->m_bIsPadding) {
+	m_ucBit = 8;
 	for(y = 0;y < height;y++) {
 	  for(x = 0;x < width;x++) {
 	    WriteData(out,0,rl->m_ucBits,8,rl->m_bLittleEndian,rl->m_bLefty);
@@ -885,9 +970,10 @@ void SimpleRaw::SaveImage(const char *nameandspecs,const struct ImgSpecs &)
 	  BitAlignOut(out,8,rl->m_bLittleEndian,rl->m_bLefty);
 	}
       } else {
-	UWORD i = rl->m_usTargetChannel;
+	UWORD i                    = rl->m_usTargetChannel;
 	struct ComponentLayout *cl = m_pComponent + i;
-	UBYTE *rptr = (UBYTE *)cl->m_pPtr;
+	UBYTE *rptr                = (UBYTE *)cl->m_pPtr;
+	m_ucBit = 8;
 	for(y = 0;y < height;y++) {
 	  UBYTE *ptr = rptr;
 	  for(x = 0;x < width;x++) {
