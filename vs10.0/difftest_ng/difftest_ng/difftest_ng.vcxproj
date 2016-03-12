@@ -1,0 +1,219 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{628653C4-0D0A-4A17-91B9-69F73977D5BE}</ProjectGuid>
+    <RootNamespace>difftest_ng</RootNamespace>
+    <Keyword>Win32Proj</Keyword>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <CharacterSet>Unicode</CharacterSet>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)$(Configuration)\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(Configuration)\</IntDir>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</LinkIncremental>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)$(Configuration)\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(Configuration)\</IntDir>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</LinkIncremental>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>$(SolutionDir)\..\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>true</MinimalRebuild>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <DisableLanguageExtensions>true</DisableLanguageExtensions>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <DisableSpecificWarnings>4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <Link>
+      <AdditionalLibraryDirectories>H:\thor\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Console</SubSystem>
+      <TargetMachine>MachineX86</TargetMachine>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>$(SolutionDir)\..\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <DisableLanguageExtensions>true</DisableLanguageExtensions>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <DisableSpecificWarnings>4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <Link>
+      <AdditionalLibraryDirectories>H:\thor\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Console</SubSystem>
+      <OptimizeReferences>true</OptimizeReferences>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <TargetMachine>MachineX86</TargetMachine>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\diff\add.cpp" />
+    <ClCompile Include="..\..\..\diff\downsampler.cpp" />
+    <ClCompile Include="..\..\..\diff\flip.cpp" />
+    <ClCompile Include="..\..\..\diff\invert.cpp" />
+    <ClCompile Include="..\..\..\diff\mapping.cpp" />
+    <ClCompile Include="..\..\..\diff\peakpos.cpp" />
+    <ClCompile Include="..\..\..\diff\upsampler.cpp" />
+    <ClCompile Include="..\..\..\diff\xyz.cpp" />
+    <ClCompile Include="..\..\..\img\simpledpx.cpp" />
+    <ClCompile Include="..\..\..\std\assert.cpp" />
+    <ClCompile Include="..\..\..\img\blankimg.cpp" />
+    <ClCompile Include="..\..\..\diff\colorhist.cpp" />
+    <ClCompile Include="..\..\..\diff\compare.cpp" />
+    <ClCompile Include="..\..\..\diff\convertimg.cpp" />
+    <ClCompile Include="..\..\..\diff\crop.cpp" />
+    <ClCompile Include="..\..\..\std\ctype.cpp" />
+    <ClCompile Include="..\..\..\tiff\decoderbase.cpp" />
+    <ClCompile Include="..\..\..\tiff\decoderfunctions.cpp" />
+    <ClCompile Include="..\..\..\diff\diffimg.cpp" />
+    <ClCompile Include="..\..\..\diff\dimension.cpp" />
+    <ClCompile Include="..\..\..\std\errno.cpp" />
+    <ClCompile Include="..\..\..\tools\fft.cpp" />
+    <ClCompile Include="..\..\..\diff\fftfilt.cpp" />
+    <ClCompile Include="..\..\..\diff\fftimg.cpp" />
+    <ClCompile Include="..\..\..\tools\file.cpp" />
+    <ClCompile Include="..\..\..\diff\histogram.cpp" />
+    <ClCompile Include="..\..\..\img\imglayout.cpp" />
+    <ClCompile Include="..\..\..\img\imgspecs.cpp" />
+    <ClCompile Include="..\..\..\tiff\lzwdecoder.cpp" />
+    <ClCompile Include="..\..\..\cmd\main.cpp" />
+    <ClCompile Include="..\..\..\diff\mask.cpp" />
+    <ClCompile Include="..\..\..\std\math.cpp" />
+    <ClCompile Include="..\..\..\diff\maxfreq.cpp" />
+    <ClCompile Include="..\..\..\diff\meter.cpp" />
+    <ClCompile Include="..\..\..\diff\mrse.cpp" />
+    <ClCompile Include="..\..\..\tiff\packbitsdecoder.cpp" />
+    <ClCompile Include="..\..\..\diff\pre.cpp" />
+    <ClCompile Include="..\..\..\diff\psnr.cpp" />
+    <ClCompile Include="..\..\..\diff\restore.cpp" />
+    <ClCompile Include="..\..\..\diff\restrict.cpp" />
+    <ClCompile Include="..\..\..\diff\scale.cpp" />
+    <ClCompile Include="..\..\..\std\setjmp.cpp" />
+    <ClCompile Include="..\..\..\img\simplebmp.cpp" />
+    <ClCompile Include="..\..\..\img\simplepgx.cpp" />
+    <ClCompile Include="..\..\..\img\simpleppm.cpp" />
+    <ClCompile Include="..\..\..\img\simpleraw.cpp" />
+    <ClCompile Include="..\..\..\img\simplergbe.cpp" />
+    <ClCompile Include="..\..\..\img\simpletiff.cpp" />
+    <ClCompile Include="..\..\..\std\stdarg.cpp" />
+    <ClCompile Include="..\..\..\std\stddef.cpp" />
+    <ClCompile Include="..\..\..\std\stdio.cpp" />
+    <ClCompile Include="..\..\..\std\stdlib.cpp" />
+    <ClCompile Include="..\..\..\std\string.cpp" />
+    <ClCompile Include="..\..\..\diff\stripe.cpp" />
+    <ClCompile Include="..\..\..\diff\thres.cpp" />
+    <ClCompile Include="..\..\..\tiff\tiffparser.cpp" />
+    <ClCompile Include="..\..\..\tiff\tifftags.cpp" />
+    <ClCompile Include="..\..\..\tiff\tiffwriter.cpp" />
+    <ClCompile Include="..\..\..\tiff\trivialdecoder.cpp" />
+    <ClCompile Include="..\..\..\std\unistd.cpp" />
+    <ClCompile Include="..\..\..\diff\ycbcr.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\diff\add.hpp" />
+    <ClInclude Include="..\..\..\diff\downsampler.hpp" />
+    <ClInclude Include="..\..\..\diff\flip.hpp" />
+    <ClInclude Include="..\..\..\diff\invert.hpp" />
+    <ClInclude Include="..\..\..\diff\mapping.hpp" />
+    <ClInclude Include="..\..\..\diff\peakpos.hpp" />
+    <ClInclude Include="..\..\..\diff\upsampler.hpp" />
+    <ClInclude Include="..\..\..\diff\xyz.hpp" />
+    <ClInclude Include="..\..\..\img\simpledpx.hpp" />
+    <ClInclude Include="..\..\..\tools\file.hpp" />
+    <ClInclude Include="..\..\..\std\assert.hpp" />
+    <ClInclude Include="..\..\..\img\blankimg.hpp" />
+    <ClInclude Include="..\..\..\diff\colorhist.hpp" />
+    <ClInclude Include="..\..\..\diff\compare.hpp" />
+    <ClInclude Include="..\..\..\diff\convertimg.hpp" />
+    <ClInclude Include="..\..\..\diff\crop.hpp" />
+    <ClInclude Include="..\..\..\std\ctype.hpp" />
+    <ClInclude Include="..\..\..\tiff\decoderbase.hpp" />
+    <ClInclude Include="..\..\..\tiff\decoderfunctions.hpp" />
+    <ClInclude Include="..\..\..\diff\diffimg.hpp" />
+    <ClInclude Include="..\..\..\diff\dimension.hpp" />
+    <ClInclude Include="..\..\..\std\errno.hpp" />
+    <ClInclude Include="..\..\..\tools\fft.hpp" />
+    <ClInclude Include="..\..\..\diff\fftfilt.hpp" />
+    <ClInclude Include="..\..\..\diff\fftimg.hpp" />
+    <ClInclude Include="..\..\..\diff\histogram.hpp" />
+    <ClInclude Include="..\..\..\img\imglayout.hpp" />
+    <ClInclude Include="..\..\..\img\imgspecs.hpp" />
+    <ClInclude Include="..\..\..\tiff\lzwdecoder.hpp" />
+    <ClInclude Include="..\..\..\cmd\main.hpp" />
+    <ClInclude Include="..\..\..\diff\mask.hpp" />
+    <ClInclude Include="..\..\..\std\math.hpp" />
+    <ClInclude Include="..\..\..\diff\maxfreq.hpp" />
+    <ClInclude Include="..\..\..\diff\meter.hpp" />
+    <ClInclude Include="..\..\..\diff\mrse.hpp" />
+    <ClInclude Include="..\..\..\tiff\packbitsdecoder.hpp" />
+    <ClInclude Include="..\..\..\diff\pre.hpp" />
+    <ClInclude Include="..\..\..\diff\psnr.hpp" />
+    <ClInclude Include="..\..\..\diff\restore.hpp" />
+    <ClInclude Include="..\..\..\diff\restrict.hpp" />
+    <ClInclude Include="..\..\..\diff\scale.hpp" />
+    <ClInclude Include="..\..\..\std\setjmp.hpp" />
+    <ClInclude Include="..\..\..\img\simplebmp.hpp" />
+    <ClInclude Include="..\..\..\img\simplepgx.hpp" />
+    <ClInclude Include="..\..\..\img\simpleppm.hpp" />
+    <ClInclude Include="..\..\..\img\simpleraw.hpp" />
+    <ClInclude Include="..\..\..\img\simplergbe.hpp" />
+    <ClInclude Include="..\..\..\img\simpletiff.hpp" />
+    <ClInclude Include="..\..\..\std\stdarg.hpp" />
+    <ClInclude Include="..\..\..\std\stddef.hpp" />
+    <ClInclude Include="..\..\..\std\stdio.hpp" />
+    <ClInclude Include="..\..\..\std\stdlib.hpp" />
+    <ClInclude Include="..\..\..\std\string.hpp" />
+    <ClInclude Include="..\..\..\diff\stripe.hpp" />
+    <ClInclude Include="..\..\..\diff\thres.hpp" />
+    <ClInclude Include="..\..\..\tiff\tiffparser.hpp" />
+    <ClInclude Include="..\..\..\tiff\tifftags.hpp" />
+    <ClInclude Include="..\..\..\tiff\tiffwriter.hpp" />
+    <ClInclude Include="..\..\..\tiff\trivialdecoder.hpp" />
+    <ClInclude Include="..\..\..\std\unistd.hpp" />
+    <ClInclude Include="..\..\..\diff\ycbcr.hpp" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
