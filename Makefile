@@ -1,6 +1,6 @@
 #######################################################################
 ##
-## $Id: Makefile,v 1.18 2014/11/06 12:53:17 thor Exp $
+## $Id: Makefile,v 1.19 2016/04/07 10:44:49 thor Exp $
 ##
 #######################################################################
 ## Makefile for the difftest_ng project,
@@ -42,10 +42,10 @@ help:
 #####################################################################
 
 configure:	configure.in autoconfig.h.in
-	@ $(AUTOCONF)
+	@ -$(AUTOCONF)
 
 autoconfig.h.in:	configure.in
-	@ $(AUTOHEADER)
+	@ -$(AUTOHEADER)
 
 autoconfig.h:	autoconfig.h.in configure.in configure
 	@ if test ! -f autoconfig.h; then ./configure CXX=$(COMPILER) CC=$(COMPILER); fi
