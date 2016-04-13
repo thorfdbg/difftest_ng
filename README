@@ -87,7 +87,7 @@ The following file name extensions are currently recognized:
 				   format for representing high-dynamic range images. This
 				   requires libopenexr to be available.
 
-.raw,.craw,.v210		   Raw formats. All raw formats are covered by a single
+.raw,.craw,.v210,.yuv		   Raw formats. All raw formats are covered by a single
 				   format converter that requires the specification of the
 				   layout of the format as part of the file name. Use the
 				   --rawhelp command line option how to specify a raw

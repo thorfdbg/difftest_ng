@@ -26,7 +26,7 @@ and conversion framework.
 /*
  * Test main file
  * 
- * $Id: imglayout.cpp,v 1.31 2015/10/13 19:26:14 thor Exp $
+ * $Id: imglayout.cpp,v 1.32 2016/04/13 13:11:04 thor Exp $
  *
  * This class defines the image layout, width, height and the
  * image depth of the individual components. It is supplied by
@@ -336,7 +336,8 @@ class ImageLayout *ImageLayout::LoadImage(const char *filename,struct ImgSpecs &
 #else
       throw "EXR support isnot compiled in, sorry!";
 #endif
-    } else if (!strncmp(ext,".raw",4) || !strncmp(ext,".craw",5) || !strncmp(ext,".v210",4)) {
+    } else if (!strncmp(ext,".raw",4)  || !strncmp(ext,".craw",5) ||
+	       !strncmp(ext,".v210",4) || !strncmp(ext,".yuv",4)) {
       // RAW family
       class SimpleRaw *raw = new SimpleRaw;
       img = raw;

@@ -26,7 +26,7 @@ and conversion framework.
 /*
  * Main program
  * 
- * $Id: main.cpp,v 1.71 2016/03/04 17:09:43 thor Exp $
+ * $Id: main.cpp,v 1.72 2016/04/13 13:11:04 thor Exp $
  *
  * This class defines the main program and argument parsing.
  */
@@ -77,7 +77,8 @@ and conversion framework.
 void Usage(const char *progname)
 {
   fprintf(stderr,"Usage: %s [options] original distorted\n"
-	  "where original and distorted are ppm,pbm,pgm,pfm,pfs,bmp,pgx,tif,png,exr,rgbe or raw images and options are one or more of\n"
+	  "where original and distorted are ppm,pbm,pgm,pfm,pfs,bmp,pgx,tif,png,exr,rgbe or raw (craw,v12,yuv) images\n"
+	  "and options are one or more of\n"
 	  "--psnr             : measure the psnr with equal weights over all components\n"
 	  "--maxsnr           : measure the snr with equal weights over all components, normalize to maximum signal\n"
 	  "--snr              : measure the snr with equal weights over all components, normalize to source energy\n"
