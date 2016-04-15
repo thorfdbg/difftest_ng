@@ -26,7 +26,7 @@ and conversion framework.
 /*
  * Test main file
  * 
- * $Id: imglayout.cpp,v 1.32 2016/04/13 13:11:04 thor Exp $
+ * $Id: imglayout.cpp,v 1.33 2016/04/15 15:37:51 thor Exp $
  *
  * This class defines the image layout, width, height and the
  * image depth of the individual components. It is supplied by
@@ -408,7 +408,8 @@ void ImageLayout::SaveImage(const char *filename,const struct ImgSpecs &specs)
     // DPX
     class SimpleDPX dpx(*this);
     dpx.SaveImage(filename,specs);
-  } else if (!strncmp(ext,".raw",4) || !strncmp(ext,".craw",5) || !strncmp(ext,".v210",4)) {
+  } else if (!strncmp(ext,".raw",4) || !strncmp(ext,".craw",5) ||
+	     !strncmp(ext,".v210",4) || !strncmp(ext,".yuv",4)) {
     class SimpleRaw raw(*this);
     // raw
     raw.SaveImage(filename,specs);
