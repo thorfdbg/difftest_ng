@@ -26,7 +26,7 @@ and conversion framework.
 /*
  * Test main file
  * 
- * $Id: imglayout.cpp,v 1.33 2016/04/15 15:37:51 thor Exp $
+ * $Id: imglayout.cpp,v 1.34 2016/05/09 20:27:16 thor Exp $
  *
  * This class defines the image layout, width, height and the
  * image depth of the individual components. It is supplied by
@@ -245,7 +245,7 @@ void ImageLayout::Crop(ULONG x1,ULONG y1,ULONG x2,ULONG y2)
   UWORD i;
   
   if (x1 > x2 || y1 > y2)
-    throw "cropping region must not be empty";
+    throw "cropping region must be non-empty";
 
   if (x2 >= m_ulWidth)
     x2 = m_ulWidth - 1;
@@ -254,18 +254,27 @@ void ImageLayout::Crop(ULONG x1,ULONG y1,ULONG x2,ULONG y2)
     y2 = m_ulHeight - 1;
   
   for(i = 0;i < m_usDepth;i++) {
-    if (m_pComponent[i].m_ucSubX != 1 || m_pComponent[i].m_ucSubY != 1)
-      throw "cropping not supported for subsampled images";
+    if (m_pComponent[i].m_ucSubX <= 0 || m_pComponent[i].m_ucSubY <= 0)
+      throw "detected invalid component subsampling while cropping";
+    if (x1 % m_pComponent[i].m_ucSubX)
+      throw "x1 cropping coordinate must be divisible by horizontal subsampling factor";
+    if (y1 % m_pComponent[i].m_ucSubY)
+      throw "y1 cropping coordinate must be divisible by vertical subsampling factor";
+    if ((x2 + 1) % m_pComponent[i].m_ucSubX)
+      throw "x2 + 1 must be divisible by horizontal subsampling factor for cropping";
+    if ((y2 + 1) % m_pComponent[i].m_ucSubY)
+      throw "y1 + 1 must be divisible by vertical subsampling factor for cropping";
   }
   
   m_ulWidth  = x2 - x1 + 1;
   m_ulHeight = y2 - y1 + 1;
   
   for(i = 0;i < m_usDepth;i++) {
-    m_pComponent[i].m_ulWidth  = x2 - x1 + 1;
-    m_pComponent[i].m_ulHeight = y2 - y1 + 1;
+    m_pComponent[i].m_ulWidth  = (x2 + 1) / m_pComponent[i].m_ucSubX - x1 / m_pComponent[i].m_ucSubX;
+    m_pComponent[i].m_ulHeight = (y2 + 1) / m_pComponent[i].m_ucSubY - y1 / m_pComponent[i].m_ucSubY;
     m_pComponent[i].m_pPtr     = ((UBYTE *)m_pComponent[i].m_pPtr) + 
-      x1 * m_pComponent[i].m_ulBytesPerPixel + y1 * m_pComponent[i].m_ulBytesPerRow;
+      (x1 / m_pComponent[i].m_ucSubX) * m_pComponent[i].m_ulBytesPerPixel +
+      (y1 / m_pComponent[i].m_ucSubY) * m_pComponent[i].m_ulBytesPerRow;
   }
 }
 ///
