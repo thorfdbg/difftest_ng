@@ -1,9 +1,8 @@
 /*************************************************************************
-** Copyright (c) 2011-2014 Accusoft Corporation                         **
-**                                                                      **
-** Written by Thomas Richter (richter@rus.uni-stuttgart.de)             **
-** Sponsored by Accusoft Corporation, Tampa, FL and                     **
-** the Computing Center of the University of Stuttgart                  **
+** Copyright (c) 2003-2016 Accusoft 				        **
+**									**
+** Written by Thomas Richter (THOR Software) for Accusoft	        **
+** All Rights Reserved							**
 **************************************************************************
 
 This source file is part of difftest_ng, a universal image measuring
@@ -26,7 +25,7 @@ and conversion framework.
 
 /*
 **
-** $Id: upsampler.hpp,v 1.1 2014/03/04 18:42:02 thor Exp $
+** $Id: upsampler.hpp,v 1.3 2016/06/04 10:44:09 thor Exp $
 **
 ** This class upsamples in the spatial domain
 */
@@ -57,6 +56,9 @@ class Upsampler : public Meter, private ImageLayout {
   // Set if only the chroma component is subsampled.
   bool        m_bChromaOnly;
   //
+  // Set if the sample position is cosited instead of centered.
+  bool        m_bCosited;
+  //
   // Release the temporary buffer.
   void ReleaseComponents(UBYTE **p);
   //
@@ -72,9 +74,9 @@ class Upsampler : public Meter, private ImageLayout {
   //
   //
 public:
-  Upsampler(UBYTE sx,UBYTE sy,bool chromaonly)
+  Upsampler(UBYTE sx,UBYTE sy,bool chromaonly,bool cosited)
     : m_ppucSource(NULL),m_ppucDestination(NULL),
-      m_ucScaleX(sx), m_ucScaleY(sy), m_bChromaOnly(chromaonly)
+      m_ucScaleX(sx), m_ucScaleY(sy), m_bChromaOnly(chromaonly), m_bCosited(cosited)
   { }
   //
   virtual ~Upsampler(void);

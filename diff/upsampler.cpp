@@ -1,9 +1,8 @@
 /*************************************************************************
-** Copyright (c) 2011-2014 Accusoft Corporation                         **
-**                                                                      **
-** Written by Thomas Richter (richter@rus.uni-stuttgart.de)             **
-** Sponsored by Accusoft Corporation, Tampa, FL and                     **
-** the Computing Center of the University of Stuttgart                  **
+** Copyright (c) 2003-2016 Accusoft 				        **
+**									**
+** Written by Thomas Richter (THOR Software) for Accusoft	        **
+** All Rights Reserved							**
 **************************************************************************
 
 This source file is part of difftest_ng, a universal image measuring
@@ -26,7 +25,7 @@ and conversion framework.
 
 /*
 **
-** $Id: upsampler.cpp,v 1.3 2015/10/03 14:43:38 thor Exp $
+** $Id: upsampler.cpp,v 1.5 2016/06/04 10:44:09 thor Exp $
 **
 ** This class downscales in the spatial domain
 */
@@ -48,15 +47,22 @@ void Upsampler::BilinearFilter(const S *org,ULONG obytesperpixel,ULONG obytesper
   ULONG x,y;
   double fx = (sx & 1)?0.0:0.5;
   double fy = (sy & 1)?0.0:0.5;
+  int    cx = sx >> 1;
+  int    cy = sy >> 1;
+
+  if (m_bCosited) {
+    fx = fy = 0.0;
+    cx = cy = 0;
+  }
   
   for(y = 0;y < h;y++) {
     S *dstrow = dest;
     for(x = 0;x < w;x++) {
       const S *srclt,*srcrt,*srclb,*srcrb;
-      LONG xo = (x + sx - (sx >> 1)) / sx - 1;
-      LONG yo = (y + sy - (sy >> 1)) / sy - 1; // left and top sample location.
-      double wx = (x - double(xo * sx) - (sx >> 1) + fx) / double(sx);
-      double wy = (y - double(yo * sy) - (sy >> 1) + fy) / double(sy); // weight for the right pixel
+      LONG xo = (x + sx - cx) / sx - 1;
+      LONG yo = (y + sy - cy) / sy - 1; // left and top sample location.
+      double wx = (x - double(xo * sx) - cx + fx) / double(sx);
+      double wy = (y - double(yo * sy) - cy + fy) / double(sy); // weight for the right pixel
       LONG xl   = (xo >= 0)?(xo):(0);
       LONG xr   = (xo + 1 < LONG(w))?(xo + 1):(xo);
       LONG yt   = (yo >= 0)?(yo):(0);

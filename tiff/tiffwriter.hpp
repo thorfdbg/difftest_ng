@@ -1,9 +1,8 @@
 /*************************************************************************
-** Copyright (c) 2011-2014 Accusoft Corporation                         **
-**                                                                      **
-** Written by Thomas Richter (richter@rus.uni-stuttgart.de)             **
-** Sponsored by Accusoft Corporation, Tampa, FL and                     **
-** the Computing Center of the University of Stuttgart                  **
+** Copyright (c) 2003-2016 Accusoft 				        **
+**									**
+** Written by Thomas Richter (THOR Software) for Accusoft	        **
+** All Rights Reserved							**
 **************************************************************************
 
 This source file is part of difftest_ng, a universal image measuring
@@ -29,7 +28,7 @@ and conversion framework.
 ** This file defines a simple tiff writer class. This phases the need for
 ** libtiff out as it does not support tiffs with varying bit depths.
 **
-** $Id: tiffwriter.hpp,v 1.5 2014/10/18 19:18:10 thor Exp $
+** $Id: tiffwriter.hpp,v 1.7 2016/06/04 10:44:10 thor Exp $
 **
 */
 

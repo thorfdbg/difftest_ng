@@ -1,9 +1,8 @@
 /*************************************************************************
-** Copyright (c) 2011-2014 Accusoft Corporation                         **
-**                                                                      **
-** Written by Thomas Richter (richter@rus.uni-stuttgart.de)             **
-** Sponsored by Accusoft Corporation, Tampa, FL and                     **
-** the Computing Center of the University of Stuttgart                  **
+** Copyright (c) 2003-2016 Accusoft 				        **
+**									**
+** Written by Thomas Richter (THOR Software) for Accusoft	        **
+** All Rights Reserved							**
 **************************************************************************
 
 This source file is part of difftest_ng, a universal image measuring
@@ -26,7 +25,7 @@ and conversion framework.
 
 /*
 **
-** $Id: compare.hpp,v 1.3 2014/01/04 11:35:27 thor Exp $
+** $Id: compare.hpp,v 1.5 2016/06/04 10:44:08 thor Exp $
 **
 ** Compare the input value against a threshold, fail if the comparison is false.
 */

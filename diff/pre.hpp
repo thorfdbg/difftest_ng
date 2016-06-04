@@ -1,9 +1,8 @@
 /*************************************************************************
-** Copyright (c) 2011-2014 Accusoft Corporation                         **
-**                                                                      **
-** Written by Thomas Richter (richter@rus.uni-stuttgart.de)             **
-** Sponsored by Accusoft Corporation, Tampa, FL and                     **
-** the Computing Center of the University of Stuttgart                  **
+** Copyright (c) 2003-2016 Accusoft 				        **
+**									**
+** Written by Thomas Richter (THOR Software) for Accusoft	        **
+** All Rights Reserved							**
 **************************************************************************
 
 This source file is part of difftest_ng, a universal image measuring
@@ -26,7 +25,7 @@ and conversion framework.
 
 /*
 **
-** $Id: pre.hpp,v 1.4 2014/01/04 11:35:28 thor Exp $
+** $Id: pre.hpp,v 1.6 2016/06/04 10:44:09 thor Exp $
 **
 ** This class measures the logarithmic peak error between two images.
 */

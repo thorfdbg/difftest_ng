@@ -1,9 +1,8 @@
 /*************************************************************************
-** Copyright (c) 2011-2014 Accusoft Corporation                         **
-**                                                                      **
-** Written by Thomas Richter (richter@rus.uni-stuttgart.de)             **
-** Sponsored by Accusoft Corporation, Tampa, FL and                     **
-** the Computing Center of the University of Stuttgart                  **
+** Copyright (c) 2003-2016 Accusoft 				        **
+**									**
+** Written by Thomas Richter (THOR Software) for Accusoft	        **
+** All Rights Reserved							**
 **************************************************************************
 
 This source file is part of difftest_ng, a universal image measuring
@@ -29,7 +28,7 @@ and conversion framework.
 ** This is the trivial decoder which doesn't do anything to the data
 ** but rather reads them as it comes, directly.
 **
-** $Id: trivialdecoder.hpp,v 1.2 2014/01/04 11:35:29 thor Exp $
+** $Id: trivialdecoder.hpp,v 1.4 2016/06/04 10:44:10 thor Exp $
 **
 */
 

@@ -1,10 +1,8 @@
 #***********************************************************************************
-#**
-#**
 #** Makefile for the difftest_ng project,
 #** THOR Software, Thomas Richter for Accusoft
 #**
-#** $Id: configure.in,v 1.13 2015/12/10 21:19:46 thor Exp $
+#** $Id: configure.in,v 1.14 2016/06/02 08:42:17 thor Exp $
 #**
 #** In this module: autoconf script for difftest_ng
 #**********************************************************************************/

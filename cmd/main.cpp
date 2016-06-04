@@ -1,9 +1,8 @@
 /*************************************************************************
-** Copyright (c) 2011-2014 Accusoft Corporation                         **
-**                                                                      **
-** Written by Thomas Richter (richter@rus.uni-stuttgart.de)             **
-** Sponsored by Accusoft Corporation, Tampa, FL and                     **
-** the Computing Center of the University of Stuttgart                  **
+** Copyright (c) 2003-2016 Accusoft 				        **
+**									**
+** Written by Thomas Richter (THOR Software) for Accusoft	        **
+** All Rights Reserved							**
 **************************************************************************
 
 This source file is part of difftest_ng, a universal image measuring
@@ -26,7 +25,7 @@ and conversion framework.
 /*
  * Main program
  * 
- * $Id: main.cpp,v 1.72 2016/04/13 13:11:04 thor Exp $
+ * $Id: main.cpp,v 1.74 2016/06/04 10:44:08 thor Exp $
  *
  * This class defines the main program and argument parsing.
  */
@@ -156,6 +155,8 @@ void Usage(const char *progname)
 	  "--csub x y         : subsample all but component 0 by the subsampling factors in x and y direction\n"
 	  "--up x y           : upsample all components by the subsampling factors in x and y direction\n"
 	  "--cup x y          : upsample all but component 0 by the subsampling factors in x and y direction\n"
+	  "--coup x y         : co-sited upsampling of all components in x and y direction\n"
+	  "--cocup x y        : co-sited upsampling of the chroma components in x and y direction\n"
 	  "--only component   : acts as a filter and restricts all following operations to the given component\n"
 	  "--upto component   : restricts all following operations to components 0..component-1\n"
 	  "--rgb              : restricts the activity to at most the first three components\n"
@@ -781,7 +782,7 @@ int main(int argc,char **argv)
 	  sy = ParseLong(argv[3]);
 	  if (sx >= 16 || sx <= 0 || sy >= 16 || sy <= 0)
 	    throw "upsampling factors must be positive and smaller than 16";
-	  m     = new class Upsampler(sx,sy,false);
+	  m     = new class Upsampler(sx,sy,false,false);
 	  argc -= 2;
 	  argv += 2;
 	} else if (!strcmp(arg,"--cup")) {
@@ -792,9 +793,31 @@ int main(int argc,char **argv)
 	  sy = ParseLong(argv[3]);
 	  if (sx >= 16 || sx <= 0 || sy >= 16 || sy <= 0)
 	    throw "upsampling factors must be positive and smaller than 16";
-	  m     = new class Upsampler(sx,sy,true);
+	  m     = new class Upsampler(sx,sy,true,false);
 	  argc -= 2;
 	  argv += 2;
+	} else if (!strcmp(arg,"--coup")) {
+	  long sx,sy;
+	  if (argc < 4)
+	    throw "--coup requires two arguments, subsampling factors in x and y direction";
+	  sx = ParseLong(argv[2]);
+	  sy = ParseLong(argv[3]);
+	  if (sx >= 16 || sx <= 0 || sy >= 16 || sy <= 0)
+	    throw "upsampling factors must be positive and smaller than 16";
+	  m     = new class Upsampler(sx,sy,false,true);
+	  argc -= 2;
+	  argv += 2;
+	} else if (!strcmp(arg,"--cocup")) {
+	  long sx,sy;
+	  if (argc < 4)
+	    throw "--cocup requires two arguments, subsampling factors in x and y direction";
+	  sx = ParseLong(argv[2]);
+	  sy = ParseLong(argv[3]);
+	  if (sx >= 16 || sx <= 0 || sy >= 16 || sy <= 0)
+	    throw "upsampling factors must be positive and smaller than 16";
+	  m     = new class Upsampler(sx,sy,true,true);
+	  argc -= 2;
+	  argv += 2;	  
 	} else if (!strcmp(arg,"--only")) {
 	  long comp;
 	  if (argc < 3)
