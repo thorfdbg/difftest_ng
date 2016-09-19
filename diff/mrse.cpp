@@ -25,7 +25,7 @@ and conversion framework.
 
 /*
 **
-** $Id: mrse.cpp,v 1.7 2016/06/04 10:44:09 thor Exp $
+** $Id: mrse.cpp,v 1.8 2016/09/19 11:52:18 thor Exp $
 **
 ** This class measures the mean relative square error between two images, averaged over all samples
 ** and thus all components.
@@ -142,6 +142,17 @@ double MRSE::Measure(class ImageLayout *src,class ImageLayout *dst,double)
     switch(m_Type) {
     case Mean:
       error += mse / src->DepthOf();
+      break;
+    case SamplingWeighted:
+      {
+	int c;
+	double numerator   = 1.0 / (src->SubXOf(comp) * src->SubYOf(comp));
+	double denominator = 0.0;
+	for(c = 0;c < d;c++) {
+	  denominator += 1.0 / (src->SubXOf(c) * src->SubYOf(c));
+	}
+	error  += mse * numerator / denominator;
+      }
       break;
     case Min:
       if (mse > error)

@@ -25,7 +25,7 @@ and conversion framework.
 
 /*
 **
-** $Id: psnr.cpp,v 1.19 2016/06/04 10:44:09 thor Exp $
+** $Id: psnr.cpp,v 1.20 2016/09/19 11:52:18 thor Exp $
 **
 ** This class measures the PSNR between two images, averaged over all samples
 ** and thus all components.
@@ -153,6 +153,18 @@ double PSNR::Measure(class ImageLayout *src,class ImageLayout *dst,double)
     case Mean:
       error  += mse / src->DepthOf();
       energy += erg / src->DepthOf();
+      break;
+    case SamplingWeighted:
+      {
+	int c;
+	double numerator   = 1.0 / (src->SubXOf(comp) * src->SubYOf(comp));
+	double denominator = 0.0;
+	for(c = 0;c < d;c++) {
+	  denominator += 1.0 / (src->SubXOf(c) * src->SubYOf(c));
+	}
+	error  += mse * numerator / denominator;
+	energy += erg * numerator / denominator;
+      }
       break;
     case Min:
       if (mse > error)

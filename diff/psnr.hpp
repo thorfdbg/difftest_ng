@@ -25,7 +25,7 @@ and conversion framework.
 
 /*
 **
-** $Id: psnr.hpp,v 1.11 2016/06/04 10:44:09 thor Exp $
+** $Id: psnr.hpp,v 1.12 2016/09/19 11:52:18 thor Exp $
 **
 ** This class measures the PSNR between two images, averaged over all samples
 ** and thus all components.
@@ -69,7 +69,8 @@ public:
     Mean,
     Min,
     YCbCr,
-    YUV
+    YUV,
+    SamplingWeighted
   };
   //
   PSNR(Type t,bool linear = false,bool snr = false,bool fromenergy = false)

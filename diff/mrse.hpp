@@ -25,7 +25,7 @@ and conversion framework.
 
 /*
 **
-** $Id: mrse.hpp,v 1.4 2016/06/04 10:44:09 thor Exp $
+** $Id: mrse.hpp,v 1.5 2016/09/19 11:52:18 thor Exp $
 **
 ** This class measures the mean relative square error between two images, averaged over all samples
 ** and thus all components.
@@ -60,7 +60,8 @@ public:
     Mean,
     Min,
     YCbCr,
-    YUV
+    YUV,
+    SamplingWeighted
   };
   //
   MRSE(Type t)

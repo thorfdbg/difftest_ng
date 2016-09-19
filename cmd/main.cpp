@@ -25,7 +25,7 @@ and conversion framework.
 /*
  * Main program
  * 
- * $Id: main.cpp,v 1.75 2016/06/05 13:09:34 thor Exp $
+ * $Id: main.cpp,v 1.76 2016/09/19 11:52:14 thor Exp $
  *
  * This class defines the main program and argument parsing.
  */
@@ -85,10 +85,12 @@ void Usage(const char *progname)
 	  "--minpsnr          : measure the minimum psnr over all components\n"
 	  "--ycbcrpsnr        : measure the psnr with weights derived from the YCbCr transformation\n"
 	  "--yuvpsnr          : measure the psnr with weights derived from the YUV transformation\n"
+	  "--swpsnr           : measure the psnr with weights coming from the subsampling factors\n"
 	  "--mrse             : measure the log of the mean relative square error with equal weights\n"
 	  "--minmrse          : measure the minimum mrse over all components\n"
 	  "--ycbcrmrse        : measure the mrse with weights derived from the YCbCr transformation\n"
 	  "--yuvmrse          : measure the mrse with weights derived from the YUV transformation\n"
+	  "--swmrse           : measure the mrse with weights coming from the subsampling factors\n"
 	  "--peak             : measure the peak relative error in dB over all components\n"
 	  "--avgpeak          : measure the peak relative error averaged over all components, in dB\n"
 	  "--peakx            : find the x position of the largest pixel error\n"
@@ -425,6 +427,8 @@ int main(int argc,char **argv)
 	  m = new class PSNR(PSNR::YCbCr);
 	} else if (!strcmp(arg,"--yuvpsnr")) {
 	  m = new class PSNR(PSNR::YUV);
+	} else if (!strcmp(arg,"--swpsnr")) {
+	  m = new class PSNR(PSNR::SamplingWeighted);
 	} else if (!strcmp(arg,"--mrse")) {
 	  m = new class MRSE(MRSE::Mean);
 	} else if (!strcmp(arg,"--minmrse")) {
@@ -433,6 +437,8 @@ int main(int argc,char **argv)
 	  m = new class MRSE(MRSE::YCbCr);
 	} else if (!strcmp(arg,"--yuvmrse")) {
 	  m = new class MRSE(MRSE::YUV);
+	} else if (!strcmp(arg,"--swmrse")) {
+	  m = new class MRSE(MRSE::SamplingWeighted);
 	} else if (!strcmp(arg,"--peak")) {
 	  m = new class PRE(PRE::Min);
 	} else if (!strcmp(arg,"--avgpeak")) {
