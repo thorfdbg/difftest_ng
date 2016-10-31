@@ -94,6 +94,7 @@
     <ClCompile Include="..\..\..\diff\invert.cpp" />
     <ClCompile Include="..\..\..\diff\mapping.cpp" />
     <ClCompile Include="..\..\..\diff\peakpos.cpp" />
+    <ClCompile Include="..\..\..\diff\shift.cpp" />
     <ClCompile Include="..\..\..\diff\upsampler.cpp" />
     <ClCompile Include="..\..\..\diff\xyz.cpp" />
     <ClCompile Include="..\..\..\img\simpledpx.cpp" />
@@ -157,6 +158,7 @@
     <ClInclude Include="..\..\..\diff\invert.hpp" />
     <ClInclude Include="..\..\..\diff\mapping.hpp" />
     <ClInclude Include="..\..\..\diff\peakpos.hpp" />
+    <ClInclude Include="..\..\..\diff\shift.hpp" />
     <ClInclude Include="..\..\..\diff\upsampler.hpp" />
     <ClInclude Include="..\..\..\diff\xyz.hpp" />
     <ClInclude Include="..\..\..\img\simpledpx.hpp" />
