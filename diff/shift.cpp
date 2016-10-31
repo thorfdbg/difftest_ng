@@ -25,7 +25,7 @@ and conversion framework.
 
 /*
 **
-** $Id: shift.cpp,v 1.1 2016/10/31 14:55:24 thor Exp $
+** $Id: shift.cpp,v 1.2 2016/10/31 15:39:38 thor Exp $
 **
 ** This class shifts images in X or Y direction.
 */
@@ -144,13 +144,23 @@ void Shift::shiftUp(T *org,ULONG obytesperpixel,ULONG obytesperrow,ULONG w,ULONG
 
 /// Shift::shift
 // Shift the image in the given direction
-void Shift::shift(class ImageLayout *img)
+void Shift::shift(class ImageLayout *img) const
 {
   UWORD comp,d  = img->DepthOf();
 
   for(comp = 0;comp < d;comp++) {
     ULONG  w = img->WidthOf(comp);
     ULONG  h = img->HeightOf(comp);
+    UBYTE sx = img->SubXOf(comp);
+    UBYTE sy = img->SubYOf(comp);
+    int   dx = this->dx;
+    int   dy = this->dy;
+    //
+    if ((dx % sx) || (dy % sy))
+      throw "shift distance is not divisible by the subsampling factors, cannot perform the shift";
+    //
+    dx /= sx;
+    dy /= sy;
     //
     if (img->BitsOf(comp) <= 8) {
       Shift::shift<UBYTE>((UBYTE *)(img->DataOf(comp)),img->BytesPerPixel(comp),img->BytesPerRow(comp),

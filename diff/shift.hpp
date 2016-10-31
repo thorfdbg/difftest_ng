@@ -25,7 +25,7 @@ and conversion framework.
 
 /*
 **
-** $Id: shift.hpp,v 1.1 2016/10/31 14:55:24 thor Exp $
+** $Id: shift.hpp,v 1.2 2016/10/31 15:39:38 thor Exp $
 **
 ** This class shifts images in X or Y direction.
 */
@@ -62,7 +62,7 @@ class Shift : public Meter {
   static void shiftUp(T *org,ULONG obytesperpixel,ULONG obytesperrow,ULONG w,ULONG h,int dy);
   //
   template<typename T>
-  void shift(T *org,ULONG obytesperpixel,ULONG obytesperrow,ULONG w,ULONG h,int dx,int dy)
+  void shift(T *org,ULONG obytesperpixel,ULONG obytesperrow,ULONG w,ULONG h,int dx,int dy) const
   {
     if (dx > 0) {
       if (ULONG(dx) > w)
@@ -86,7 +86,7 @@ class Shift : public Meter {
     }
   }
   //
-  void shift(class ImageLayout *src);
+  void shift(class ImageLayout *src) const;
   //
 public:
   //
