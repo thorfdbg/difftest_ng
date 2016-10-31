@@ -25,7 +25,7 @@ and conversion framework.
 /*
  * Main program
  * 
- * $Id: main.cpp,v 1.76 2016/09/19 11:52:14 thor Exp $
+ * $Id: main.cpp,v 1.77 2016/10/31 14:55:20 thor Exp $
  *
  * This class defines the main program and argument parsing.
  */
@@ -54,6 +54,7 @@ and conversion framework.
 #include "diff/convertimg.hpp"
 #include "diff/invert.hpp"
 #include "diff/flip.hpp"
+#include "diff/shift.hpp"
 #include "diff/scale.hpp"
 #include "diff/crop.hpp"
 #include "diff/mrse.hpp"
@@ -151,6 +152,7 @@ void Usage(const char *progname)
 	  "--invert           : invert the source image before comparing\n"
 	  "--flipx            : flip the source horizontally before comparing\n"
 	  "--flipy            : flip the source vertically before comparing\n"
+	  "--shift dx dy      : shift the image by the given amount right/bottom (or right/up if < 0)\n"
 	  "--pad bpp dst      : pad (right-aligned) a component into a larger bit-depths\n"
 	  "--asprec bpp       : set the bit-depth to bpp, padding input and output into the target bitdepth\n"
 	  "--sub x y          : subsample all components by the subsampling factors in x and y direction\n"
@@ -766,6 +768,15 @@ int main(int argc,char **argv)
 	  m   = new class Flip(Flip::FlipX);
 	} else if (!strcmp(arg,"--flipy")) {
 	  m   = new class Flip(Flip::FlipY);
+	} else if (!strcmp(arg,"--shift")) {
+	  long dx,dy;
+	  if (argc < 4)
+	    throw "--shift requires two arguments, shift distance in horizontal and vertical direction";
+	  dx = ParseLong(argv[2]);
+	  dy = ParseLong(argv[3]);
+	  m     = new class Shift(dx,dy);
+	  argc -= 2;
+	  argv += 2;
 	} else if (!strcmp(arg,"--pad")) {
 	  long bpp;
 	  if (argc < 4)

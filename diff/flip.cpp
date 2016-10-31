@@ -25,7 +25,7 @@ and conversion framework.
 
 /*
 **
-** $Id: flip.cpp,v 1.4 2016/06/04 10:44:08 thor Exp $
+** $Id: flip.cpp,v 1.5 2016/10/31 14:55:24 thor Exp $
 **
 ** This class flips the image in X or Y direction.
 */
@@ -39,7 +39,7 @@ and conversion framework.
 // Templated implementations: Flip horizontally.
 template<typename T>
 void Flip::doFlipX(T *org,ULONG obytesperpixel,ULONG obytesperrow,
-		   ULONG w,ULONG h)
+		   ULONG w,ULONG h) const
 {
   ULONG x;
   ULONG y;
@@ -65,7 +65,7 @@ void Flip::doFlipX(T *org,ULONG obytesperpixel,ULONG obytesperrow,
 // Flip vertically.
 template<typename T>
 void Flip::doFlipY(T *org,ULONG obytesperpixel,ULONG obytesperrow,
-		   ULONG w,ULONG h)
+		   ULONG w,ULONG h) const
 { 
   ULONG x;
   ULONG y;
@@ -89,43 +89,52 @@ void Flip::doFlipY(T *org,ULONG obytesperpixel,ULONG obytesperrow,
 }
 ///
 
-/// Flip::Measure
-double Flip::Measure(class ImageLayout *src,class ImageLayout *,double in)
+/// Flip::flip
+// Perform the flip on a single image
+void Flip::flip(class ImageLayout *img) const
 {
-  UWORD comp,d  = src->DepthOf();
+  UWORD comp,d  = img->DepthOf();
 
   for(comp = 0;comp < d;comp++) {
-    ULONG  w = src->WidthOf(comp);
-    ULONG  h = src->HeightOf(comp);
+    ULONG  w = img->WidthOf(comp);
+    ULONG  h = img->HeightOf(comp);
     //
-    if (src->BitsOf(comp) <= 8) {
+    if (img->BitsOf(comp) <= 8) {
       if (m_Type == FlipX) {
-	Flip::doFlipX<UBYTE>((UBYTE *)(src->DataOf(comp)),src->BytesPerPixel(comp),src->BytesPerRow(comp),w,h);
+	Flip::doFlipX<UBYTE>((UBYTE *)(img->DataOf(comp)),img->BytesPerPixel(comp),img->BytesPerRow(comp),w,h);
       } else {
-	Flip::doFlipY<UBYTE>((UBYTE *)(src->DataOf(comp)),src->BytesPerPixel(comp),src->BytesPerRow(comp),w,h);
+	Flip::doFlipY<UBYTE>((UBYTE *)(img->DataOf(comp)),img->BytesPerPixel(comp),img->BytesPerRow(comp),w,h);
       }
-    } else if (!src->isFloat(comp) && src->BitsOf(comp) <= 16) { // 16 bit float is internally stored as 32 bit.
+    } else if (!img->isFloat(comp) && img->BitsOf(comp) <= 16) { // 16 bit float is internally stored as 32 bit.
       if (m_Type == FlipX) {
-	Flip::doFlipX<UWORD>((UWORD *)(src->DataOf(comp)),src->BytesPerPixel(comp),src->BytesPerRow(comp),w,h);
+	Flip::doFlipX<UWORD>((UWORD *)(img->DataOf(comp)),img->BytesPerPixel(comp),img->BytesPerRow(comp),w,h);
       } else {
-	Flip::doFlipY<UWORD>((UWORD *)(src->DataOf(comp)),src->BytesPerPixel(comp),src->BytesPerRow(comp),w,h);
+	Flip::doFlipY<UWORD>((UWORD *)(img->DataOf(comp)),img->BytesPerPixel(comp),img->BytesPerRow(comp),w,h);
       }
-    } else if (src->BitsOf(comp) <= 32) {
+    } else if (img->BitsOf(comp) <= 32) {
       if (m_Type == FlipX) {
-	Flip::doFlipX<ULONG>((ULONG *)(src->DataOf(comp)),src->BytesPerPixel(comp),src->BytesPerRow(comp),w,h);
+	Flip::doFlipX<ULONG>((ULONG *)(img->DataOf(comp)),img->BytesPerPixel(comp),img->BytesPerRow(comp),w,h);
       } else {
-	Flip::doFlipY<ULONG>((ULONG *)(src->DataOf(comp)),src->BytesPerPixel(comp),src->BytesPerRow(comp),w,h);
+	Flip::doFlipY<ULONG>((ULONG *)(img->DataOf(comp)),img->BytesPerPixel(comp),img->BytesPerRow(comp),w,h);
       }
-    } else if (src->BitsOf(comp) <= 64) {
+    } else if (img->BitsOf(comp) <= 64) {
       if (m_Type == FlipX) {
-	Flip::doFlipX<UQUAD>((UQUAD *)(src->DataOf(comp)),src->BytesPerPixel(comp),src->BytesPerRow(comp),w,h);
+	Flip::doFlipX<UQUAD>((UQUAD *)(img->DataOf(comp)),img->BytesPerPixel(comp),img->BytesPerRow(comp),w,h);
       } else {
-	Flip::doFlipY<UQUAD>((UQUAD *)(src->DataOf(comp)),src->BytesPerPixel(comp),src->BytesPerRow(comp),w,h);
+	Flip::doFlipY<UQUAD>((UQUAD *)(img->DataOf(comp)),img->BytesPerPixel(comp),img->BytesPerRow(comp),w,h);
       }
     } else {
       throw "unsupported data type";
     }
   }
+}
+///
+
+/// Flip::Measure
+double Flip::Measure(class ImageLayout *src,class ImageLayout *dst,double in)
+{
+  flip(src);
+  flip(dst);
 
   return in;
 }

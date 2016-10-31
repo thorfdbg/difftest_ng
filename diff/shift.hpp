@@ -25,13 +25,13 @@ and conversion framework.
 
 /*
 **
-** $Id: flip.hpp,v 1.4 2016/10/31 14:55:24 thor Exp $
+** $Id: shift.hpp,v 1.1 2016/10/31 14:55:24 thor Exp $
 **
-** This class flips the image in X or Y direction.
+** This class shifts images in X or Y direction.
 */
 
-#ifndef DIFF_FLIP_HPP
-#define DIFF_FLIP_HPP
+#ifndef DIFF_SHIFT_HPP
+#define DIFF_SHIFT_HPP
 
 /// Includes
 #include "diff/meter.hpp"
@@ -41,36 +41,60 @@ and conversion framework.
 class ImageLayout;
 ///
 
-/// class Flip
-class Flip : public Meter {
+/// class Shift
+class Shift : public Meter {
   //
-  // Flip type
-  int m_Type;
+  // Shift direction.
+  int dx;
+  int dy;
   //
-  // Templated implementations: Flip horizontally.
+  // Templated implementations: Shift the image horizontally to the right
   template<typename T>
-  void doFlipX(T *org,ULONG obytesperpixel,ULONG obytesperrow,
-	       ULONG w,ULONG h) const;
+  static void shiftRight(T *org,ULONG obytesperpixel,ULONG obytesperrow,ULONG w,ULONG h,int dx);
   //
-  // Flip vertically.
   template<typename T>
-  void doFlipY(T *org,ULONG obytesperpixel,ULONG obytesperrow,
-	       ULONG w,ULONG h) const;
+  static void shiftLeft(T *org,ULONG obytesperpixel,ULONG obytesperrow,ULONG w,ULONG h,int dx);
   //
+  template<typename T>
+  static void shiftDown(T *org,ULONG obytesperpixel,ULONG obytesperrow,ULONG w,ULONG h,int dy);
   //
-  void flip(class ImageLayout *img) const;
+  template<typename T>
+  static void shiftUp(T *org,ULONG obytesperpixel,ULONG obytesperrow,ULONG w,ULONG h,int dy);
+  //
+  template<typename T>
+  void shift(T *org,ULONG obytesperpixel,ULONG obytesperrow,ULONG w,ULONG h,int dx,int dy)
+  {
+    if (dx > 0) {
+      if (ULONG(dx) > w)
+	dx = w;
+      shiftRight(org,obytesperpixel,obytesperrow,w,h,dx);
+    } else if (dx < 0) {
+      dx = -dx;
+      if (ULONG(dx) > w)
+	dx = w;
+      shiftLeft(org,obytesperpixel,obytesperrow,w,h,dx);
+    }
+    if (dy > 0) {
+      if (ULONG(dy) > h)
+	dy = h;
+      shiftDown(org,obytesperpixel,obytesperrow,w,h,dy);
+    } else if (dy < 0) {
+      dy = -dy;
+      if (ULONG(dy) > h)
+	dy = h;
+      shiftUp(org,obytesperpixel,obytesperrow,w,h,dy);
+    }
+  }
+  //
+  void shift(class ImageLayout *src);
   //
 public:
   //
-  // Several options: Flip horizontally or vertically.
-  enum Type {
-    FlipX,
-    FlipY
-  };
   //
-  Flip(Type t)
-    : m_Type(t)
-  { }
+  Shift(int deltax,int deltay)
+    : dx(deltax), dy(deltay)
+  {
+  }
   //
   virtual double Measure(class ImageLayout *src,class ImageLayout *dst,double in);
   //
