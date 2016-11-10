@@ -25,7 +25,7 @@ and conversion framework.
 
 /*
 **
-** $Id: shift.cpp,v 1.2 2016/10/31 15:39:38 thor Exp $
+** $Id: shift.cpp,v 1.3 2016/11/10 10:32:35 thor Exp $
 **
 ** This class shifts images in X or Y direction.
 */
@@ -44,7 +44,7 @@ void Shift::shiftRight(T *org,ULONG obytesperpixel,ULONG obytesperrow,ULONG w,UL
 
   for(y = 0;y < h;y++) {
     T *left = org;
-    T *src  = (T *)((UBYTE *)(org) + obytesperpixel * (w - dx));
+    T *src  = (T *)((UBYTE *)(org) + obytesperpixel * (w - dx - 1));
     T *dst  = (T *)((UBYTE *)(org) + obytesperpixel * (w - 1 ));
     while(src >= left) {
       *dst = *src;
