@@ -25,7 +25,7 @@ and conversion framework.
 /*
  * This class saves and loads images in the dpx format.
  *
- * $Id: simpledpx.cpp,v 1.15 2016/06/04 10:44:09 thor Exp $
+ * $Id: simpledpx.cpp,v 1.16 2017/01/13 10:47:32 thor Exp $
  */
 
 /// Includes
@@ -335,6 +335,7 @@ void SimpleDPX::ParseHeader(FILE *file,struct ImgSpecs &specs)
   UWORD depth,alpha;
   ULONG width,height;
   UWORD i;
+  bool yuv;
   struct ComponentLayout *cl;
 
   m_bLittleEndian = false;
@@ -397,10 +398,10 @@ void SimpleDPX::ParseHeader(FILE *file,struct ImgSpecs &specs)
   } else {
     m_ulWidth        = width;
     m_ulHeight       = height;
-  } 
+  }
+  yuv                = false;
   specs.ASCII        = ImgSpecs::No;
   specs.Interleaved  = (m_usElements == 1)?(ImgSpecs::Yes):(ImgSpecs::No);
-  specs.YUVEncoded   = ImgSpecs::No; // changed possibly to Yes later on.
   specs.Palettized   = ImgSpecs::No;
   specs.LittleEndian = (m_bLittleEndian)?(ImgSpecs::Yes):(ImgSpecs::No);
   //
@@ -411,7 +412,7 @@ void SimpleDPX::ParseHeader(FILE *file,struct ImgSpecs &specs)
       m_Elements[i].m_ulWidth  = width;
       m_Elements[i].m_ulHeight = height;
       if (ParseElementHeader(file,m_Elements + i))
-	specs.YUVEncoded   = ImgSpecs::Yes;
+	yuv = true;
     } else {
       // Skip over elements we do not need
       SkipBytes(file,4*5 + 1*4 + 2*2 + 4*3 + 32);
@@ -419,6 +420,8 @@ void SimpleDPX::ParseHeader(FILE *file,struct ImgSpecs &specs)
   }
   //
   // The rest is junk we do not need.
+  if (specs.YUVEncoded == ImgSpecs::Unspecified)
+    specs.YUVEncoded = yuv?(ImgSpecs::Yes):(ImgSpecs::No);
   //
   // Now compute the depth of the image.
   depth = 0;

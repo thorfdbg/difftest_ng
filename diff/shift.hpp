@@ -25,7 +25,7 @@ and conversion framework.
 
 /*
 **
-** $Id: shift.hpp,v 1.2 2016/10/31 15:39:38 thor Exp $
+** $Id: shift.hpp,v 1.3 2017/01/13 10:47:32 thor Exp $
 **
 ** This class shifts images in X or Y direction.
 */
@@ -35,6 +35,7 @@ and conversion framework.
 
 /// Includes
 #include "diff/meter.hpp"
+#include "img/imgspecs.hpp"
 ///
 
 /// Forwards
@@ -48,41 +49,44 @@ class Shift : public Meter {
   int dx;
   int dy;
   //
+  // Output specifications of the destination file.
+  const struct ImgSpecs &m_TargetSpecs;
+  //
   // Templated implementations: Shift the image horizontally to the right
   template<typename T>
-  static void shiftRight(T *org,ULONG obytesperpixel,ULONG obytesperrow,ULONG w,ULONG h,int dx);
+  static void shiftRight(T *org,T boundary,ULONG obytesperpixel,ULONG obytesperrow,ULONG w,ULONG h,int dx);
   //
   template<typename T>
-  static void shiftLeft(T *org,ULONG obytesperpixel,ULONG obytesperrow,ULONG w,ULONG h,int dx);
+  static void shiftLeft(T *org,T boundary,ULONG obytesperpixel,ULONG obytesperrow,ULONG w,ULONG h,int dx);
   //
   template<typename T>
-  static void shiftDown(T *org,ULONG obytesperpixel,ULONG obytesperrow,ULONG w,ULONG h,int dy);
+  static void shiftDown(T *org,T boundary,ULONG obytesperpixel,ULONG obytesperrow,ULONG w,ULONG h,int dy);
   //
   template<typename T>
-  static void shiftUp(T *org,ULONG obytesperpixel,ULONG obytesperrow,ULONG w,ULONG h,int dy);
+  static void shiftUp(T *org,T boundary,ULONG obytesperpixel,ULONG obytesperrow,ULONG w,ULONG h,int dy);
   //
   template<typename T>
-  void shift(T *org,ULONG obytesperpixel,ULONG obytesperrow,ULONG w,ULONG h,int dx,int dy) const
+  void shift(T *org,T boundary,ULONG obytesperpixel,ULONG obytesperrow,ULONG w,ULONG h,int dx,int dy) const
   {
     if (dx > 0) {
       if (ULONG(dx) > w)
 	dx = w;
-      shiftRight(org,obytesperpixel,obytesperrow,w,h,dx);
+      shiftRight(org,boundary,obytesperpixel,obytesperrow,w,h,dx);
     } else if (dx < 0) {
       dx = -dx;
       if (ULONG(dx) > w)
 	dx = w;
-      shiftLeft(org,obytesperpixel,obytesperrow,w,h,dx);
+      shiftLeft(org,boundary,obytesperpixel,obytesperrow,w,h,dx);
     }
     if (dy > 0) {
       if (ULONG(dy) > h)
 	dy = h;
-      shiftDown(org,obytesperpixel,obytesperrow,w,h,dy);
+      shiftDown(org,boundary,obytesperpixel,obytesperrow,w,h,dy);
     } else if (dy < 0) {
       dy = -dy;
       if (ULONG(dy) > h)
 	dy = h;
-      shiftUp(org,obytesperpixel,obytesperrow,w,h,dy);
+      shiftUp(org,boundary,obytesperpixel,obytesperrow,w,h,dy);
     }
   }
   //
@@ -91,8 +95,9 @@ class Shift : public Meter {
 public:
   //
   //
-  Shift(int deltax,int deltay)
-    : dx(deltax), dy(deltay)
+  Shift(int deltax,int deltay,const struct ImgSpecs &specs)
+    : dx(deltax), dy(deltay),
+      m_TargetSpecs(specs)
   {
   }
   //

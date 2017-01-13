@@ -25,7 +25,7 @@ and conversion framework.
 /*
  * Main program
  * 
- * $Id: main.cpp,v 1.77 2016/10/31 14:55:20 thor Exp $
+ * $Id: main.cpp,v 1.78 2017/01/13 10:47:32 thor Exp $
  *
  * This class defines the main program and argument parsing.
  */
@@ -185,6 +185,8 @@ void Usage(const char *progname)
 	  "--ascii            : encode output in ascii if applicable\n"
 	  "--interleaved      : encode output in interleaved samples if applicable\n"
 	  "--separate         : encode output in separate planes if applicable\n"
+	  "--isyuv            : override automatic YUV detection, sources are really in YUV\n"
+	  "--isrgb            : override automatic YUV detection, sources are really in RGB\n"
 	  "--littleendian     : use little endian output if applicable\n"
 	  "--toabsradiance    : multiply floating point samples by recorded radiance scale to convert to absolute radiance\n"
 	  "--brief            : use a brief (only numeric) output format\n"
@@ -774,7 +776,7 @@ int main(int argc,char **argv)
 	    throw "--shift requires two arguments, shift distance in horizontal and vertical direction";
 	  dx = ParseLong(argv[2]);
 	  dy = ParseLong(argv[3]);
-	  m     = new class Shift(dx,dy);
+	  m     = new class Shift(dx,dy,spec1);
 	  argc -= 2;
 	  argv += 2;
 	} else if (!strcmp(arg,"--pad")) {
@@ -911,6 +913,12 @@ int main(int argc,char **argv)
 	} else if (!strcmp(arg,"--toabsradiance")) {
 	  spec1.AbsoluteRadiance = ImgSpecs::Yes;
 	  spec2.AbsoluteRadiance = ImgSpecs::Yes;
+	} else if (!strcmp(arg,"--isyuv")) {
+	  spec1.YUVEncoded = ImgSpecs::Yes;
+	  spec2.YUVEncoded = ImgSpecs::Yes;
+	} else if (!strcmp(arg,"--isrgb")) {
+	  spec1.YUVEncoded = ImgSpecs::No;
+	  spec2.YUVEncoded = ImgSpecs::No;
 	} else if (!strcmp(arg,"--brief")) {
 	  brief = true;
 	} else {

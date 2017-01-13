@@ -25,7 +25,7 @@ and conversion framework.
 /*
  * This class saves and loads images in any header-less format.
  *
- * $Id: simpleraw.cpp,v 1.17 2016/06/04 10:44:09 thor Exp $
+ * $Id: simpleraw.cpp,v 1.18 2017/01/13 10:47:33 thor Exp $
  */
 
 /// Includes
@@ -560,6 +560,7 @@ UQUAD SimpleRaw::ReadData(FILE *in,UBYTE bitsize,UBYTE packsize,bool littleendia
 void SimpleRaw::LoadImage(const char *nameandspecs,struct ImgSpecs &specs)
 {
   struct RawLayout *rl;
+  bool yuv = false;
   //
   m_ulNominalWidth  = 0;
   m_ulNominalHeight = 0;
@@ -578,6 +579,7 @@ void SimpleRaw::LoadImage(const char *nameandspecs,struct ImgSpecs &specs)
   //
   // Setup the component of the master layout.
   CreateComponents(m_ulNominalWidth,m_ulNominalHeight,m_usNominalDepth);
+  //
   //
   for(rl = m_pRawList;rl;rl = rl->m_pNext) {
     if (!rl->m_bIsPadding) {
@@ -628,9 +630,21 @@ void SimpleRaw::LoadImage(const char *nameandspecs,struct ImgSpecs &specs)
     }
   }
   //
+  // Make a best guess whether this is yuv.
+  if (m_usNominalDepth >= 3 && 
+      (m_pComponent[1].m_ucSubX > m_pComponent[0].m_ucSubX ||
+       m_pComponent[2].m_ucSubX > m_pComponent[0].m_ucSubX ||
+       m_pComponent[1].m_ucSubY > m_pComponent[0].m_ucSubY ||
+       m_pComponent[2].m_ucSubY > m_pComponent[0].m_ucSubY)) {
+    yuv = true;
+  }
+  //
   // Layout?
   specs.Interleaved = (m_bSeparate)?(ImgSpecs::No):(ImgSpecs::Yes);
   specs.Palettized  = ImgSpecs::No;
+  // Insert the yuv flag into the specs, unless the user knows any better
+  if (specs.YUVEncoded == ImgSpecs::Unspecified)
+    specs.YUVEncoded  = yuv?(ImgSpecs::Yes):(ImgSpecs::No);
   //
   // Now read the stuff.
   if (m_bSeparate) {

@@ -25,7 +25,7 @@ and conversion framework.
 
 /*
 **
-** $Id: shift.cpp,v 1.3 2016/11/10 10:32:35 thor Exp $
+** $Id: shift.cpp,v 1.4 2017/01/13 10:47:32 thor Exp $
 **
 ** This class shifts images in X or Y direction.
 */
@@ -38,7 +38,7 @@ and conversion framework.
 /// Shift::shiftRight
 // Templated implementations: Shift the image horizontally to the right
 template<typename T>
-void Shift::shiftRight(T *org,ULONG obytesperpixel,ULONG obytesperrow,ULONG w,ULONG h,int dx)
+void Shift::shiftRight(T *org,T boundary,ULONG obytesperpixel,ULONG obytesperrow,ULONG w,ULONG h,int dx)
 {
   ULONG y;
 
@@ -52,7 +52,7 @@ void Shift::shiftRight(T *org,ULONG obytesperpixel,ULONG obytesperrow,ULONG w,UL
       dst  = (T *)((UBYTE *)(dst) - obytesperpixel);
     }
     while(dst >= left) {
-      *dst = 0;
+      *dst = boundary;
       dst  = (T *)((UBYTE *)(dst) - obytesperpixel);
     }
     org = (T *)((UBYTE *)(org) + obytesperrow);
@@ -63,7 +63,7 @@ void Shift::shiftRight(T *org,ULONG obytesperpixel,ULONG obytesperrow,ULONG w,UL
 /// Shift::shiftLeft
 // Templated implementations: Shift the image horizontally to the left
 template<typename T>
-void Shift::shiftLeft(T *org,ULONG obytesperpixel,ULONG obytesperrow,ULONG w,ULONG h,int dx)
+void Shift::shiftLeft(T *org,T boundary,ULONG obytesperpixel,ULONG obytesperrow,ULONG w,ULONG h,int dx)
 {
   ULONG y;
 
@@ -77,7 +77,7 @@ void Shift::shiftLeft(T *org,ULONG obytesperpixel,ULONG obytesperrow,ULONG w,ULO
       dst  = (T *)((UBYTE *)(dst) + obytesperpixel);
     }
     while(dst < right) {
-      *dst = 0;
+      *dst = boundary;
       dst  = (T *)((UBYTE *)(dst) + obytesperpixel);
     }
     org = (T *)((UBYTE *)(org) + obytesperrow);
@@ -88,7 +88,7 @@ void Shift::shiftLeft(T *org,ULONG obytesperpixel,ULONG obytesperrow,ULONG w,ULO
 /// Shift::shiftDown
 // Templated implementations: Shift the image vertically down
 template<typename T>
-void Shift::shiftDown(T *org,ULONG obytesperpixel,ULONG obytesperrow,ULONG w,ULONG h,int dy)
+void Shift::shiftDown(T *org,T boundary,ULONG obytesperpixel,ULONG obytesperrow,ULONG w,ULONG h,int dy)
 {
   ULONG y;
 
@@ -106,7 +106,7 @@ void Shift::shiftDown(T *org,ULONG obytesperpixel,ULONG obytesperrow,ULONG w,ULO
     T *dst   = (T *)((UBYTE *)(org) + obytesperrow * y);
     T *right = (T *)((UBYTE *)(dst) + obytesperpixel * w);
     while(dst < right) {
-      *dst = 0;
+      *dst = boundary;
       dst  = (T *)((UBYTE *)(dst) + obytesperpixel);
     }
   } while(y--);
@@ -116,7 +116,7 @@ void Shift::shiftDown(T *org,ULONG obytesperpixel,ULONG obytesperrow,ULONG w,ULO
 /// Shift::shiftUp
 // Templated implementations: Shift the image vertically up
 template<typename T>
-void Shift::shiftUp(T *org,ULONG obytesperpixel,ULONG obytesperrow,ULONG w,ULONG h,int dy)
+void Shift::shiftUp(T *org,T boundary,ULONG obytesperpixel,ULONG obytesperrow,ULONG w,ULONG h,int dy)
 {
   ULONG y;
 
@@ -134,7 +134,7 @@ void Shift::shiftUp(T *org,ULONG obytesperpixel,ULONG obytesperrow,ULONG w,ULONG
     T *dst   = (T *)((UBYTE *)(org) + obytesperrow   * y);
     T *right = (T *)((UBYTE *)(dst) + obytesperpixel * w);
     while(dst < right) {
-      *dst = 0;
+      *dst = boundary;
       dst  = (T *)((UBYTE *)(dst) + obytesperpixel);
     }
     y++;
@@ -147,7 +147,8 @@ void Shift::shiftUp(T *org,ULONG obytesperpixel,ULONG obytesperrow,ULONG w,ULONG
 void Shift::shift(class ImageLayout *img) const
 {
   UWORD comp,d  = img->DepthOf();
-
+  bool isyuv    = (m_TargetSpecs.YUVEncoded == ImgSpecs::Yes)?true:false;
+  
   for(comp = 0;comp < d;comp++) {
     ULONG  w = img->WidthOf(comp);
     ULONG  h = img->HeightOf(comp);
@@ -155,6 +156,8 @@ void Shift::shift(class ImageLayout *img) const
     UBYTE sy = img->SubYOf(comp);
     int   dx = this->dx;
     int   dy = this->dy;
+    bool yuv = (isyuv && (comp == 1 || comp == 2) && img->isSigned(comp) == false)?true:false;
+    UBYTE bd = img->BitsOf(comp);
     //
     if ((dx % sx) || (dy % sy))
       throw "shift distance is not divisible by the subsampling factors, cannot perform the shift";
@@ -163,16 +166,27 @@ void Shift::shift(class ImageLayout *img) const
     dy /= sy;
     //
     if (img->BitsOf(comp) <= 8) {
-      Shift::shift<UBYTE>((UBYTE *)(img->DataOf(comp)),img->BytesPerPixel(comp),img->BytesPerRow(comp),
+      UBYTE neutral = (yuv)?(1 << (bd - 1)):(0);
+      Shift::shift<UBYTE>((UBYTE *)(img->DataOf(comp)),neutral,img->BytesPerPixel(comp),img->BytesPerRow(comp),
 			  w,h,dx,dy);
     } else if (!img->isFloat(comp) && img->BitsOf(comp) <= 16) { // 16 bit float is internally stored as 32 bit.
-      Shift::shift<UWORD>((UWORD *)(img->DataOf(comp)),img->BytesPerPixel(comp),img->BytesPerRow(comp),
+      UWORD neutral = (yuv)?(1 << (bd - 1)):(0);
+      Shift::shift<UWORD>((UWORD *)(img->DataOf(comp)),neutral,img->BytesPerPixel(comp),img->BytesPerRow(comp),
 			  w,h,dx,dy);
     } else if (img->BitsOf(comp) <= 32) {
-      Shift::shift<ULONG>((ULONG *)(img->DataOf(comp)),img->BytesPerPixel(comp),img->BytesPerRow(comp),
-			  w,h,dx,dy);
-    } else if (img->BitsOf(comp) <= 64) {
-      Shift::shift<UQUAD>((UQUAD *)(img->DataOf(comp)),img->BytesPerPixel(comp),img->BytesPerRow(comp),
+      if (img->isFloat(comp)) {
+	// This is stored in float, actually.
+	FLOAT neutral = (yuv)?(0.5f):(0.0f);
+	Shift::shift<FLOAT>((FLOAT *)(img->DataOf(comp)),neutral,img->BytesPerPixel(comp),img->BytesPerRow(comp),
+			    w,h,dx,dy);
+      } else {
+	ULONG neutral = (yuv)?(1 << (bd - 1)):(0);
+	Shift::shift<ULONG>((ULONG *)(img->DataOf(comp)),neutral,img->BytesPerPixel(comp),img->BytesPerRow(comp),
+			    w,h,dx,dy);
+      }
+    } else if (img->BitsOf(comp) <= 64 && img->isFloat(comp)) {
+      DOUBLE neutral = (yuv)?(0.5):(0.0);
+      Shift::shift<DOUBLE>((DOUBLE *)(img->DataOf(comp)),neutral,img->BytesPerPixel(comp),img->BytesPerRow(comp),
 			  w,h,dx,dy);
     } else {
       throw "unsupported data type";

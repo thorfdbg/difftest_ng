@@ -27,7 +27,7 @@ and conversion framework.
  * This is the image file format that is defined by JPEG2000 part 4
  * for encoding the test streams.
  *
- * $Id: simplepgx.cpp,v 1.17 2016/06/04 10:44:09 thor Exp $
+ * $Id: simplepgx.cpp,v 1.18 2017/01/13 10:47:33 thor Exp $
  */
 
 /// Includes
@@ -85,6 +85,7 @@ void SimplePgx::LoadImage(const char *basename,struct ImgSpecs &specs)
   char buffer[256 + 4];
   bool embedded = false; // if the header is embedded in the file and the file names are generated.
   bool single   = false;
+  bool yuv      = false;
   File file(basename,"r");
   //
   if (m_pComponent) {
@@ -278,7 +279,13 @@ void SimplePgx::LoadImage(const char *basename,struct ImgSpecs &specs)
     // this is only an approximation. Urgh. We don't know the left edge...
     layout->m_ucSubX          = w / name->m_ulWidth;
     // ditto. Same problem.  
-    layout->m_ucSubY          = h / name->m_ulHeight; 
+    layout->m_ucSubY          = h / name->m_ulHeight;
+    // Make a best guess wether this is yuv.
+    if (depth >= 3 && 
+	(layout->m_ucSubX > m_pComponent->m_ucSubX ||
+	 layout->m_ucSubY > m_pComponent->m_ucSubY)) {
+      yuv                     = true;
+    }
     layout->m_ulWidth         = name->m_ulWidth;
     layout->m_ulHeight        = name->m_ulHeight;
     layout->m_ulBytesPerRow   = bypp * name->m_ulWidth;
@@ -397,6 +404,10 @@ void SimplePgx::LoadImage(const char *basename,struct ImgSpecs &specs)
     name = name->m_pNext;
     layout++;
   }
+  //
+  // Insert the yuv flag into the specs.
+  if (specs.YUVEncoded == ImgSpecs::Unspecified)
+    specs.YUVEncoded = yuv?(ImgSpecs::Yes):(ImgSpecs::No);
 }
 ///
 

@@ -26,7 +26,7 @@ and conversion framework.
 /*
 ** An image class to load and save TIFF images (or some of them).
 **
-** $Id: simpletiff.cpp,v 1.30 2016/06/04 10:44:09 thor Exp $
+** $Id: simpletiff.cpp,v 1.31 2017/01/13 10:47:33 thor Exp $
 */
 
 /// Includes
@@ -1075,7 +1075,8 @@ void SimpleTiff::LoadImage(const char *basename,struct ImgSpecs &specs)
   default:
     //
     specs.Palettized = ImgSpecs::No;
-    specs.YUVEncoded = ImgSpecs::No;
+    if (specs.YUVEncoded == ImgSpecs::Unspecified)
+      specs.YUVEncoded = ImgSpecs::No;
     break;
   }
   //
