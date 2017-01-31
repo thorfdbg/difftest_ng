@@ -1,6 +1,4 @@
 /*************************************************************************
-** Copyright (c) 2003-2016 Accusoft 				        **
-**									**
 ** Written by Thomas Richter (THOR Software) for Accusoft	        **
 ** All Rights Reserved							**
 **************************************************************************
@@ -25,7 +23,7 @@ and conversion framework.
 
 /*
 ** Config file for difftest_ng
-** $Id: config.h,v 1.8 2017/01/31 11:57:58 thor Exp $
+** $Id: config.h,v 1.9 2017/01/31 12:07:31 thor Exp $
 **
 */
 
