@@ -2,9 +2,22 @@
 #** Makefile for the difftest_ng project,
 #** THOR Software, Thomas Richter for Accusoft
 #**
-#** $Id: configure.in,v 1.14 2016/06/02 08:42:17 thor Exp $
+#** $Id: configure.in,v 1.15 2017/01/31 10:44:08 thor Exp $
 #**
 #** In this module: autoconf script for difftest_ng
+#**
+#**  difftest_ng is free software: you can redistribute it and/or modify
+#**  it under the terms of the GNU General Public License as published by
+#**  the Free Software Foundation, either version 3 of the License, or
+#**  (at your option) any later version.
+#**
+#**  difftest_ng is distributed in the hope that it will be useful,
+#**  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#**  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#**  GNU General Public License for more details.
+#**
+#**  You should have received a copy of the GNU General Public License
+#**  along with difftest_ng.  If not, see <http://www.gnu.org/licenses/>.
 #**********************************************************************************/
 #
 # Process this file with autoconf to produce a configure script.
