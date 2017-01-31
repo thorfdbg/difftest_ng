@@ -1,6 +1,4 @@
 /*************************************************************************
-** Copyright (c) 2003-2016 Accusoft 				        **
-**									**
 ** Written by Thomas Richter (THOR Software) for Accusoft	        **
 ** All Rights Reserved							**
 **************************************************************************
@@ -25,7 +23,7 @@ and conversion framework.
 /*
  * This class saves and loads images in the dpx format.
  *
- * $Id: simpledpx.cpp,v 1.16 2017/01/13 10:47:32 thor Exp $
+ * $Id: simpledpx.cpp,v 1.17 2017/01/31 11:58:04 thor Exp $
  */
 
 /// Includes

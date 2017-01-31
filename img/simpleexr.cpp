@@ -1,6 +1,4 @@
 /*************************************************************************
-** Copyright (c) 2003-2016 Accusoft 				        **
-**									**
 ** Written by Thomas Richter (THOR Software) for Accusoft	        **
 ** All Rights Reserved							**
 **************************************************************************
@@ -25,7 +23,7 @@ and conversion framework.
 /*
  * An image class to load and save EXR images
  * from a file or to a file.
- * $Id: simpleexr.cpp,v 1.7 2016/06/04 10:44:09 thor Exp $
+ * $Id: simpleexr.cpp,v 1.8 2017/01/31 11:58:04 thor Exp $
  */
 
 /// Includes

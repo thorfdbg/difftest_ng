@@ -1,6 +1,4 @@
 /*************************************************************************
-** Copyright (c) 2003-2016 Accusoft 				        **
-**									**
 ** Written by Thomas Richter (THOR Software) for Accusoft	        **
 ** All Rights Reserved							**
 **************************************************************************
@@ -27,7 +25,7 @@ and conversion framework.
  * This is the image file format that is defined by JPEG2000 part 4
  * for encoding the test streams.
  *
- * $Id: simplepgx.hpp,v 1.9 2016/06/04 10:44:09 thor Exp $
+ * $Id: simplepgx.hpp,v 1.10 2017/01/31 11:58:04 thor Exp $
  */
 
 #ifndef SIMPLEPGX_HPP

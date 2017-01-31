@@ -1,6 +1,4 @@
 /*************************************************************************
-** Copyright (c) 2003-2016 Accusoft 				        **
-**									**
 ** Written by Thomas Richter (THOR Software) for Accusoft	        **
 ** All Rights Reserved							**
 **************************************************************************
@@ -26,7 +24,7 @@ and conversion framework.
 /*
 ** An image class to load and save TIFF images (or some of them).
 **
-** $Id: simpletiff.cpp,v 1.31 2017/01/13 10:47:33 thor Exp $
+** $Id: simpletiff.cpp,v 1.32 2017/01/31 11:58:04 thor Exp $
 */
 
 /// Includes

@@ -1,13 +1,31 @@
 /*************************************************************************
-** Copyright (c) 2003-1024 Accusoft				        **
-** THIS IS UNPUBLISHED PROPRIETARY SOURCE CODE				**
+** Copyright (c) 2003-2016 Accusoft 				        **
 **									**
-** Written by Thomas Richter (THOR Software) for Accusoft		**
+** Written by Thomas Richter (THOR Software) for Accusoft	        **
 ** All Rights Reserved							**
+**************************************************************************
+
+This source file is part of difftest_ng, a universal image measuring
+and conversion framework.
+
+    difftest_ng is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    difftest_ng is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with difftest_ng.  If not, see <http://www.gnu.org/licenses/>.
+
 *************************************************************************/
+
 /*
 ** Config file for difftest_ng
-** $Id: config.h,v 1.7 2014/01/04 13:44:46 thor Exp $
+** $Id: config.h,v 1.8 2017/01/31 11:57:58 thor Exp $
 **
 */
 

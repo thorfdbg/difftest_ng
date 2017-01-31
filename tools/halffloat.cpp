@@ -1,6 +1,4 @@
 /*************************************************************************
-** Copyright (c) 2003-2016 Accusoft 				        **
-**									**
 ** Written by Thomas Richter (THOR Software) for Accusoft	        **
 ** All Rights Reserved							**
 **************************************************************************
@@ -27,6 +25,6 @@ and conversion framework.
 **
 ** This file contains basic support for half-float numbers.
 **
-** $Id: halffloat.cpp,v 1.4 2016/06/04 10:44:10 thor Exp $
+** $Id: halffloat.cpp,v 1.5 2017/01/31 11:58:05 thor Exp $
 **
 */

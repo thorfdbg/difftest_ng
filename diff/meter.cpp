@@ -1,6 +1,4 @@
 /*************************************************************************
-** Copyright (c) 2003-2016 Accusoft 				        **
-**									**
 ** Written by Thomas Richter (THOR Software) for Accusoft	        **
 ** All Rights Reserved							**
 **************************************************************************
@@ -26,7 +24,7 @@ and conversion framework.
 ** This class defines the base structure for all meters, i.e. all
 ** possible measurements that can be made.
 **
-** $Id: meter.cpp,v 1.4 2016/06/04 10:44:09 thor Exp $
+** $Id: meter.cpp,v 1.5 2017/01/31 11:58:04 thor Exp $
 **
 */
 

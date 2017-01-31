@@ -1,6 +1,4 @@
 /*************************************************************************
-** Copyright (c) 2003-2016 Accusoft 				        **
-**									**
 ** Written by Thomas Richter (THOR Software) for Accusoft	        **
 ** All Rights Reserved							**
 **************************************************************************
@@ -28,7 +26,7 @@ and conversion framework.
  * and save simple (hence, the name) BMP images. It
  * does not support any kind of RLC encoded images.
  *
- * $Id: simplebmp.cpp,v 1.22 2016/06/04 10:44:09 thor Exp $
+ * $Id: simplebmp.cpp,v 1.23 2017/01/31 11:58:04 thor Exp $
  *
  */
 

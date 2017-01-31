@@ -1,6 +1,4 @@
 /*************************************************************************
-** Copyright (c) 2003-2016 Accusoft 				        **
-**									**
 ** Written by Thomas Richter (THOR Software) for Accusoft	        **
 ** All Rights Reserved							**
 **************************************************************************
@@ -25,7 +23,7 @@ and conversion framework.
 /*
  * Type definition: Some system independent type definitions
  * (thor's pecularities)
- * $Id: types.cpp,v 1.4 2016/06/04 10:44:10 thor Exp $
+ * $Id: types.cpp,v 1.5 2017/01/31 11:58:04 thor Exp $
  *
  * The following header defines basic types to be used in the J2K interface
  * routines. Especially, this file must be adapted if your compiler has

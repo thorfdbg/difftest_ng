@@ -1,6 +1,4 @@
 /*************************************************************************
-** Copyright (c) 2003-2016 Accusoft 				        **
-**									**
 ** Written by Thomas Richter (THOR Software) for Accusoft	        **
 ** All Rights Reserved							**
 **************************************************************************
@@ -26,7 +24,7 @@ and conversion framework.
 
 /*
 **
-** $Id: diffimg.hpp,v 1.12 2016/06/04 10:44:08 thor Exp $
+** $Id: diffimg.hpp,v 1.13 2017/01/31 11:58:03 thor Exp $
 **
 ** This class saves the difference image as a normalized 8bpp image
 ** with the same number of components as the original.

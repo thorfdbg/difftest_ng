@@ -1,6 +1,4 @@
 /*************************************************************************
-** Copyright (c) 2003-2016 Accusoft 				        **
-**									**
 ** Written by Thomas Richter (THOR Software) for Accusoft	        **
 ** All Rights Reserved							**
 **************************************************************************
@@ -25,7 +23,7 @@ and conversion framework.
 /*
  * An image class to load and save uncompressed BMP images
  * from a file or to a file.
- * $Id: simplebmp.hpp,v 1.9 2016/06/04 10:44:09 thor Exp $
+ * $Id: simplebmp.hpp,v 1.10 2017/01/31 11:58:04 thor Exp $
  */
 
 #ifndef SIMPLEBMP_HPP

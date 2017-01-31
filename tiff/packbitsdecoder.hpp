@@ -1,6 +1,4 @@
 /*************************************************************************
-** Copyright (c) 2003-2016 Accusoft 				        **
-**									**
 ** Written by Thomas Richter (THOR Software) for Accusoft	        **
 ** All Rights Reserved							**
 **************************************************************************
@@ -27,7 +25,7 @@ and conversion framework.
 **
 ** This file contains the logic to decode packbits encoded TIFF files
 **
-** $Id: packbitsdecoder.hpp,v 1.5 2016/06/04 10:44:10 thor Exp $
+** $Id: packbitsdecoder.hpp,v 1.6 2017/01/31 11:58:05 thor Exp $
 **
 */
 

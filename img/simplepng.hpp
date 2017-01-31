@@ -1,6 +1,4 @@
 /*************************************************************************
-** Copyright (c) 2003-2016 Accusoft 				        **
-**									**
 ** Written by Thomas Richter (THOR Software) for Accusoft	        **
 ** All Rights Reserved							**
 **************************************************************************
@@ -25,7 +23,7 @@ and conversion framework.
 /*
  * An image class to load and save PNG images
  * from a file or to a file.
- * $Id: simplepng.hpp,v 1.5 2016/06/04 10:44:09 thor Exp $
+ * $Id: simplepng.hpp,v 1.6 2017/01/31 11:58:04 thor Exp $
  */
 
 #ifndef SIMPLEPNG_HPP

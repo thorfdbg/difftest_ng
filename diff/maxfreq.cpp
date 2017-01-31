@@ -1,6 +1,4 @@
 /*************************************************************************
-** Copyright (c) 2003-2016 Accusoft 				        **
-**									**
 ** Written by Thomas Richter (THOR Software) for Accusoft	        **
 ** All Rights Reserved							**
 **************************************************************************
@@ -25,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: maxfreq.cpp,v 1.12 2016/06/04 10:44:08 thor Exp $
+** $Id: maxfreq.cpp,v 1.13 2017/01/31 11:58:04 thor Exp $
 **
 ** This class locates the maximum frequency and returns the absolute value of this frequency
 ** as result.

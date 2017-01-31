@@ -1,6 +1,4 @@
 /*************************************************************************
-** Copyright (c) 2003-2016 Accusoft 				        **
-**									**
 ** Written by Thomas Richter (THOR Software) for Accusoft	        **
 ** All Rights Reserved							**
 **************************************************************************
@@ -25,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: convertimg.hpp,v 1.5 2016/06/04 10:44:08 thor Exp $
+** $Id: convertimg.hpp,v 1.6 2017/01/31 11:58:03 thor Exp $
 **
 ** This class saves the original image unmodified for conversion and testing
 ** purposes.

@@ -1,6 +1,4 @@
 /*************************************************************************
-** Copyright (c) 2003-2016 Accusoft 				        **
-**									**
 ** Written by Thomas Richter (THOR Software) for Accusoft	        **
 ** All Rights Reserved							**
 **************************************************************************
@@ -28,7 +26,7 @@ and conversion framework.
 ** include file. It might possibly contain fixes for
 ** various Os derivations from the intended stdlib.
 **
-** $Id: stddef.hpp,v 1.4 2016/06/04 10:44:10 thor Exp $
+** $Id: stddef.hpp,v 1.5 2017/01/31 11:58:05 thor Exp $
 */
 
 #ifndef STDDEF_HPP

@@ -1,6 +1,4 @@
 /*************************************************************************
-** Copyright (c) 2003-2016 Accusoft 				        **
-**									**
 ** Written by Thomas Richter (THOR Software) for Accusoft	        **
 ** All Rights Reserved							**
 **************************************************************************
@@ -25,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: mask.hpp,v 1.4 2016/06/04 10:44:08 thor Exp $
+** $Id: mask.hpp,v 1.5 2017/01/31 11:58:04 thor Exp $
 **
 ** This tool replaces the pixels in the distored image by the pixels from the original
 ** providing a masking operation. The masking is an alpha-blending in case the mask

@@ -1,6 +1,4 @@
 /*************************************************************************
-** Copyright (c) 2003-2016 Accusoft 				        **
-**									**
 ** Written by Thomas Richter (THOR Software) for Accusoft	        **
 ** All Rights Reserved							**
 **************************************************************************
@@ -25,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: psnr.cpp,v 1.20 2016/09/19 11:52:18 thor Exp $
+** $Id: psnr.cpp,v 1.21 2017/01/31 11:58:04 thor Exp $
 **
 ** This class measures the PSNR between two images, averaged over all samples
 ** and thus all components.

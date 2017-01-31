@@ -1,6 +1,4 @@
 /*************************************************************************
-** Copyright (c) 2003-2016 Accusoft 				        **
-**									**
 ** Written by Thomas Richter (THOR Software) for Accusoft	        **
 ** All Rights Reserved							**
 **************************************************************************
@@ -25,7 +23,7 @@ and conversion framework.
 /*
  * Main program
  * 
- * $Id: main.cpp,v 1.78 2017/01/13 10:47:32 thor Exp $
+ * $Id: main.cpp,v 1.79 2017/01/31 11:58:03 thor Exp $
  *
  * This class defines the main program and argument parsing.
  */

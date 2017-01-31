@@ -1,6 +1,6 @@
 #######################################################################
 ##
-## $Id: Makefile,v 1.20 2017/01/31 10:44:08 thor Exp $
+## $Id: Makefile,v 1.21 2017/01/31 11:59:43 thor Exp $
 ##
 #######################################################################
 ## Makefile for the difftest_ng project,
@@ -316,7 +316,7 @@ Distrib.zip	:	doc dox configure autoconfig.h.in
 	@ sleep 2
 	@ touch configure
 	@ $(MAKE) --no-print-directory $(DIRLIBS) TARGET="zip"
-	@ $(ZIPASCII) -r Distrib.zip README README.License config.h
+	@ $(ZIPASCII) -r Distrib.zip README README.license config.h
 	@ $(ZIPASCII) -r Distrib.zip vs10.0/difftest_ng/difftest_ng.sln vs10.0/difftest_ng/difftest_ng/difftest_ng.vcxproj
 	@ $(ZIPASCII) -r Distrib.zip vs9.0/difftest_ng/difftest_ng.sln vs9.0/difftest_ng/difftest_ng/difftest_ng.vcproj
 	@ $(ZIP) -r Distrib.zip Makefile Makefile.template Makefile_Settings.*

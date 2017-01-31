@@ -1,6 +1,4 @@
 /*************************************************************************
-** Copyright (c) 2003-2016 Accusoft 				        **
-**									**
 ** Written by Thomas Richter (THOR Software) for Accusoft	        **
 ** All Rights Reserved							**
 **************************************************************************
@@ -25,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: flip.cpp,v 1.5 2016/10/31 14:55:24 thor Exp $
+** $Id: flip.cpp,v 1.6 2017/01/31 11:58:04 thor Exp $
 **
 ** This class flips the image in X or Y direction.
 */
