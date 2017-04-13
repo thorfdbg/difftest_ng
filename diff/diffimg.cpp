@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: diffimg.cpp,v 1.17 2017/01/31 11:58:03 thor Exp $
+** $Id: diffimg.cpp,v 1.18 2017/04/13 13:03:54 thor Exp $
 **
 ** This class saves the difference image as a normalized 8bpp image
 ** with the same number of components as the original.
@@ -122,12 +122,20 @@ double DiffImg::Measure(class ImageLayout *src,class ImageLayout *dst,double in)
 
 
   for(comp = 0;comp < src->DepthOf();comp++) {
-    double scale = 1.0;
-    double shift = -((src->isFloat(comp))?(0.5):((1 << src->BitsOf(comp))>>1));
+    double scale = m_dFactor;
+    double shift = 0.0;
     ULONG  w     = src->WidthOf(comp);
     ULONG  h     = src->HeightOf(comp);
     UBYTE  bytes = (m_bScale)?1:((src->isFloat(comp))?((src->BitsOf(comp) > 32)?8:4):((src->BitsOf(comp) + 7) >> 3));
     UBYTE *mem   = new UBYTE[w * h * bytes];
+    //
+    // Shift is the required shift to generate unsigned data from a
+    // differential signal, before scaling to the target bitdepth.
+    if (src->isFloat(comp)) {
+      shift = -0.5 / m_dFactor;
+    } else {
+      shift = (-((1 << src->BitsOf(comp)) >> 1)) / m_dFactor;
+    }
     //
     m_ppucImage[comp]                    = mem;
     m_pComponent[comp].m_ucBits          = m_bScale?8:src->BitsOf(comp);

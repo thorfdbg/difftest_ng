@@ -24,7 +24,7 @@ and conversion framework.
 
 /*
 **
-** $Id: diffimg.hpp,v 1.13 2017/01/31 11:58:03 thor Exp $
+** $Id: diffimg.hpp,v 1.14 2017/04/13 13:03:54 thor Exp $
 **
 ** This class saves the difference image as a normalized 8bpp image
 ** with the same number of components as the original.
@@ -59,6 +59,9 @@ class DiffImg : public Meter, private ImageLayout {
   // Scale to range.
   bool                   m_bScale;
   //
+  // The scale factor if auto-scaling is disabled.
+  DOUBLE                 m_dFactor;
+  //
   template<typename T,typename D>
   static void Adjust(T *org       ,ULONG obytesperpixel,ULONG obytesperrow,
 		     T *dst       ,ULONG dbytesperpixel,ULONG dbytesperrow,
@@ -68,8 +71,9 @@ class DiffImg : public Meter, private ImageLayout {
 public:
   //
   // Construct the difference image. Takes a file name.
-  DiffImg(const char *filename,const struct ImgSpecs &specs,bool scale)
-    : m_pTargetFile(filename), m_ppucImage(NULL), m_TargetSpecs(specs), m_bScale(scale)
+  DiffImg(const char *filename,const struct ImgSpecs &specs,bool scale,double factor = 1.0)
+    : m_pTargetFile(filename), m_ppucImage(NULL), m_TargetSpecs(specs),
+      m_bScale(scale), m_dFactor(factor)
   {
   }
   //

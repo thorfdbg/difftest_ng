@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: mapping.hpp,v 1.9 2017/01/31 11:58:04 thor Exp $
+** $Id: mapping.hpp,v 1.10 2017/02/13 09:42:05 thor Exp $
 **
 ** This class works like the scaler, but more elaborate as it allows a couple
 ** of less trivial conversions: gamma mapping, log mapping and half-log mapping.
@@ -90,16 +90,16 @@ private:
   void CreatePUMap(void);
   //
   // Convert to int using a gamma mapping.
-  template<typename T>
-  void ToGamma(const FLOAT *org ,ULONG obytesperpixel,ULONG obytesperrow,
-	       T *dst           ,ULONG dbytesperpixel,ULONG dbytesperrow,
+  template<typename S,typename T>
+  void ToGamma(const S *org ,ULONG obytesperpixel,ULONG obytesperrow,
+	       T *dst       ,ULONG dbytesperpixel,ULONG dbytesperrow,
 	       ULONG w, ULONG h, double scale, double limF, double gamma);
   //
   // apply the inverse map.
-  template<typename T>
-  void InvGamma(const T *src  ,ULONG obytesperpixel,ULONG obytesperrow,
-		FLOAT *dst    ,ULONG dbytesperpixel,ULONG dbytesperrow,
-		ULONG w, ULONG h, double scale, double gamma);
+  template<typename S,typename T>
+  void InvGamma(const S *src  ,ULONG obytesperpixel,ULONG obytesperrow,
+		T *dst        ,ULONG dbytesperpixel,ULONG dbytesperrow,
+		ULONG w, ULONG h, double scale, double outscale, double gamma);
   //
   // Compute the limF value as the 95% percentile of the luminance for
   // greyscale.

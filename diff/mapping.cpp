@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: mapping.cpp,v 1.12 2017/01/31 11:58:04 thor Exp $
+** $Id: mapping.cpp,v 1.13 2017/02/13 09:42:05 thor Exp $
 **
 ** This class works like the scaler, but more elaborate as it allows a couple
 ** of less trivial conversions: gamma mapping, log mapping and half-log mapping.
@@ -38,16 +38,16 @@ and conversion framework.
 
 /// Mapping::ToGamma
 // Convert to int using a gamma mapping.
-template<typename T>
-void Mapping::ToGamma(const FLOAT *org ,ULONG obytesperpixel,ULONG obytesperrow,
-		      T *dst           ,ULONG dbytesperpixel,ULONG dbytesperrow,
+template<typename S,typename T>
+void Mapping::ToGamma(const S *org ,ULONG obytesperpixel,ULONG obytesperrow,
+		      T *dst       ,ULONG dbytesperpixel,ULONG dbytesperrow,
 		      ULONG w, ULONG h, double scale, double limF, double gamma)
 {
   ULONG x,y;
   double invgamma = 1.0 / gamma;
   
   for(y = 0;y < h;y++) {
-    const FLOAT *orgrow = org;
+    const S *orgrow = org;
     T *dstrow       = dst;
     for(x = 0;x < w;x++) {
       double v    = *orgrow;
@@ -61,10 +61,10 @@ void Mapping::ToGamma(const FLOAT *org ,ULONG obytesperpixel,ULONG obytesperrow,
 	  v = scale;
       }
       *dstrow = T(v + 0.5);
-      orgrow  = (const FLOAT *)((const UBYTE *)(orgrow) + obytesperpixel);
+      orgrow  = (const S *)((const UBYTE *)(orgrow) + obytesperpixel);
       dstrow  = (T *)((UBYTE *)(dstrow) + dbytesperpixel);
     }
-    org = (const FLOAT *)((const UBYTE *)(org) + obytesperrow);
+    org = (const S *)((const UBYTE *)(org) + obytesperrow);
     dst = (T *)((UBYTE *)(dst) + dbytesperrow);
   }
 }
@@ -72,26 +72,26 @@ void Mapping::ToGamma(const FLOAT *org ,ULONG obytesperpixel,ULONG obytesperrow,
 
 /// Mapping::InvGamma
 // Inverse gamma mapping of the above.
-template<typename T>
-void Mapping::InvGamma(const T *src  ,ULONG obytesperpixel,ULONG obytesperrow,
-		       FLOAT *dst    ,ULONG dbytesperpixel,ULONG dbytesperrow,
-		       ULONG w, ULONG h, double scale, double gamma)
+template<typename S,typename T>
+void Mapping::InvGamma(const S *src  ,ULONG obytesperpixel,ULONG obytesperrow,
+		       T *dst        ,ULONG dbytesperpixel,ULONG dbytesperrow,
+		       ULONG w, ULONG h, double scale, double outscale, double gamma)
 { 
   ULONG x,y;
   double invscale = 1.0 / scale;
   
   for(y = 0;y < h;y++) {
-    const T *orgrow = src;
-    FLOAT *dstrow   = dst;
+    const S *orgrow = src;
+    T *dstrow       = dst;
     for(x = 0;x < w;x++) {
       double v    = *orgrow;
-      v = pow(v * invscale,gamma);
+      v = outscale * pow(v * invscale,gamma);
       *dstrow = v;
-      orgrow  = (const T *)((const UBYTE *)(orgrow) + obytesperpixel);
-      dstrow  = (FLOAT   *)((UBYTE *)(dstrow) + dbytesperpixel);
+      orgrow  = (const S *)((const UBYTE *)(orgrow) + obytesperpixel);
+      dstrow  = (T       *)((UBYTE *)(dstrow) + dbytesperpixel);
     }
-    src = (const T *)((const UBYTE *)(src) + obytesperrow);
-    dst = (FLOAT *)((UBYTE *)(dst) + dbytesperrow);
+    src = (const S *)((const UBYTE *)(src) + obytesperrow);
+    dst = (T       *)((UBYTE *)(dst)       + dbytesperrow);
   }
 }
 ///
@@ -546,28 +546,26 @@ void Mapping::ApplyMap(class ImageLayout *src,class ImageLayout *dst)
   // Need to compute the 95% percentile?
   if (m_Type == Gamma && m_bInverse == false) {
     if (src->DepthOf() == 1) {
-      if (!src->isFloat(0))
-	throw "gamma conversion requires floating point input";
-      limf = ComputeLimF((const FLOAT *)src->DataOf(0),src->BytesPerPixel(0),src->BytesPerRow(0),
+      if (src->isFloat(0)) {
+	if (src->BitsOf(0) != 16 && src->BitsOf(0) != 32)
+	  throw "this conversion tool expects 16 bit half float or float input";
+	limf = ComputeLimF((const FLOAT *)src->DataOf(0),src->BytesPerPixel(0),src->BytesPerRow(0),
 			 src->WidthOf(0),src->HeightOf(0));
-      if (src->BitsOf(0) != 16 && src->BitsOf(0) != 32)
-	throw "this conversion tool expects 16 bit half float or float input";
+      }
     } else if (src->DepthOf() == 3) {
-      if (!src->isFloat(0) || !src->isFloat(1) || !src->isFloat(2))
-	throw "gamma conversion requires floating point input";
-      if (src->WidthOf(0) != src->WidthOf(1) || src->HeightOf(0) != src->HeightOf(1) ||
-	  src->WidthOf(0) != src->WidthOf(2) || src->HeightOf(0) != src->HeightOf(2))
-	throw "gamma conversion from RGB input works only for non-subsampled input"; 
-      if ((src->BitsOf(0) != 16 && src->BitsOf(0) != 32) ||
-	  (src->BitsOf(1) != 16 && src->BitsOf(1) != 32) ||
-	  (src->BitsOf(2) != 16 && src->BitsOf(2) != 32))
-	throw "this conversion tool expects 16 bit half float or float input";
-      limf = ComputeLimF((const FLOAT *)src->DataOf(0),src->BytesPerPixel(0),src->BytesPerRow(0),
-			 (const FLOAT *)src->DataOf(1),src->BytesPerPixel(1),src->BytesPerRow(1),
-			 (const FLOAT *)src->DataOf(2),src->BytesPerPixel(2),src->BytesPerRow(2),
-			 src->WidthOf(0),src->HeightOf(0));
-    } else {
-      throw "gamma conversion works only for grey scale or color images";
+      if (src->isFloat(0) && src->isFloat(1) && src->isFloat(2)) {
+	if (src->WidthOf(0) != src->WidthOf(1) || src->HeightOf(0) != src->HeightOf(1) ||
+	    src->WidthOf(0) != src->WidthOf(2) || src->HeightOf(0) != src->HeightOf(2))
+	  throw "gamma conversion from RGB input works only for non-subsampled input"; 
+	if ((src->BitsOf(0) != 16 && src->BitsOf(0) != 32) ||
+	    (src->BitsOf(1) != 16 && src->BitsOf(1) != 32) ||
+	    (src->BitsOf(2) != 16 && src->BitsOf(2) != 32))
+	  throw "this conversion tool expects 16 bit half float or float input";
+	limf = ComputeLimF((const FLOAT *)src->DataOf(0),src->BytesPerPixel(0),src->BytesPerRow(0),
+			   (const FLOAT *)src->DataOf(1),src->BytesPerPixel(1),src->BytesPerRow(1),
+			   (const FLOAT *)src->DataOf(2),src->BytesPerPixel(2),src->BytesPerRow(2),
+			   src->WidthOf(0),src->HeightOf(0));
+      }
     }
   }
   //
@@ -579,6 +577,7 @@ void Mapping::ApplyMap(class ImageLayout *src,class ImageLayout *dst)
   for(comp = 0;comp < src->DepthOf();comp++) {
     ULONG  w    = src->WidthOf(comp);
     ULONG  h    = src->HeightOf(comp);
+    double lim  = limf;
     //
     if (m_bInverse) { 
       // Integer to float.
@@ -594,10 +593,17 @@ void Mapping::ApplyMap(class ImageLayout *src,class ImageLayout *dst)
       assert(dst->WidthOf(comp) == w);
       assert(dst->HeightOf(comp) == h);
     } else {
-      if (!src->isFloat(comp))
-	throw "this conversion tool expects floating point input";
-      if (m_Type != PQ && src->BitsOf(comp) != 16 && src->BitsOf(comp) != 32)
-	throw "this conversion tool expects 16 bit half float or float input";
+      if (m_Type == Gamma) {
+	if (!src->isFloat(comp) && src->isSigned(comp))
+	  throw "this conversion tool expects floating point or unsigned input";
+	if (!src->isFloat(comp))
+	  lim = ((1UL << (src->BitsOf(comp))) - 1);
+      } else {
+	if (!src->isFloat(comp))
+	  throw "this conversion tool expects floating point input";
+	if (m_Type != PQ && src->BitsOf(comp) != 16 && src->BitsOf(comp) != 32)
+	  throw "this conversion tool expects 16 bit half float or float input";
+      }
       //
       // Ensure the target has the right depths.
       if (m_Type == Log || m_Type == PU2) {
@@ -616,32 +622,76 @@ void Mapping::ApplyMap(class ImageLayout *src,class ImageLayout *dst)
     case Gamma:
       if (m_bInverse) {
 	if (src->BitsOf(comp) <= 8) {
-	  InvGamma<UBYTE>((const UBYTE *)src->DataOf(comp),src->BytesPerPixel(comp),src->BytesPerRow(comp),
-			  (FLOAT *)dst->DataOf(comp),dst->BytesPerPixel(comp),dst->BytesPerRow(comp),
-			  w,h,(1UL << src->BitsOf(comp)) - 1,m_dGamma);
+	  InvGamma<UBYTE,FLOAT>((const UBYTE *)src->DataOf(comp),src->BytesPerPixel(comp),src->BytesPerRow(comp),
+				(FLOAT *)dst->DataOf(comp),dst->BytesPerPixel(comp),dst->BytesPerRow(comp),
+				w,h,(1UL << src->BitsOf(comp)) - 1,1.0,m_dGamma);
 	} else if (src->BitsOf(comp) <= 16) {
-	  InvGamma<UWORD>((const UWORD *)src->DataOf(comp),src->BytesPerPixel(comp),src->BytesPerRow(comp),
-			  (FLOAT *)dst->DataOf(comp),dst->BytesPerPixel(comp),dst->BytesPerRow(comp),
-			  w,h,(1UL << src->BitsOf(comp)) - 1,m_dGamma);
+	  InvGamma<UWORD,FLOAT>((const UWORD *)src->DataOf(comp),src->BytesPerPixel(comp),src->BytesPerRow(comp),
+				(FLOAT *)dst->DataOf(comp),dst->BytesPerPixel(comp),dst->BytesPerRow(comp),
+				w,h,(1UL << src->BitsOf(comp)) - 1,1.0,m_dGamma);
 	} else if (src->BitsOf(comp) <= 32) {
-	  InvGamma<ULONG>((const ULONG *)src->DataOf(comp),src->BytesPerPixel(comp),src->BytesPerRow(comp),
-			  (FLOAT *)dst->DataOf(comp),dst->BytesPerPixel(comp),dst->BytesPerRow(comp),
-			  w,h,(1UL << src->BitsOf(comp)) - 1,m_dGamma);
+	  InvGamma<ULONG,FLOAT>((const ULONG *)src->DataOf(comp),src->BytesPerPixel(comp),src->BytesPerRow(comp),
+				(FLOAT *)dst->DataOf(comp),dst->BytesPerPixel(comp),dst->BytesPerRow(comp),
+				w,h,(1UL << src->BitsOf(comp)) - 1,1.0,m_dGamma);
 	} else throw "unsupported source bit depth, must be between 1 and 32 bits per pixel";
       } else {
-	if (m_ucTargetDepth <= 8) {
-	  ToGamma<UBYTE>((const FLOAT *)src->DataOf(comp),src->BytesPerPixel(comp),src->BytesPerRow(comp),
-			 (UBYTE *)dst->DataOf(comp),dst->BytesPerPixel(comp),dst->BytesPerRow(comp),
-			 w,h,(1UL << m_ucTargetDepth) - 1,limf,m_dGamma);
-	} else if (m_ucTargetDepth <= 16) {
-	  ToGamma<UWORD>((const FLOAT *)src->DataOf(comp),src->BytesPerPixel(comp),src->BytesPerRow(comp),
-			 (UWORD *)dst->DataOf(comp),dst->BytesPerPixel(comp),dst->BytesPerRow(comp),
-			 w,h,(1UL << m_ucTargetDepth) - 1,limf,m_dGamma);
-	} else if (m_ucTargetDepth <= 32) {	  
-	  ToGamma<ULONG>((const FLOAT *)src->DataOf(comp),src->BytesPerPixel(comp),src->BytesPerRow(comp),
-			 (ULONG *)dst->DataOf(comp),dst->BytesPerPixel(comp),dst->BytesPerRow(comp),
-			 w,h,(1UL << m_ucTargetDepth) - 1,limf,m_dGamma);
-	} else throw "unsupported target bit depth, must be between 1 and 32 bits per pixel";
+	if (src->isFloat(comp)) {
+	  if (m_ucTargetDepth <= 8) {
+	    ToGamma<FLOAT,UBYTE>((const FLOAT *)src->DataOf(comp),src->BytesPerPixel(comp),src->BytesPerRow(comp),
+				 (UBYTE *)dst->DataOf(comp),dst->BytesPerPixel(comp),dst->BytesPerRow(comp),
+				 w,h,(1UL << m_ucTargetDepth) - 1,lim,m_dGamma);
+	  } else if (m_ucTargetDepth <= 16) {
+	    ToGamma<FLOAT,UWORD>((const FLOAT *)src->DataOf(comp),src->BytesPerPixel(comp),src->BytesPerRow(comp),
+				 (UWORD *)dst->DataOf(comp),dst->BytesPerPixel(comp),dst->BytesPerRow(comp),
+				 w,h,(1UL << m_ucTargetDepth) - 1,lim,m_dGamma);
+	  } else if (m_ucTargetDepth <= 32) {	  
+	    ToGamma<FLOAT,ULONG>((const FLOAT *)src->DataOf(comp),src->BytesPerPixel(comp),src->BytesPerRow(comp),
+				 (ULONG *)dst->DataOf(comp),dst->BytesPerPixel(comp),dst->BytesPerRow(comp),
+				 w,h,(1UL << m_ucTargetDepth) - 1,lim,m_dGamma);
+	  } else throw "unsupported target bit depth, must be between 1 and 32 bits per pixel";
+	} else if (src->BitsOf(comp) <= 8) {
+	  if (m_ucTargetDepth <= 8) {
+	    ToGamma<UBYTE,UBYTE>((const UBYTE *)src->DataOf(comp),src->BytesPerPixel(comp),src->BytesPerRow(comp),
+				 (UBYTE *)dst->DataOf(comp),dst->BytesPerPixel(comp),dst->BytesPerRow(comp),
+				 w,h,(1UL << m_ucTargetDepth) - 1,lim,m_dGamma);
+	  } else if (m_ucTargetDepth <= 16) {
+	    ToGamma<UBYTE,UWORD>((const UBYTE *)src->DataOf(comp),src->BytesPerPixel(comp),src->BytesPerRow(comp),
+				 (UWORD *)dst->DataOf(comp),dst->BytesPerPixel(comp),dst->BytesPerRow(comp),
+				 w,h,(1UL << m_ucTargetDepth) - 1,lim,m_dGamma);
+	  } else if (m_ucTargetDepth <= 32) {	  
+	    ToGamma<UBYTE,ULONG>((const UBYTE *)src->DataOf(comp),src->BytesPerPixel(comp),src->BytesPerRow(comp),
+				 (ULONG *)dst->DataOf(comp),dst->BytesPerPixel(comp),dst->BytesPerRow(comp),
+				 w,h,(1UL << m_ucTargetDepth) - 1,lim,m_dGamma);
+	  } else throw "unsupported target bit depth, must be between 1 and 32 bits per pixel";
+	} else if (src->BitsOf(comp) <= 16) {
+	  if (m_ucTargetDepth <= 8) {
+	    ToGamma<UWORD,UBYTE>((const UWORD *)src->DataOf(comp),src->BytesPerPixel(comp),src->BytesPerRow(comp),
+				 (UBYTE *)dst->DataOf(comp),dst->BytesPerPixel(comp),dst->BytesPerRow(comp),
+				 w,h,(1UL << m_ucTargetDepth) - 1,lim,m_dGamma);
+	  } else if (m_ucTargetDepth <= 16) {
+	    ToGamma<UWORD,UWORD>((const UWORD *)src->DataOf(comp),src->BytesPerPixel(comp),src->BytesPerRow(comp),
+				 (UWORD *)dst->DataOf(comp),dst->BytesPerPixel(comp),dst->BytesPerRow(comp),
+				 w,h,(1UL << m_ucTargetDepth) - 1,lim,m_dGamma);
+	  } else if (m_ucTargetDepth <= 32) {	  
+	    ToGamma<UWORD,ULONG>((const UWORD *)src->DataOf(comp),src->BytesPerPixel(comp),src->BytesPerRow(comp),
+				 (ULONG *)dst->DataOf(comp),dst->BytesPerPixel(comp),dst->BytesPerRow(comp),
+				 w,h,(1UL << m_ucTargetDepth) - 1,lim,m_dGamma);
+	  } else throw "unsupported target bit depth, must be between 1 and 32 bits per pixel";
+	} else if (src->BitsOf(comp) <= 32) {
+	  if (m_ucTargetDepth <= 8) {
+	    ToGamma<ULONG,UBYTE>((const ULONG *)src->DataOf(comp),src->BytesPerPixel(comp),src->BytesPerRow(comp),
+				 (UBYTE *)dst->DataOf(comp),dst->BytesPerPixel(comp),dst->BytesPerRow(comp),
+				 w,h,(1UL << m_ucTargetDepth) - 1,lim,m_dGamma);
+	  } else if (m_ucTargetDepth <= 16) {
+	    ToGamma<ULONG,UWORD>((const ULONG *)src->DataOf(comp),src->BytesPerPixel(comp),src->BytesPerRow(comp),
+				 (UWORD *)dst->DataOf(comp),dst->BytesPerPixel(comp),dst->BytesPerRow(comp),
+				 w,h,(1UL << m_ucTargetDepth) - 1,lim,m_dGamma);
+	  } else if (m_ucTargetDepth <= 32) {	  
+	    ToGamma<ULONG,ULONG>((const ULONG *)src->DataOf(comp),src->BytesPerPixel(comp),src->BytesPerRow(comp),
+				 (ULONG *)dst->DataOf(comp),dst->BytesPerPixel(comp),dst->BytesPerRow(comp),
+				 w,h,(1UL << m_ucTargetDepth) - 1,lim,m_dGamma);
+	  } else throw "unsupported target bit depth, must be between 1 and 32 bits per pixel";
+	}
       }
       break;
     case HalfLog:
@@ -742,10 +792,15 @@ void Mapping::CreateTargetBuffer(class ImageLayout *src)
       m_pComponent[comp].m_ulBytesPerRow   = w * sizeof(FLOAT);
       m_pComponent[comp].m_pPtr            = mem;
     } else {
-      if (!src->isFloat(comp))
-	throw "this conversion tool expects floating point input";
-      if (src->BitsOf(comp) != 16 && src->BitsOf(comp) != 32)
-	throw "this conversion tool expects 16 bit half float or float input";
+      if (m_Type == Gamma) {
+	if (!src->isFloat(comp) && src->isSigned(comp))
+	  throw "this conversion tool expects unsigned or floating point input";
+      } else {
+	if (!src->isFloat(comp))
+	  throw "this conversion tool expects floating point input";
+	if (src->BitsOf(comp) != 16 && src->BitsOf(comp) != 32)
+	  throw "this conversion tool expects 16 bit half float or float input";
+      }
       //
       if (m_Type == Log || m_Type == PU2) {
 	FLOAT *mem = new FLOAT[w * h];

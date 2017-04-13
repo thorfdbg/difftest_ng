@@ -23,7 +23,7 @@ and conversion framework.
 /*
  * Main program
  * 
- * $Id: main.cpp,v 1.79 2017/01/31 11:58:03 thor Exp $
+ * $Id: main.cpp,v 1.80 2017/04/13 13:03:51 thor Exp $
  *
  * This class defines the main program and argument parsing.
  */
@@ -108,6 +108,7 @@ void Usage(const char *progname)
 	  "--float     comp   : print whether the indicated component is IEEE floating point (1 = yes, 0 = no)\n"
 	  "--diff target      : save the difference image (-i is an alternative form of this option)\n"
 	  "--rawdiff target   : similar to --diff, except that it doesn't scale the difference to maximum range\n"
+	  "--sdiff scale trgt : generate a differential signal with an explicitly given scale\n"
 	  "--mask roi         : mask the source image by the mask image before applying the comparison\n"
 	  "--notmask roi      : mask the source image by the inverse of the mask\n"
 	  "--convert target   : save the original image unaltered, but possibly in a new format\n"
@@ -497,6 +498,12 @@ int main(int argc,char **argv)
 	  m = new class DiffImg(argv[2],specout,false);
 	  argc--;
 	  argv++;
+	} else if (!strcmp(arg,"--sdiff")) {
+	  if (argc < 4)
+	    throw "--sdiff requires a scale and the target file name as argument";
+	  m = new class DiffImg(argv[3],specout,false,ParseDouble(argv[2]));
+	  argc -= 2;
+	  argv += 2;
 	} else if (!strcmp(arg,"--mask") || !strcmp(arg,"-R")) {
 	  if (argc < 3)
 	    throw "--mask requires the mask file name as argument";
