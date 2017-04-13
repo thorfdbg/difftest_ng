@@ -122,6 +122,7 @@ where original and distorted are ppm,pbm,pgm,pfm,pfs,bmp,pgx,tif,png,exr,rgbe or
 --float     comp   : print whether the indicated component is IEEE floating point (1 = yes, 0 = no)
 --diff target      : save the difference image (-i is an alternative form of this option)
 --rawdiff target   : similar to --diff, except that it doesn't scale the difference to maximum range
+--sdiff scale trgt : generate a differential signal with an explicitly given scale
 --mask roi         : mask the source image by the mask image before applying the comparison
 --notmask roi      : mask the source image by the inverse of the mask
 --convert target   : save the original image unaltered, but possibly in a new format
