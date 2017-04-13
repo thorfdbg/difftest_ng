@@ -2,7 +2,7 @@
 #** Makefile for the difftest_ng project,
 #** THOR Software, Thomas Richter for Accusoft
 #**
-#** $Id: configure.in,v 1.15 2017/01/31 10:44:08 thor Exp $
+#** $Id: configure.in,v 1.16 2017/04/13 13:29:55 thor Exp $
 #**
 #** In this module: autoconf script for difftest_ng
 #**
@@ -197,8 +197,14 @@ if test "$ac_arg_THREADING" = "yes" -a "$ac_arg_OPENEXR" = "yes"; then
    AC_LANG(C)
 fi
 #
-# Check for png.
+# Check for png. png also requires libz, even without saying so.
 if test "$ac_arg_PNG" = "yes"; then
+   ac_save_CFLAGS=$CFLAGS
+   ac_save_LDFLAGS=$LDFLAGS
+   AC_MSG_CHECKING([whether libz is available])
+   AC_SEARCH_LIBS([deflate],[z])
+   CFLAGS=$ac_save_CFLAGS
+   LDFLAGS=$ac_save_LDFLAGS
    AC_MSG_CHECKING([whether libpng-config is available])
    pngcmd=`which libpng-config`
    if test -n "${pngcmd}"; then
@@ -207,7 +213,7 @@ if test "$ac_arg_PNG" = "yes"; then
 	 PNG_CFLAGS="`libpng-config --cflags`"
 	 PNG_LDFLAGS="`libpng-config --libs`"
 	 AC_SUBST(PNG_CFLAGS,["`libpng-config --cflags`"])
-	 AC_SUBST(PNG_LDFLAGS,["`libpng-config --libs`"])
+	 AC_SUBST(PNG_LDFLAGS,["`libpng-config --libs` -lz"])
       else
 	 ac_has_png_config=no
       fi
