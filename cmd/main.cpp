@@ -23,7 +23,7 @@ and conversion framework.
 /*
  * Main program
  * 
- * $Id: main.cpp,v 1.80 2017/04/13 13:03:51 thor Exp $
+ * $Id: main.cpp,v 1.81 2017/06/06 11:23:27 thor Exp $
  *
  * This class defines the main program and argument parsing.
  */
@@ -160,6 +160,8 @@ void Usage(const char *progname)
 	  "--cup x y          : upsample all but component 0 by the subsampling factors in x and y direction\n"
 	  "--coup x y         : co-sited upsampling of all components in x and y direction\n"
 	  "--cocup x y        : co-sited upsampling of the chroma components in x and y direction\n"
+	  "--boxup x y        : upsample with a simple box filter\n"
+	  "--boxcup x y       : upsample the chrome components with a simple box filter\n"
 	  "--only component   : acts as a filter and restricts all following operations to the given component\n"
 	  "--upto component   : restricts all following operations to components 0..component-1\n"
 	  "--rgb              : restricts the activity to at most the first three components\n"
@@ -830,7 +832,7 @@ int main(int argc,char **argv)
 	  sy = ParseLong(argv[3]);
 	  if (sx >= 16 || sx <= 0 || sy >= 16 || sy <= 0)
 	    throw "upsampling factors must be positive and smaller than 16";
-	  m     = new class Upsampler(sx,sy,false,false);
+	  m     = new class Upsampler(sx,sy,false,Upsampler::Centered);
 	  argc -= 2;
 	  argv += 2;
 	} else if (!strcmp(arg,"--cup")) {
@@ -841,7 +843,7 @@ int main(int argc,char **argv)
 	  sy = ParseLong(argv[3]);
 	  if (sx >= 16 || sx <= 0 || sy >= 16 || sy <= 0)
 	    throw "upsampling factors must be positive and smaller than 16";
-	  m     = new class Upsampler(sx,sy,true,false);
+	  m     = new class Upsampler(sx,sy,true,Upsampler::Centered);
 	  argc -= 2;
 	  argv += 2;
 	} else if (!strcmp(arg,"--coup")) {
@@ -852,7 +854,7 @@ int main(int argc,char **argv)
 	  sy = ParseLong(argv[3]);
 	  if (sx >= 16 || sx <= 0 || sy >= 16 || sy <= 0)
 	    throw "upsampling factors must be positive and smaller than 16";
-	  m     = new class Upsampler(sx,sy,false,true);
+	  m     = new class Upsampler(sx,sy,false,Upsampler::Cosited);
 	  argc -= 2;
 	  argv += 2;
 	} else if (!strcmp(arg,"--cocup")) {
@@ -863,7 +865,29 @@ int main(int argc,char **argv)
 	  sy = ParseLong(argv[3]);
 	  if (sx >= 16 || sx <= 0 || sy >= 16 || sy <= 0)
 	    throw "upsampling factors must be positive and smaller than 16";
-	  m     = new class Upsampler(sx,sy,true,true);
+	  m     = new class Upsampler(sx,sy,true,Upsampler::Cosited);
+	  argc -= 2;
+	  argv += 2;
+	} else if (!strcmp(arg,"--boxup")) {
+	  long sx,sy;
+	  if (argc < 4)
+	    throw "--boxup requires two arguments, subsampling factors in x and y direction";
+	  sx = ParseLong(argv[2]);
+	  sy = ParseLong(argv[3]);
+	  if (sx >= 16 || sx <= 0 || sy >= 16 || sy <= 0)
+	    throw "upsampling factors must be positive and smaller than 16";
+	  m     = new class Upsampler(sx,sy,false,Upsampler::Boxed);
+	  argc -= 2;
+	  argv += 2;
+	} else if (!strcmp(arg,"--boxcup")) {
+	  long sx,sy;
+	  if (argc < 4)
+	    throw "--boxcup requires two arguments, subsampling factors in x and y direction";
+	  sx = ParseLong(argv[2]);
+	  sy = ParseLong(argv[3]);
+	  if (sx >= 16 || sx <= 0 || sy >= 16 || sy <= 0)
+	    throw "upsampling factors must be positive and smaller than 16";
+	  m     = new class Upsampler(sx,sy,true,Upsampler::Boxed);
 	  argc -= 2;
 	  argv += 2;	  
 	} else if (!strcmp(arg,"--only")) {

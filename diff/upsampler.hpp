@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: upsampler.hpp,v 1.4 2017/01/31 11:58:04 thor Exp $
+** $Id: upsampler.hpp,v 1.5 2017/06/06 11:23:31 thor Exp $
 **
 ** This class upsamples in the spatial domain
 */
@@ -44,6 +44,14 @@ struct ImgSpecs;
 // This class upsamples images in the spatial domain
 class Upsampler : public Meter, private ImageLayout {
   //
+public:
+  enum FilterType {
+    Centered,
+    Cosited,
+    Boxed
+  };
+  //
+private:
   // The component memory itself.
   UBYTE     **m_ppucSource;
   UBYTE     **m_ppucDestination;
@@ -54,8 +62,7 @@ class Upsampler : public Meter, private ImageLayout {
   // Set if only the chroma component is subsampled.
   bool        m_bChromaOnly;
   //
-  // Set if the sample position is cosited instead of centered.
-  bool        m_bCosited;
+  FilterType  m_FilterType;
   //
   // Release the temporary buffer.
   void ReleaseComponents(UBYTE **p);
@@ -70,11 +77,18 @@ class Upsampler : public Meter, private ImageLayout {
 		      S min,S max,
 		      int sx,int sy);
   //
+  template<typename S>
+  void BoxFilter(const S *org,ULONG obytesperpixel,ULONG obytesperrow,
+		 S *dest,ULONG tbytesperpixel,ULONG tbytesperrow,
+		 ULONG w,ULONG h,
+		 int sx,int sy);
+  //
   //
 public:
-  Upsampler(UBYTE sx,UBYTE sy,bool chromaonly,bool cosited)
+  Upsampler(UBYTE sx,UBYTE sy,bool chromaonly,FilterType type)
     : m_ppucSource(NULL),m_ppucDestination(NULL),
-      m_ucScaleX(sx), m_ucScaleY(sy), m_bChromaOnly(chromaonly), m_bCosited(cosited)
+      m_ucScaleX(sx), m_ucScaleY(sy), m_bChromaOnly(chromaonly),
+      m_FilterType(type)
   { }
   //
   virtual ~Upsampler(void);
