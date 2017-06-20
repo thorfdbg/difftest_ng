@@ -23,7 +23,7 @@ and conversion framework.
 /*
  * Main program
  * 
- * $Id: main.cpp,v 1.81 2017/06/06 11:23:27 thor Exp $
+ * $Id: main.cpp,v 1.82 2017/06/12 14:57:09 thor Exp $
  *
  * This class defines the main program and argument parsing.
  */
@@ -65,6 +65,7 @@ and conversion framework.
 #include "diff/mapping.hpp"
 #include "diff/downsampler.hpp"
 #include "diff/upsampler.hpp"
+#include "diff/clamp.hpp"
 #include "img/imglayout.hpp"
 #include "img/imgspecs.hpp"
 #include <new>
@@ -162,6 +163,7 @@ void Usage(const char *progname)
 	  "--cocup x y        : co-sited upsampling of the chroma components in x and y direction\n"
 	  "--boxup x y        : upsample with a simple box filter\n"
 	  "--boxcup x y       : upsample the chrome components with a simple box filter\n"
+	  "--clamp min max    : clamp the image(s) to the specified range of sample values\n"
 	  "--only component   : acts as a filter and restricts all following operations to the given component\n"
 	  "--upto component   : restricts all following operations to components 0..component-1\n"
 	  "--rgb              : restricts the activity to at most the first three components\n"
@@ -889,7 +891,16 @@ int main(int argc,char **argv)
 	    throw "upsampling factors must be positive and smaller than 16";
 	  m     = new class Upsampler(sx,sy,true,Upsampler::Boxed);
 	  argc -= 2;
-	  argv += 2;	  
+	  argv += 2;
+	} else if (!strcmp(arg,"--clamp")) {
+	  DOUBLE min,max;
+	  if (argc < 4)
+	    throw "--clamp requires two arguments, minimum and maximum of the valid range";
+	  min   = ParseDouble(argv[2]);
+	  max   = ParseDouble(argv[3]);
+	  m     = new class Clamp(min,max);
+	  argc -= 2;
+	  argv += 2;
 	} else if (!strcmp(arg,"--only")) {
 	  long comp;
 	  if (argc < 3)

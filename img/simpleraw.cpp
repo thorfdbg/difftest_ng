@@ -23,7 +23,7 @@ and conversion framework.
 /*
  * This class saves and loads images in any header-less format.
  *
- * $Id: simpleraw.cpp,v 1.19 2017/01/31 11:58:04 thor Exp $
+ * $Id: simpleraw.cpp,v 1.20 2017/06/20 13:36:25 thor Exp $
  */
 
 /// Includes
@@ -42,7 +42,7 @@ and conversion framework.
 SimpleRaw::SimpleRaw(void)
   : m_pcFilename(NULL), m_pRawList(NULL), 
     m_ulNominalWidth(0), m_ulNominalHeight(0), m_usNominalDepth(0), 
-    m_usFields(0), m_bSeparate(false), m_ucBit(0), m_ulBitBuffer(0)
+    m_usFields(0), m_bSeparate(false), m_ucBit(0), m_uqBitBuffer(0)
 {
 }
 ///
@@ -52,7 +52,7 @@ SimpleRaw::SimpleRaw(void)
 SimpleRaw::SimpleRaw(const class ImageLayout &org)
   : ImageLayout(org), m_pcFilename(NULL), m_pRawList(NULL), 
     m_ulNominalWidth(0), m_ulNominalHeight(0), m_usNominalDepth(0), 
-    m_usFields(0), m_bSeparate(false), m_ucBit(0), m_ulBitBuffer(0)
+    m_usFields(0), m_bSeparate(false), m_ucBit(0), m_uqBitBuffer(0)
 {
 }
 ///
@@ -363,11 +363,12 @@ void SimpleRaw::ComponentLayoutFromFileName(const char *filename)
       if (packstart) {
 	packedbits += rl->m_ucBits;
       }
-      if (packedbits > 32) {
-	PostError("cannot pack more than 32 bits into a field");
+      if (packedbits > 64) {
+	PostError("cannot pack more than 64 bits into a field");
 	return;
-      } else if (packedbits != 0 && packedbits != 8 && packedbits != 16 && packedbits != 32) {
-	PostError("the number of bits packed together in interleaved planes must be either 8,16 or 32");
+      } else if (packedbits != 0 && packedbits != 8 && packedbits != 16 &&
+		 packedbits != 32 && packedbits != 64) {
+	PostError("the number of bits packed together in interleaved planes must be either 8,16,32 or 64");
 	return;
       }
       
@@ -510,7 +511,7 @@ UQUAD SimpleRaw::ReadData(FILE *in,UBYTE bitsize,UBYTE packsize,bool littleendia
 	    (UQUAD(d6) << 16) |
 	    (UQUAD(d7) <<  8) |
 	    (UQUAD(d8) <<  0));
-  } else if (bitsize < 32) {
+  } else if (bitsize < 64) {
     ULONG res   = 0;
     UBYTE sign  = bitsize;
     UBYTE shift = 0;
@@ -519,7 +520,7 @@ UQUAD SimpleRaw::ReadData(FILE *in,UBYTE bitsize,UBYTE packsize,bool littleendia
       if (m_ucBit == 0) {
 	if (packsize == 0)
 	  PostError("Pixels must be packed into units of 8,16 or 32 bits, add dummy channels to discard unused bits");
-	m_ulBitBuffer = ReadData(in,packsize,packsize,littleendian,issigned,false);
+	m_uqBitBuffer = ReadData(in,packsize,packsize,littleendian,issigned,false);
 	m_ucBit       = packsize;
       }
       UBYTE avail = m_ucBit;
@@ -528,19 +529,19 @@ UQUAD SimpleRaw::ReadData(FILE *in,UBYTE bitsize,UBYTE packsize,bool littleendia
 
       // m_ucBit is the number of valid bits.
       if (lefty) {
-	res     |= ((m_ulBitBuffer >> (packsize - m_ucBit)) & ((1UL << avail) - 1)) << shift;
+	res     |= ((m_uqBitBuffer >> (packsize - m_ucBit)) & ((1ULL << avail) - 1)) << shift;
 	shift   += avail;
       } else {
 	// remove avail bits from the byte
-	res      = (res << avail) | ((m_ulBitBuffer >> (m_ucBit - avail)) & ((1UL << avail) - 1));
+	res      = (res << avail) | ((m_uqBitBuffer >> (m_ucBit - avail)) & ((1ULL << avail) - 1));
       }
       bitsize -= avail;
       m_ucBit -= avail;
     } while(bitsize);
     
     if (issigned) {
-      if (res & (1 << (sign - 1))) { // result is negative
-	res |= ULONG(-1) << sign;
+      if (res & (1ULL << (sign - 1))) { // result is negative
+	res |= UQUAD(-1) << sign;
       }
     }
     return res;
@@ -573,7 +574,7 @@ void SimpleRaw::LoadImage(const char *nameandspecs,struct ImgSpecs &specs)
   }
   File in       = File(m_pcFilename,"rb");
   m_ucBit       = 0;
-  m_ulBitBuffer = 0;
+  m_uqBitBuffer = 0;
   //
   // Setup the component of the master layout.
   CreateComponents(m_ulNominalWidth,m_ulNominalHeight,m_usNominalDepth);
@@ -779,9 +780,9 @@ void SimpleRaw::LoadImage(const char *nameandspecs,struct ImgSpecs &specs)
 void SimpleRaw::BitAlignOut(FILE *out,UBYTE packsize,bool littleendian,bool lefty)
 {
   if (m_ucBit < packsize) {
-    WriteData(out,m_ulBitBuffer,packsize,packsize,littleendian,lefty);
+    WriteData(out,m_uqBitBuffer,packsize,packsize,littleendian,lefty);
     m_ucBit       = packsize;
-    m_ulBitBuffer = 0;
+    m_uqBitBuffer = 0;
   }
 }
 ///
@@ -832,7 +833,7 @@ void SimpleRaw::WriteData(FILE *out,UQUAD data,UBYTE bitsize,UBYTE packsize,bool
       putc(UBYTE(data >>  8),out);
       putc(UBYTE(data >>  0),out);
     }
-  } else if (bitsize < 32) {
+  } else if (bitsize < 64) {
     data &= (1UL << bitsize) - 1;
     
     if (lefty) {
@@ -841,9 +842,9 @@ void SimpleRaw::WriteData(FILE *out,UQUAD data,UBYTE bitsize,UBYTE packsize,bool
       while (bitsize >= m_ucBit) {
 	// We have to write more bits than there is room in the bit buffer.
 	// Hence, the complete buffer can be filled.
-	m_ulBitBuffer |= (data & ((1UL << m_ucBit) - 1)) << (packsize - m_ucBit);
-	WriteData(out,m_ulBitBuffer,packsize,packsize,littleendian,false);
-	m_ulBitBuffer  = 0;
+	m_uqBitBuffer |= (UQUAD(data) & ((1ULL << m_ucBit) - 1)) << (packsize - m_ucBit);
+	WriteData(out,m_uqBitBuffer,packsize,packsize,littleendian,false);
+	m_uqBitBuffer  = 0;
 	// Remove lower bits.
 	data         >>= m_ucBit;
 	bitsize       -= m_ucBit;
@@ -851,23 +852,23 @@ void SimpleRaw::WriteData(FILE *out,UQUAD data,UBYTE bitsize,UBYTE packsize,bool
       }
       // We have to write less than there is room in the bit buffer. Hence,
       // we must upshift the remaining bits to fit into the bit buffer.
-      m_ulBitBuffer |= data << (packsize - m_ucBit);
+      m_uqBitBuffer |= UQUAD(data) << (packsize - m_ucBit);
       m_ucBit       -= bitsize;
     } else {
       while (bitsize >= m_ucBit) {
 	// We have to write more bits than there is room in the bit buffer.
 	// Hence, the complete buffer can be filled.
-	m_ulBitBuffer |= data >> (bitsize - m_ucBit);
-	WriteData(out,m_ulBitBuffer,packsize,packsize,littleendian,false);
-	m_ulBitBuffer  = 0;
+	m_uqBitBuffer |= UQUAD(data) >> (bitsize - m_ucBit);
+	WriteData(out,m_uqBitBuffer,packsize,packsize,littleendian,false);
+	m_uqBitBuffer  = 0;
 	bitsize       -= m_ucBit;
 	m_ucBit        = packsize;
 	// Remove upper bits.
-	data          &= (1UL << bitsize) - 1;
+	data          &= (1ULL << bitsize) - 1;
       }
       // We have to write less than there is room in the bit buffer. Hence,
       // we must upshift the remaining bits to fit into the bit buffer.
-      m_ulBitBuffer |= data << (m_ucBit - bitsize);
+      m_uqBitBuffer |= UQUAD(data) << (m_ucBit - bitsize);
       m_ucBit       -= bitsize;
     }
   } else {
@@ -926,7 +927,7 @@ void SimpleRaw::SaveImage(const char *nameandspecs,const struct ImgSpecs &)
   //
   File out      = File(m_pcFilename,"wb");
   m_ucBit       = 0;
-  m_ulBitBuffer = 0;
+  m_uqBitBuffer = 0;
   //
   if (m_bSeparate) {
     for(rl = m_pRawList;rl;rl = rl->m_pNext) {

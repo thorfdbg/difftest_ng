@@ -23,7 +23,7 @@ and conversion framework.
 /*
  * This class saves and loads images in any header-less format.
  *
- * $Id: simpleraw.hpp,v 1.11 2017/01/31 11:58:04 thor Exp $
+ * $Id: simpleraw.hpp,v 1.12 2017/06/20 13:36:25 thor Exp $
  */
 
 #ifndef SIMPLERAW_HPP
@@ -141,7 +141,7 @@ class SimpleRaw : public ImageLayout {
   UBYTE m_ucBit;
   //
   // The input or output bit buffer.
-  ULONG m_ulBitBuffer;
+  UQUAD m_uqBitBuffer;
   //
   // Read a single pixel from the specified file.
   UQUAD ReadData(FILE *in,UBYTE bitsize,UBYTE packsize,bool littleendian,bool issigned,bool lefty);
@@ -156,7 +156,7 @@ class SimpleRaw : public ImageLayout {
   void BitAlignIn(void)
   {
     m_ucBit       = 0; // Fetch the next byte on in.
-    m_ulBitBuffer = 0;
+    m_uqBitBuffer = 0;
   }
   //
 public:
