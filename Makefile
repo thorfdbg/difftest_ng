@@ -318,6 +318,7 @@ Distrib.zip	:	doc dox configure autoconfig.h.in
 	@ $(MAKE) --no-print-directory $(DIRLIBS) TARGET="zip"
 	@ $(ZIPASCII) -r Distrib.zip README README.license config.h
 	@ $(ZIPASCII) -r Distrib.zip vs10.0/difftest_ng/difftest_ng.sln vs10.0/difftest_ng/difftest_ng/difftest_ng.vcxproj
+	@ $(ZIPASCII) -r Distrib.zip vs14.0/difftest_ng/difftest_ng.sln vs14.0/difftest_ng/difftest_ng/difftest_ng.vcxproj
 	@ $(ZIPASCII) -r Distrib.zip vs9.0/difftest_ng/difftest_ng.sln vs9.0/difftest_ng/difftest_ng/difftest_ng.vcproj
 	@ $(ZIP) -r Distrib.zip Makefile Makefile.template Makefile_Settings.*
 	@ $(ZIP) -r Distrib.zip configure configure.in automakefile.in autoconfig.h.in
