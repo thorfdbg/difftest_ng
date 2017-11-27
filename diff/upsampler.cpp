@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: upsampler.cpp,v 1.7 2017/06/06 11:23:31 thor Exp $
+** $Id: upsampler.cpp,v 1.8 2017/11/27 13:21:16 thor Exp $
 **
 ** This class downscales in the spatial domain
 */
@@ -145,7 +145,7 @@ void Upsampler::Upsample(UBYTE **&data,class ImageLayout *src)
   m_pComponent  = NULL;
   ReleaseComponents(data);
   //
-  if (m_bChromaOnly) {
+  if (m_bChromaOnly || m_bAutomatic) {
     m_ulWidth     = src->WidthOf();
     m_ulHeight    = src->HeightOf();
   } else { 
@@ -158,17 +158,22 @@ void Upsampler::Upsample(UBYTE **&data,class ImageLayout *src)
   //
   // Initialize component dimensions.
   for(i = 0; i < m_usDepth; i++) {
-    if (m_bChromaOnly == false || i > 0) { 
-      m_pComponent[i].m_ulWidth  = src->WidthOf(i)  * m_ucScaleX;
-      m_pComponent[i].m_ulHeight = src->HeightOf(i) * m_ucScaleY;
+    if (m_bAutomatic) {
+      m_pComponent[i].m_ulWidth  = src->WidthOf();
+      m_pComponent[i].m_ulHeight = src->HeightOf();
     } else {
-      m_pComponent[i].m_ulWidth  = src->WidthOf(i);
-      m_pComponent[i].m_ulHeight = src->HeightOf(i);
+      if (m_bChromaOnly == false || i > 0) { 
+	m_pComponent[i].m_ulWidth  = src->WidthOf(i)  * m_ucScaleX;
+	m_pComponent[i].m_ulHeight = src->HeightOf(i) * m_ucScaleY;
+      } else {
+	m_pComponent[i].m_ulWidth  = src->WidthOf(i);
+	m_pComponent[i].m_ulHeight = src->HeightOf(i);
+      }
     }
     m_pComponent[i].m_ucBits   = src->BitsOf(i);
     m_pComponent[i].m_bSigned  = src->isSigned(i);
     m_pComponent[i].m_bFloat   = src->isFloat(i);
-    if (m_bChromaOnly && i > 0) { 
+    if (m_bAutomatic || (m_bChromaOnly && i > 0)) { 
       m_pComponent[i].m_ucSubX   = 1;
       m_pComponent[i].m_ucSubY   = 1;
     } else {
@@ -194,7 +199,10 @@ void Upsampler::Upsample(UBYTE **&data,class ImageLayout *src)
   for(i = 0;i < m_usDepth;i++) {
     UBYTE sx,sy;
     //
-    if (m_bChromaOnly == false || i > 0) { 
+    if (m_bAutomatic) {
+      sx = src->SubXOf(i);
+      sy = src->SubYOf(i);
+    } else if (m_bChromaOnly == false || i > 0) { 
       sx = m_ucScaleX;
       sy = m_ucScaleY;
     } else {
@@ -350,8 +358,6 @@ void Upsampler::Upsample(UBYTE **&data,class ImageLayout *src)
 /// Upsampler::Measure
 double Upsampler::Measure(class ImageLayout *src,class ImageLayout *dest,double in)
 {
-  src->TestIfCompatible(dest);
-
   Upsample(m_ppucSource,src);
   Upsample(m_ppucDestination,dest);
 

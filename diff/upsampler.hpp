@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: upsampler.hpp,v 1.5 2017/06/06 11:23:31 thor Exp $
+** $Id: upsampler.hpp,v 1.6 2017/11/27 13:21:16 thor Exp $
 **
 ** This class upsamples in the spatial domain
 */
@@ -62,6 +62,9 @@ private:
   // Set if only the chroma component is subsampled.
   bool        m_bChromaOnly;
   //
+  // Set if the upsampling is automatic to 1x1
+  bool        m_bAutomatic;
+  //
   FilterType  m_FilterType;
   //
   // Release the temporary buffer.
@@ -85,10 +88,10 @@ private:
   //
   //
 public:
-  Upsampler(UBYTE sx,UBYTE sy,bool chromaonly,FilterType type)
+  Upsampler(UBYTE sx,UBYTE sy,bool chromaonly,FilterType type,bool automatic = false)
     : m_ppucSource(NULL),m_ppucDestination(NULL),
       m_ucScaleX(sx), m_ucScaleY(sy), m_bChromaOnly(chromaonly),
-      m_FilterType(type)
+      m_bAutomatic(automatic), m_FilterType(type)
   { }
   //
   virtual ~Upsampler(void);

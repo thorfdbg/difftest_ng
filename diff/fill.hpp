@@ -20,50 +20,53 @@ and conversion framework.
     along with difftest_ng.  If not, see <http://www.gnu.org/licenses/>.
 
 *************************************************************************/
-
 /*
+** Fill
+** 
+** $Id: fill.hpp,v 1.1 2017/11/27 11:37:13 thor Exp $
 **
-** $Id: blankimg.hpp,v 1.7 2017/11/27 13:21:16 thor Exp $
-**
-** This image class doesn't do much useful, it only represents a blank
-** image of a given dimension.
+** This class fills an entire image with a given color
 **
 */
 
-#ifndef BLANKIMG_HPP
-#define BLANKIMG_HPP
+#ifndef DIFF_FILL_HPP
+#define DIFF_FILL_HPP
 
-
-/// Includes
-#include "imglayout.hpp"
-#include "std/stdio.hpp"
+/// Include
+#include "diff/meter.hpp"
 ///
 
-/// BlankImg
-// This image class doesn't do much useful, it only represents a blank
-// image of a given dimension.
-class BlankImg  : public ImageLayout {
-  // This is the image raw data
-  // the data is in order {r,g,b} for colored pictures. It contains only zeros....
-  UBYTE *m_pucImage;
+/// Forwards
+class ImageLayout;
+///
+
+/// class Fill
+// This class fills an entire image with a given color
+class Fill : public Meter {
+  //
+  // Templated filler class.
+  template<typename T>
+  void  FillCanvas(T *org,ULONG bytesperpixel,ULONG bytesperrow,
+		   ULONG width,ULONG height,T value);
+  //
+  // The configuration string that contains all the fill values. This is directly
+  // coming from the command line.
+  const char *m_pcValues;
   //
 public:
-  // Create a blank image of the given dimensions.
-  BlankImg(ULONG width,ULONG height,UWORD depth);
+  Fill(const char *fill)
+    : m_pcValues(fill)
+  { }
   //
-  // Copy the image from another source for later saving.
-  BlankImg(const class ImageLayout &layout);
-  // destructor
-  ~BlankImg(void);
+  virtual double Measure(class ImageLayout *src,class ImageLayout *dst,double in);
   //
-  // Allocate all the memory and assign it to the components.
-  void Blank(void);
-  //
-  // Allocate all the memory and assign it to the components.
-  // This version allocated separate memory for the components
-  void BlankSeparate(void);
+  virtual const char *NameOf(void) const
+  {
+    return NULL;
+  }
 };
 ///
 
 ///
 #endif
+

@@ -22,48 +22,53 @@ and conversion framework.
 *************************************************************************/
 
 /*
+** Paste
+** 
+** $Id: paste.hpp,v 1.1 2017/11/27 13:21:16 thor Exp $
 **
-** $Id: blankimg.hpp,v 1.7 2017/11/27 13:21:16 thor Exp $
-**
-** This image class doesn't do much useful, it only represents a blank
-** image of a given dimension.
+** This class copies a second image into the first image.
 **
 */
 
-#ifndef BLANKIMG_HPP
-#define BLANKIMG_HPP
+#ifndef DIFF_PASTE_HPP
+#define DIFF_PASTE_HPP
 
-
-/// Includes
-#include "imglayout.hpp"
-#include "std/stdio.hpp"
+/// Include
+#include "diff/meter.hpp"
 ///
 
-/// BlankImg
-// This image class doesn't do much useful, it only represents a blank
-// image of a given dimension.
-class BlankImg  : public ImageLayout {
-  // This is the image raw data
-  // the data is in order {r,g,b} for colored pictures. It contains only zeros....
-  UBYTE *m_pucImage;
+/// Forwards
+class ImageLayout;
+///
+
+/// class Paste
+// This class copies a second image into the first image.
+class Paste : public Meter {
+  //
+  // Templated filler class.
+  template<typename T>
+  void  PasteImage(T *dst,ULONG dbytesperpixel,ULONG dbytesperrow,
+		   const T *src,ULONG sbytesperpixel,ULONG sbytesperrow,
+		   ULONG tx,ULONG ty,ULONG width,ULONG height);
+  //
+  // The coordinates into which to paste the target image.
+  // They still have to be modified by the subsampling parameters.
+  ULONG m_ulDestX,m_ulDestY;
   //
 public:
-  // Create a blank image of the given dimensions.
-  BlankImg(ULONG width,ULONG height,UWORD depth);
+  Paste(ULONG x,ULONG y)
+    : m_ulDestX(x), m_ulDestY(y)
+  { }
   //
-  // Copy the image from another source for later saving.
-  BlankImg(const class ImageLayout &layout);
-  // destructor
-  ~BlankImg(void);
+  virtual double Measure(class ImageLayout *src,class ImageLayout *dst,double in);
   //
-  // Allocate all the memory and assign it to the components.
-  void Blank(void);
-  //
-  // Allocate all the memory and assign it to the components.
-  // This version allocated separate memory for the components
-  void BlankSeparate(void);
+  virtual const char *NameOf(void) const
+  {
+    return NULL;
+  }
 };
 ///
 
 ///
 #endif
+

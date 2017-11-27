@@ -23,7 +23,7 @@ and conversion framework.
 /*
  * Test main file
  * 
- * $Id: imglayout.cpp,v 1.37 2017/01/31 11:58:04 thor Exp $
+ * $Id: imglayout.cpp,v 1.39 2017/11/27 13:21:16 thor Exp $
  *
  * This class defines the image layout, width, height and the
  * image depth of the individual components. It is supplied by
@@ -35,6 +35,7 @@ and conversion framework.
 #include "std/stdarg.hpp"
 #include "std/stdio.hpp"
 #include "std/errno.hpp"
+#include "std/stdlib.hpp"
 #include "cmd/main.hpp"
 #include "img/imglayout.hpp"
 #include "img/imgspecs.hpp"
@@ -285,14 +286,33 @@ class ImageLayout *ImageLayout::LoadImage(const char *filename,struct ImgSpecs &
   const char *ext        = strrchr(filename,'.');
   //
   if (ext == NULL) {
+    if (filename[0] == '-' && filename[1] == '/') {
+      char *end;
+      long width,height,depth;
+      // Create a new image with given dimensions.
+      width = strtol(filename+2,&end,0);
+      if (*end == 'x' || *end == 'X') {
+	height = strtol(end+1,&end,0);
+	if (*end == 'x' || *end == 'X') {
+	  depth = strtol(end+1,&end,0);
+	  if (*end == 0) {
+	    if (width > 0 && height > 0 && depth > 0) {
+	      class BlankImg *blank = new BlankImg(width,height,depth);
+	      blank->CreateComponents(width,height,depth);
+	      blank->BlankSeparate();
+	      return blank;
+	    } else throw "image dimensions of newly created image must be all positive";
+	  }
+	}
+      }
+      throw "invalid syntax for creating a new image, use '-/<width>x<height>x<depth>' as pseudo-filename";
+    }
     throw "no file format extender, can't load source image";
     return NULL;
   }
   //
-  //
   try {
     //
-    // Now get the stream extender.
     if (!strcmp(ext,".ppm") || !strcmp(ext,".pgm") || !strcmp(ext,".pbm") || 
 	!strcmp(ext,".pnm") || !strcmp(ext,".pfm") || !strcmp(ext,".pfs")) {
       // PPM family

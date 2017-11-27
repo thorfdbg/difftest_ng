@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: downsampler.cpp,v 1.6 2017/01/31 11:58:03 thor Exp $
+** $Id: downsampler.cpp,v 1.7 2017/11/27 13:21:16 thor Exp $
 **
 ** This class downscales in the spatial domain
 */
@@ -257,8 +257,6 @@ void Downsampler::Downsample(UBYTE **&data,class ImageLayout *src)
 /// Downsampler::Measure
 double Downsampler::Measure(class ImageLayout *src,class ImageLayout *dest,double in)
 {
-  src->TestIfCompatible(dest);
-
   Downsample(m_ppucSource,src);
   Downsample(m_ppucDestination,dest);
 

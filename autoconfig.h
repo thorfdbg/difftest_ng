@@ -9,7 +9,7 @@
 /* #undef AMBIGIOUS_NEW_BUG */
 
 /* Define for short name of hardware platform */
-/* #undef HARDWARE */
+#define HARDWARE x86_64
 
 /* Define to 1 if __attribute((aligned)) works */
 #define HAS_ALIGNED 1
@@ -184,19 +184,19 @@
 #define HAVE_GETTIMEOFDAY 1
 
 /* Define to 1 if you have the `gsl_fft_complex_backward' function. */
-#define HAVE_GSL_FFT_COMPLEX_BACKWARD 1
+/* #undef HAVE_GSL_FFT_COMPLEX_BACKWARD */
 
 /* Define to 1 if you have the `gsl_fft_complex_forward' function. */
-#define HAVE_GSL_FFT_COMPLEX_FORWARD 1
+/* #undef HAVE_GSL_FFT_COMPLEX_FORWARD */
 
 /* Define to 1 if you have the `gsl_fft_complex_workspace_alloc' function. */
-#define HAVE_GSL_FFT_COMPLEX_WORKSPACE_ALLOC 1
+/* #undef HAVE_GSL_FFT_COMPLEX_WORKSPACE_ALLOC */
 
 /* Define to 1 if you have the `gsl_fft_complex_workspace_free' function. */
-#define HAVE_GSL_FFT_COMPLEX_WORKSPACE_FREE 1
+/* #undef HAVE_GSL_FFT_COMPLEX_WORKSPACE_FREE */
 
 /* Define to 1 if you have the <gsl/gsl_fft_complex.h> header file. */
-#define HAVE_GSL_GSL_FFT_COMPLEX_H 1
+/* #undef HAVE_GSL_GSL_FFT_COMPLEX_H */
 
 /* Define to 1 if you have the <half.h> header file. */
 /* #undef HAVE_HALF_H */
@@ -286,31 +286,31 @@
 #define HAVE_PNG_INIT_IO 1
 
 /* Define if you have POSIX threads libraries and header files. */
-/* #undef HAVE_PTHREAD */
+#define HAVE_PTHREAD 1
 
 /* Define to 1 if you have the `pthread_create' function. */
-/* #undef HAVE_PTHREAD_CREATE */
+#define HAVE_PTHREAD_CREATE 1
 
 /* Define to 1 if PTHREAD_CREATE_DETACHED is available */
-/* #undef HAVE_PTHREAD_CREATE_DETACHED */
+#define HAVE_PTHREAD_CREATE_DETACHED 1
 
 /* Define to 1 if you have the `pthread_detach' function. */
-/* #undef HAVE_PTHREAD_DETACH */
+#define HAVE_PTHREAD_DETACH 1
 
 /* Define to 1 if you have the `pthread_equal' function. */
-/* #undef HAVE_PTHREAD_EQUAL */
+#define HAVE_PTHREAD_EQUAL 1
 
 /* Define to 1 if you have the <pthread.h> header file. */
-/* #undef HAVE_PTHREAD_H */
+#define HAVE_PTHREAD_H 1
 
 /* Define to 1 if you have the `pthread_mutexattr_init' function. */
-/* #undef HAVE_PTHREAD_MUTEXATTR_INIT */
+#define HAVE_PTHREAD_MUTEXATTR_INIT 1
 
 /* Define to 1 if you have the `pthread_mutex_init' function. */
-/* #undef HAVE_PTHREAD_MUTEX_INIT */
+#define HAVE_PTHREAD_MUTEX_INIT 1
 
 /* Define to 1 if you have the `pthread_self' function. */
-/* #undef HAVE_PTHREAD_SELF */
+#define HAVE_PTHREAD_SELF 1
 
 /* Define to 1 if you have the `read' function. */
 #define HAVE_READ 1
@@ -322,10 +322,10 @@
 #define HAVE_RESTRICTED_PTRS 1
 
 /* Define to 1 if you have the <semaphore.h> header file. */
-/* #undef HAVE_SEMAPHORE_H */
+#define HAVE_SEMAPHORE_H 1
 
 /* Define to 1 if you have the `sem_init' function. */
-/* #undef HAVE_SEM_INIT */
+#define HAVE_SEM_INIT 1
 
 /* Define to 1 if you have the `setjmp' function. */
 #define HAVE_SETJMP 1
@@ -504,7 +504,7 @@
 #define TIME_WITH_SYS_TIME 1
 
 /* Define if you want to use multithreading. */
-/* #undef USE_MULTITHREADING */
+#define USE_MULTITHREADING 1
 
 /* Define to empty if `const' does not conform to ANSI C. */
 /* #undef const */

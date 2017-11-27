@@ -23,7 +23,7 @@ and conversion framework.
 /*
  * Main program
  * 
- * $Id: main.cpp,v 1.82 2017/06/12 14:57:09 thor Exp $
+ * $Id: main.cpp,v 1.84 2017/11/27 13:21:12 thor Exp $
  *
  * This class defines the main program and argument parsing.
  */
@@ -66,6 +66,8 @@ and conversion framework.
 #include "diff/downsampler.hpp"
 #include "diff/upsampler.hpp"
 #include "diff/clamp.hpp"
+#include "diff/fill.hpp"
+#include "diff/paste.hpp"
 #include "img/imglayout.hpp"
 #include "img/imgspecs.hpp"
 #include <new>
@@ -158,8 +160,10 @@ void Usage(const char *progname)
 	  "--sub x y          : subsample all components by the subsampling factors in x and y direction\n"
 	  "--csub x y         : subsample all but component 0 by the subsampling factors in x and y direction\n"
 	  "--up x y           : upsample all components by the subsampling factors in x and y direction\n"
+	  "--up auto          : upsample all components such that we get consistent 1x1 (444) sampling\n"
 	  "--cup x y          : upsample all but component 0 by the subsampling factors in x and y direction\n"
 	  "--coup x y         : co-sited upsampling of all components in x and y direction\n"
+	  "--coup auto        : co-sited upsampling, with automatic choice of upsampling factors\n"
 	  "--cocup x y        : co-sited upsampling of the chroma components in x and y direction\n"
 	  "--boxup x y        : upsample with a simple box filter\n"
 	  "--boxcup x y       : upsample the chrome components with a simple box filter\n"
@@ -168,6 +172,7 @@ void Usage(const char *progname)
 	  "--upto component   : restricts all following operations to components 0..component-1\n"
 	  "--rgb              : restricts the activity to at most the first three components\n"
 	  "--crop x1 y1 x2 y2 : crop a rectangular image region (x1,y1)-(x2,y2). Edges are inclusive.\n"
+	  "--cropd x1 y1 x2 y2: crop a rectangular image region (x1,y1)-(x2,y2) from the distorted image only.\n"
 	  "--restore          : un-do the restrictions of --crop and --only or --rgb\n"
 	  "--toycbcr          : convert images to YCbCr before comparing\n"
 	  "--tosignedycbcr    : convert images to YCbCr with signed chroma components\n"
@@ -184,6 +189,8 @@ void Usage(const char *progname)
 	  "--fromlms          : convert images from LMS to RGB before comparing\n"
 	  "--xyztolms         : convert images from XYZ to LMS before comparing\n"
 	  "--lmstoxyz         : convert images from LMS to XYZ before comparing\n"
+	  "--fill r,g,b,...   : fill the source image with the given color\n"
+	  "--paste x y        : paste the distorted image at the given position into the source\n"
 	  "--raw              : encode output in raw if applicable\n"
 	  "--ascii            : encode output in ascii if applicable\n"
 	  "--interleaved      : encode output in interleaved samples if applicable\n"
@@ -197,6 +204,8 @@ void Usage(const char *progname)
 	  "                     smaller or equal or smaller than given threshold t.\n"
 	  "                     Attention: Quoting required when used from the shell.\n"
 	  "\n"
+	  "If the source image is '-/<width>x<height>x<depth>', it is replaced by a blank image of the\n"
+	  "given dimensions. This image can be filled with any other color by --fill, see above.\n"
 	  "If the distorted image file name equals '-', then the image is replaced by a blank image\n"
 	  "\n"
 	  "--help             : print this page\n"
@@ -413,7 +422,7 @@ int main(int argc,char **argv)
       //
       // No meter yet.
       m = NULL;
-      if (arg[0] == '-') {
+      if (arg[0] == '-' && arg[1] != '/') {
 	if (!strcmp(arg,"--help")) {
 	  Usage(argv[0]);
 	  return 0;
@@ -828,15 +837,29 @@ int main(int argc,char **argv)
 	  argv += 2;
 	} else if (!strcmp(arg,"--up")) {
 	  long sx,sy;
-	  if (argc < 4)
+	  bool automatic = false;
+	  if (argc < 3)
 	    throw "--up requires two arguments, subsampling factors in x and y direction";
-	  sx = ParseLong(argv[2]);
-	  sy = ParseLong(argv[3]);
+	  if (!strcmp(argv[2],"auto")) {
+	    sx = 1;
+	    sy = 1;
+	    automatic = true;
+	  } else {
+	    if (argc < 4)
+	      throw "--up requires two arguments, subsampling factors in x and y direction";
+	    sx = ParseLong(argv[2]);
+	    sy = ParseLong(argv[3]);
+	  }
 	  if (sx >= 16 || sx <= 0 || sy >= 16 || sy <= 0)
 	    throw "upsampling factors must be positive and smaller than 16";
-	  m     = new class Upsampler(sx,sy,false,Upsampler::Centered);
-	  argc -= 2;
-	  argv += 2;
+	  m     = new class Upsampler(sx,sy,false,Upsampler::Centered,automatic);
+	  if (automatic) {
+	    argc--;
+	    argv++;
+	  } else {
+	    argc -= 2;
+	    argv += 2;
+	  }
 	} else if (!strcmp(arg,"--cup")) {
 	  long sx,sy;
 	  if (argc < 4)
@@ -850,15 +873,29 @@ int main(int argc,char **argv)
 	  argv += 2;
 	} else if (!strcmp(arg,"--coup")) {
 	  long sx,sy;
-	  if (argc < 4)
+	  bool automatic = false;
+	  if (argc < 3)
 	    throw "--coup requires two arguments, subsampling factors in x and y direction";
-	  sx = ParseLong(argv[2]);
-	  sy = ParseLong(argv[3]);
+	  if (!strcmp(argv[2],"auto")) {
+	    sx = 1;
+	    sy = 1;
+	    automatic = true;
+	  } else {
+	    if (argc < 4)
+	      throw "--coup requires two arguments, subsampling factors in x and y direction";
+	    sx = ParseLong(argv[2]);
+	    sy = ParseLong(argv[3]);
+	  }
 	  if (sx >= 16 || sx <= 0 || sy >= 16 || sy <= 0)
 	    throw "upsampling factors must be positive and smaller than 16";
-	  m     = new class Upsampler(sx,sy,false,Upsampler::Cosited);
-	  argc -= 2;
-	  argv += 2;
+	  m     = new class Upsampler(sx,sy,false,Upsampler::Cosited,automatic);
+	  if (automatic) {
+	    argc--;
+	    argv++;
+	  } else {
+	    argc -= 2;
+	    argv += 2;
+	  }
 	} else if (!strcmp(arg,"--cocup")) {
 	  long sx,sy;
 	  if (argc < 4)
@@ -933,11 +970,41 @@ int main(int argc,char **argv)
 	  y2 = ParseLong(argv[5]);
 	  if (x1 < 0 || y1 < 0 || x2 < 0 || y2 < 0)
 	    throw "--crop requires non-negative arguments";
-	  m = new class Crop(x1,y1,x2,y2);
+	  m = new class Crop(x1,y1,x2,y2,Crop::CropBoth);
+	  argc -= 4;
+	  argv += 4;
+	} else if (!strcmp(arg,"--cropd")) {
+	  long x1,y1,x2,y2;
+	  if (argc < 2+4)
+	    throw "--cropd requires the coordinates of the rectangle as arguments";
+	  x1 = ParseLong(argv[2]);
+	  y1 = ParseLong(argv[3]);
+	  x2 = ParseLong(argv[4]);
+	  y2 = ParseLong(argv[5]);
+	  if (x1 < 0 || y1 < 0 || x2 < 0 || y2 < 0)
+	    throw "--cropd requires non-negative arguments";
+	  m = new class Crop(x1,y1,x2,y2,Crop::CropDst);
 	  argc -= 4;
 	  argv += 4;
 	} else if (!strcmp(arg,"--restore")) {
 	  m = new class Restore(orgcpy,dstcpy);
+	} else if (!strcmp(arg,"--fill")) {
+	  if (argc < 3)
+	    throw "--fill requires a comma-separated list of fill values as argument";
+	  m = new class Fill(argv[2]);
+	  argc--;
+	  argv++;
+	} else if (!strcmp(arg,"--paste")) {
+	  long x1,y1;
+	  if (argc < 4)
+	    throw "--paste requires two arguments, the target x and y position";
+	  x1 = ParseLong(argv[2]);
+	  y1 = ParseLong(argv[3]);
+	  if (x1 < 0 || y1 < 0)
+	    throw "--paste requires non-negative arguments";
+	  m = new class Paste(x1,y1);
+	  argc -= 2;
+	  argv += 2;
 	} else if (!strcmp(arg,"--raw")) {
 	  specout.ASCII = ImgSpecs::No;
 	} else if (!strcmp(arg,"--ascii")) {

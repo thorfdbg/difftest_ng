@@ -11,28 +11,28 @@
 ## The following variable defines the compiler we use
 ## for running the code.
 ##
-COMPILER_CMD	=	g++-4.9
+COMPILER_CMD	=	g++
 CC_ONLY         =       gcc
 SETTINGS	=	gcc
 PREFIX		=	/home/thor/bin/wavelet
-PTHREADCFLAGS	=	
-PTHREADLDFLAGS	=	
-PTHREADLIBS	=	
-HWTYPE		=	
-HAVE_ADDONS	=	
+PTHREADCFLAGS	=	-pthread
+PTHREADLDFLAGS	=	-pthread
+PTHREADLIBS	=	 
+HWTYPE		=	x86_64
+HAVE_ADDONS	=	no
 ##
 ## Additional options
-ADDOPTS		=	-DUSE_AUTOCONF -mfpmath=387   -I/usr/include/libpng12 -I/usr/include
+ADDOPTS		=	-DUSE_AUTOCONF -mfpmath=387 -D__IS_x86_64__  -I/usr/include/libpng16 
 LIB_OPTS	=	-fvisibility=internal -fPIC -DBUILD_LIB
 EXTRA_LIBS	=	
 ##
 ## Options for GSL
-GSL_LDFLAGS	=	-L/usr/lib -lgsl -lgslcblas -lm
-GSL_CFLAGS	=	-I/usr/include
+GSL_LDFLAGS	=	
+GSL_CFLAGS	=	
 ##
 ## Options for PNG
-PNG_LDFLAGS	=	-lpng12 -lz
-PNG_CFLAGS	=	-I/usr/include/libpng12
+PNG_LDFLAGS	=	-lpng16 -lz
+PNG_CFLAGS	=	-I/usr/include/libpng16
 ##
 ## Options for EXR
 EXR_LDFLAGS	=	

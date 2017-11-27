@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: crop.cpp,v 1.5 2017/01/31 11:58:03 thor Exp $
+** $Id: crop.cpp,v 1.6 2017/11/27 13:21:16 thor Exp $
 **
 ** This class crops images, i.e. extracts rectangular regions from images
 */
@@ -37,8 +37,12 @@ and conversion framework.
 // Crop an image region
 double Crop::Measure(class ImageLayout *src,class ImageLayout *dst,double in)
 {
-  src->Crop(m_ulX1,m_ulY1,m_ulX2,m_ulY2);
-  dst->Crop(m_ulX1,m_ulY1,m_ulX2,m_ulY2);
+  if (m_Mode == CropBoth || m_Mode == CropSrc) {
+    src->Crop(m_ulX1,m_ulY1,m_ulX2,m_ulY2);
+  }
+  if (m_Mode == CropBoth || m_Mode == CropDst) {
+    dst->Crop(m_ulX1,m_ulY1,m_ulX2,m_ulY2);
+  }
   
   return in;
 }

@@ -35,6 +35,16 @@ and conversion framework.
 ///
 
 /// BlankImg::BlankImg
+// Create a blank image of the given dimensions.
+BlankImg::BlankImg(ULONG width,ULONG height,UWORD depth)
+{
+  m_ulWidth  = width;
+  m_ulHeight = height;
+  m_usDepth  = depth;
+}
+///
+  
+/// BlankImg::BlankImg
 // Copy the image from another source for later saving.
 BlankImg::BlankImg(const class ImageLayout &layout)
   : ImageLayout(layout), m_pucImage(NULL)
@@ -58,9 +68,11 @@ void BlankImg::Blank(void)
   size_t size = WidthOf() * HeightOf();
 
   assert(m_pucImage == NULL);
-  
+
   for(d = 0;d < DepthOf();d++) {
     size_t ms = (BitsOf(d) + 7) >> 3;
+    if (isFloat(d) && BitsOf(d) == 16)
+      ms = 4; // half float is represented as float.
     if (ms > ntry)
       ntry = ms;
   }
@@ -77,6 +89,39 @@ void BlankImg::Blank(void)
     m_pComponent[d].m_ulBytesPerPixel = ULONG(ntry);
     m_pComponent[d].m_ulBytesPerRow   = ULONG(ntry * WidthOf());
     m_pComponent[d].m_pPtr            = m_pucImage;
+  }
+}
+///
+
+/// BlankImg::BlankSeparate
+// Allocate all the memory and assign it to the components.
+// This version allocated separate memory for the components
+void BlankImg::BlankSeparate(void)
+{
+  UWORD d;
+  size_t size = 0;
+  UBYTE *mem;
+
+  assert(m_pucImage == NULL);
+
+  for(d = 0;d < DepthOf();d++) {
+    size_t ms = (BitsOf(d) + 7) >> 3;
+    if (isFloat(d) && BitsOf(d) == 16)
+      ms = 4; // half float is represented as float.
+    size += ms * WidthOf(d) * HeightOf(d);
+  }
+
+  mem = m_pucImage = new UBYTE[size];
+  memset(m_pucImage,0,size * sizeof(UBYTE));
+
+  for(d = 0;d < DepthOf();d++) {
+    size_t ms = (BitsOf(d) + 7) >> 3;
+    if (isFloat(d) && BitsOf(d) == 16)
+      ms = 4; // half float is represented as float.
+    m_pComponent[d].m_ulBytesPerPixel = ms;
+    m_pComponent[d].m_ulBytesPerRow   = ms * WidthOf(d);
+    m_pComponent[d].m_pPtr            = mem;
+    mem += ms * WidthOf(d) * HeightOf(d);
   }
 }
 ///
