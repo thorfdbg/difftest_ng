@@ -23,7 +23,7 @@ and conversion framework.
 /*
  * Main program
  * 
- * $Id: main.cpp,v 1.84 2017/11/27 13:21:12 thor Exp $
+ * $Id: main.cpp,v 1.85 2018/01/18 15:31:05 thor Exp $
  *
  * This class defines the main program and argument parsing.
  */
@@ -357,6 +357,9 @@ void RawHelp(void)
 	  "                             Subsampling factors are derived from the sample counts\n"
 	  "                             and padding is applied at the end of each line to one\n"
 	  "                             complete cycle.\n"
+	  "{6-},{10-=0}:{6-},{10-=1}:{6-},{10-=0}:{6-},{10-=2}:\n"
+	  "                             pixel-interleaved yuv in little-endian, where samples are\n"
+	  "                             packed as YUYV, each in a 16 bit little-endian format.\n"
 	  "\n");
 }
 ///
