@@ -23,7 +23,7 @@ and conversion framework.
 /*
  * Main program
  * 
- * $Id: main.cpp,v 1.85 2018/01/18 15:31:05 thor Exp $
+ * $Id: main.cpp,v 1.86 2018/05/02 15:35:45 thor Exp $
  *
  * This class defines the main program and argument parsing.
  */
@@ -175,8 +175,10 @@ void Usage(const char *progname)
 	  "--cropd x1 y1 x2 y2: crop a rectangular image region (x1,y1)-(x2,y2) from the distorted image only.\n"
 	  "--restore          : un-do the restrictions of --crop and --only or --rgb\n"
 	  "--toycbcr          : convert images to YCbCr before comparing\n"
+	  "--toycbcrbl        : convert images to YCbCr before comparing, and include a black level\n"
 	  "--tosignedycbcr    : convert images to YCbCr with signed chroma components\n"
 	  "--fromycbcr        : convert images from YCbCr to RGB before comparing\n"
+	  "--fromycbcrbl      : convert images from YCbCr to RGB before comparing, and remove the black level\n"
 	  "--torct            : convert an image with the RCT from JPEG 2000\n"
 	  "--tosignedrct      : convert an image with the RCT from JPEG 2000, leaving chroma signed\n"
 	  "--fromrct          : convert an image back to RGB with the inverse RCT\n"
@@ -630,31 +632,37 @@ int main(int argc,char **argv)
 #endif
 	} else if (!strcmp(arg,"--toycbcr")) {
 	  specout.YUVEncoded = ImgSpecs::Yes;
-	  m = new YCbCr(false,false,YCbCr::YCbCr_Trafo);
+	  m = new YCbCr(false,false,false,YCbCr::YCbCr_Trafo);
+	} else if (!strcmp(arg,"--toycbcrbl")) {
+	  specout.YUVEncoded = ImgSpecs::Yes;
+	  m = new YCbCr(false,false,true,YCbCr::YCbCr_Trafo);
 	} else if (!strcmp(arg,"--tosignedycbcr")) {
 	  specout.YUVEncoded = ImgSpecs::Yes;
-	  m = new YCbCr(false,true,YCbCr::YCbCr_Trafo);
+	  m = new YCbCr(false,true,false,YCbCr::YCbCr_Trafo);
 	} else if (!strcmp(arg,"--fromycbcr")) {
 	  specout.YUVEncoded = ImgSpecs::No;
-	  m = new YCbCr(true ,false,YCbCr::YCbCr_Trafo);
+	  m = new YCbCr(true ,false, false,YCbCr::YCbCr_Trafo);
+	} else if (!strcmp(arg,"--fromycbcrbl")) {
+	  specout.YUVEncoded = ImgSpecs::No;
+	  m = new YCbCr(true ,false, true,YCbCr::YCbCr_Trafo);
 	} else if (!strcmp(arg,"--torct")) {
 	  specout.YUVEncoded = ImgSpecs::Yes;
-	  m = new YCbCr(false,false,YCbCr::RCT_Trafo);
+	  m = new YCbCr(false,false,false,YCbCr::RCT_Trafo);
 	} else if (!strcmp(arg,"--tosignedrct")) {
 	  specout.YUVEncoded = ImgSpecs::Yes;
-	  m = new YCbCr(false,true,YCbCr::RCT_Trafo);
+	  m = new YCbCr(false,true,false,YCbCr::RCT_Trafo);
 	} else if (!strcmp(arg,"--fromrct")) {
 	  specout.YUVEncoded = ImgSpecs::No;
-	  m = new YCbCr(true ,false,YCbCr::RCT_Trafo);
+	  m = new YCbCr(true ,false,false,YCbCr::RCT_Trafo);
 	} else if (!strcmp(arg,"--toycgco")) {
 	  specout.YUVEncoded = ImgSpecs::Yes;
-	  m = new YCbCr(false,false,YCbCr::YCgCo_Trafo);
+	  m = new YCbCr(false,false,false,YCbCr::YCgCo_Trafo);
 	} else if (!strcmp(arg,"--tosignedycgco")) {
 	  specout.YUVEncoded = ImgSpecs::Yes;
-	  m = new YCbCr(false,true,YCbCr::YCgCo_Trafo);
+	  m = new YCbCr(false,true,false,YCbCr::YCgCo_Trafo);
 	} else if (!strcmp(arg,"--fromycgco")) {
 	  specout.YUVEncoded = ImgSpecs::No;
-	  m = new YCbCr(true ,false,YCbCr::YCgCo_Trafo);
+	  m = new YCbCr(true ,false,false,YCbCr::YCgCo_Trafo);
 	} else if (!strcmp(arg,"--toxyz")) {
 	  m = new XYZ(XYZ::RGBtoXYZ,false);
 	} else if (!strcmp(arg,"--fromxyz")) {

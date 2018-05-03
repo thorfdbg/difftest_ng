@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: ycbcr.cpp,v 1.9 2017/01/31 11:58:04 thor Exp $
+** $Id: ycbcr.cpp,v 1.10 2018/05/02 15:35:49 thor Exp $
 **
 ** This class converts between RGB and YCbCr signals
 */
@@ -378,6 +378,9 @@ void YCbCr::ToYCbCr(class ImageLayout *img)
       ymax    = (issigned)?( (QUAD(1) << (bits-1))-1):( (QUAD(1) << (bits))-1);
       cmin    = (issigned)?(-(QUAD(1) << (bits-1)))  :  (0);
       cmax    = (issigned)?( (QUAD(1) << (bits-1))-1):( (QUAD(1) << (bits))-1);
+      if (m_bBlackLevel) {
+	yoffset += (QUAD(1) << bits) >> 4;
+      }
     }
   }
   //
@@ -520,6 +523,9 @@ void YCbCr::FromYCbCr(class ImageLayout *img)
       coffset = (issigned)?(0)                       :(QUAD(1) << (bits-1));
       min     = (issigned)?(-(QUAD(1) << (bits-1)))  :(0);
       max     = (issigned)?( (QUAD(1) << (bits-1))-1):( (QUAD(1) << (bits))-1);
+      if (m_bBlackLevel) {
+	yoffset += (QUAD(1) << bits) >> 4;
+      }
     }
   }  
   //

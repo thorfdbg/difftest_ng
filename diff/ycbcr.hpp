@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: ycbcr.hpp,v 1.7 2017/01/31 11:58:04 thor Exp $
+** $Id: ycbcr.hpp,v 1.8 2018/05/02 15:35:49 thor Exp $
 **
 ** This class converts between RGB and YCbCr signals
 */
@@ -46,16 +46,20 @@ struct ImgSpecs;
 class YCbCr : public Meter, private ImageLayout {
   //
   // This bool is set for backwards conversion, i.e. YCbCr->RGB
-  bool m_bInverse;
+  bool  m_bInverse;
   //
   // This flag is set in case the chroma components shall be made
   // signed.
-  bool m_bMakeSigned;
+  bool  m_bMakeSigned;
+  //
+  // If this is set, the typical ITU-BT.XXX black level of 16 (scaled)
+  // is added or subtracted from the signal levels.
+  bool  m_bBlackLevel;
   //
   // The component memory itself. In case of the integer transformations,
   // the range is expanded, hence a new image has to be created.
-  UBYTE                *m_ppucSrcImage[3];
-  UBYTE                *m_ppucDstImage[3];
+  UBYTE *m_ppucSrcImage[3];
+  UBYTE *m_ppucDstImage[3];
   //
 public:
   //
@@ -152,8 +156,8 @@ private:
 public:
   //
   // Forwards or backwards conversion to and from YCbCr
-  YCbCr(bool inverse,bool makesigned,Conversion conv)
-    : m_bInverse(inverse), m_bMakeSigned(makesigned), m_Conversion(conv)
+  YCbCr(bool inverse,bool makesigned,bool blacklevel,Conversion conv)
+    : m_bInverse(inverse), m_bMakeSigned(makesigned), m_bBlackLevel(blacklevel), m_Conversion(conv)
   {
     memset(m_ppucSrcImage,0,sizeof(m_ppucSrcImage));
     memset(m_ppucDstImage,0,sizeof(m_ppucDstImage));
