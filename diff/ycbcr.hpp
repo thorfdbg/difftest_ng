@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: ycbcr.hpp,v 1.8 2018/05/02 15:35:49 thor Exp $
+** $Id: ycbcr.hpp,v 1.9 2018/06/15 09:06:52 thor Exp $
 **
 ** This class converts between RGB and YCbCr signals
 */
@@ -65,9 +65,11 @@ public:
   //
   // The conversion to run
   enum Conversion {
-    YCbCr_Trafo,
+    YCbCr_Trafo,     // this is actually a BT.601 conversion
     RCT_Trafo,
-    YCgCo_Trafo
+    YCgCo_Trafo,
+    YCbCr709_Trafo,  // This is the BT.709 conversion
+    YCbCr2020_Trafo, // This is the transformation for BT.2020
   }    m_Conversion;
   //
 private:
@@ -80,7 +82,25 @@ private:
 		      double cmin,double cmax,
 		      ULONG bppr,ULONG bppg,ULONG bppb,
 		      ULONG bprr,ULONG bprg,ULONG bprb,
-		      ULONG w, ULONG h);  
+		      ULONG w, ULONG h);
+  //
+  template<typename S,typename T>
+  static void ToYCbCr709(S *r,S *g,S *b,
+			 double yoffset,double coffset,
+			 double min,double max,
+			 double cmin,double cmax,
+			 ULONG bppr,ULONG bppg,ULONG bppb,
+			 ULONG bprr,ULONG bprg,ULONG bprb,
+			 ULONG w, ULONG h);
+  //
+  template<typename S,typename T>
+  static void ToYCbCr2020(S *r,S *g,S *b,
+			  double yoffset,double coffset,
+			  double min,double max,
+			  double cmin,double cmax,
+			  ULONG bppr,ULONG bppg,ULONG bppb,
+			  ULONG bprr,ULONG bprg,ULONG bprb,
+			  ULONG w, ULONG h);  
   //
   // Forward conversion for RCT
   template<typename S,typename T>
@@ -110,6 +130,22 @@ private:
 			ULONG bppy,ULONG bppcb,ULONG bppcr,
 			ULONG bpry,ULONG bprcb,ULONG bprcr,
 			ULONG w, ULONG h);
+  //
+  template<typename S,typename T>
+  static void FromYCbCr709(S *y,T *cb,T *cr,
+			   double yoffset,double coffset,
+			   double min,double max,
+			   ULONG bppy,ULONG bppcb,ULONG bppcr,
+			   ULONG bpry,ULONG bprcb,ULONG bprcr,
+			   ULONG w, ULONG h);
+  //
+  template<typename S,typename T>
+  static void FromYCbCr2020(S *y,T *cb,T *cr,
+			    double yoffset,double coffset,
+			    double min,double max,
+			    ULONG bppy,ULONG bppcb,ULONG bppcr,
+			    ULONG bpry,ULONG bprcb,ULONG bprcr,
+			    ULONG w, ULONG h);
   //
   template<typename S,typename T>
   static void FromRCT(const S *y,const T *cb,const T *cr,S *r,S *g,S *b,
@@ -143,6 +179,15 @@ private:
   // The dispatcher for the reverse transformation direction.
   template<typename S,typename T>
   void DispatchFromRCT(const class ImageLayout *img,ULONG yoffset,ULONG coffset,ULONG w,ULONG h);
+  //
+  template<typename S,typename T>
+  void DispatchToYCbCr(const class ImageLayout *img,double offset,double coffset,
+		       double ymin,double ymax,double cmin,double cmax,ULONG w,ULONG h);
+  //
+  // The dispatcher for the reverse transformation direction.
+  template<typename S,typename T>
+  void DispatchFromYCbCr(const class ImageLayout *img,double yoffset,double coffset,double min,double max,
+			 ULONG w,ULONG h);
   //
   // Perform integer transformations, RCT and YCgCo
   // They are both range-expanding.

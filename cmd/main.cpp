@@ -23,7 +23,7 @@ and conversion framework.
 /*
  * Main program
  * 
- * $Id: main.cpp,v 1.86 2018/05/02 15:35:45 thor Exp $
+ * $Id: main.cpp,v 1.87 2018/06/15 09:06:49 thor Exp $
  *
  * This class defines the main program and argument parsing.
  */
@@ -174,11 +174,19 @@ void Usage(const char *progname)
 	  "--crop x1 y1 x2 y2 : crop a rectangular image region (x1,y1)-(x2,y2). Edges are inclusive.\n"
 	  "--cropd x1 y1 x2 y2: crop a rectangular image region (x1,y1)-(x2,y2) from the distorted image only.\n"
 	  "--restore          : un-do the restrictions of --crop and --only or --rgb\n"
-	  "--toycbcr          : convert images to YCbCr before comparing\n"
-	  "--toycbcrbl        : convert images to YCbCr before comparing, and include a black level\n"
-	  "--tosignedycbcr    : convert images to YCbCr with signed chroma components\n"
-	  "--fromycbcr        : convert images from YCbCr to RGB before comparing\n"
-	  "--fromycbcrbl      : convert images from YCbCr to RGB before comparing, and remove the black level\n"
+	  "--toycbcr          : convert images to 601 YCbCr before comparing\n"
+	  "--toycbcrbl        : convert images to 601 YCbCr before comparing, and include a black level\n"
+	  "--tosignedycbcr    : convert images to 601 YCbCr with signed chroma components\n"
+	  "--fromycbcr        : convert images from 601 YCbCr to RGB before comparing\n"
+	  "--fromycbcrbl      : convert images from 601 YCbCr to RGB before comparing, and remove the black level\n"
+	  "--toycbcr709       : convert images to 709 YCbCr before comparing\n"
+	  "--toycbcr709bl     : convert images to 709 YCbCr before comaring, and include a black level\n"
+	  "--fromycbcr709     : convert images from 709 YCbCr to RGB before comparing\n"
+	  "--fromycbcr709bl   : convert images from 709 YCbCr to RGB before comparing, and remove the black level\n"
+	  "--toycbcr2020      : convert images to 2020 YCbCr before comparing\n"
+	  "--toycbcr2020bl    : convert images to 2020 YCbCr before comaring, and include a black level\n"
+	  "--fromycbcr2020    : convert images from 2020 YCbCr to RGB before comparing\n"
+	  "--fromycbcr2020bl  : convert images from 2020 YCbCr to RGB before comparing, and remove the black level\n"
 	  "--torct            : convert an image with the RCT from JPEG 2000\n"
 	  "--tosignedrct      : convert an image with the RCT from JPEG 2000, leaving chroma signed\n"
 	  "--fromrct          : convert an image back to RGB with the inverse RCT\n"
@@ -663,6 +671,30 @@ int main(int argc,char **argv)
 	} else if (!strcmp(arg,"--fromycgco")) {
 	  specout.YUVEncoded = ImgSpecs::No;
 	  m = new YCbCr(true ,false,false,YCbCr::YCgCo_Trafo);
+	} else if (!strcmp(arg,"--toycbcr709")) {
+	  specout.YUVEncoded = ImgSpecs::Yes;
+	  m = new YCbCr(false,false,false,YCbCr::YCbCr709_Trafo);
+	} else if (!strcmp(arg,"--toycbcr709bl")) {
+	  specout.YUVEncoded = ImgSpecs::Yes;
+	  m = new YCbCr(false,false,true,YCbCr::YCbCr709_Trafo);
+	} else if (!strcmp(arg,"--fromycbcr709")) {
+	  specout.YUVEncoded = ImgSpecs::No;
+	  m = new YCbCr(true ,false, false,YCbCr::YCbCr709_Trafo);
+	} else if (!strcmp(arg,"--fromycbcr709bl")) {
+	  specout.YUVEncoded = ImgSpecs::No;
+	  m = new YCbCr(true ,false, true,YCbCr::YCbCr709_Trafo);
+	} else if (!strcmp(arg,"--toycbcr2020")) {
+	  specout.YUVEncoded = ImgSpecs::Yes;
+	  m = new YCbCr(false,false,false,YCbCr::YCbCr2020_Trafo);
+	} else if (!strcmp(arg,"--toycbcr2020bl")) {
+	  specout.YUVEncoded = ImgSpecs::Yes;
+	  m = new YCbCr(false,false,true,YCbCr::YCbCr2020_Trafo);
+	} else if (!strcmp(arg,"--fromycbcr2020")) {
+	  specout.YUVEncoded = ImgSpecs::No;
+	  m = new YCbCr(true ,false, false,YCbCr::YCbCr2020_Trafo);
+	} else if (!strcmp(arg,"--fromycbcr2020bl")) {
+	  specout.YUVEncoded = ImgSpecs::No;
+	  m = new YCbCr(true ,false, true,YCbCr::YCbCr2020_Trafo);
 	} else if (!strcmp(arg,"--toxyz")) {
 	  m = new XYZ(XYZ::RGBtoXYZ,false);
 	} else if (!strcmp(arg,"--fromxyz")) {

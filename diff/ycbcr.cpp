@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: ycbcr.cpp,v 1.10 2018/05/02 15:35:49 thor Exp $
+** $Id: ycbcr.cpp,v 1.11 2018/06/15 09:06:52 thor Exp $
 **
 ** This class converts between RGB and YCbCr signals
 */
@@ -87,7 +87,98 @@ void YCbCr::ToYCbCr(S *r,S *g,S *b,
     b  = (S *)((UBYTE *)(b) + bprb);
   }
 }
+///
+
+/// YCbCr::ToYCbCr709
+template<typename S,typename T>
+void YCbCr::ToYCbCr709(S *r,S *g,S *b,
+		       double yoffset,double coffset,
+		       double min,double max,
+		       double cmin,double cmax,
+		       ULONG bppr,ULONG bppg,ULONG bppb,
+		       ULONG bprr,ULONG bprg,ULONG bprb,
+		       ULONG w, ULONG h)
+{
+  ULONG x,y;
+  const double kb = 0.0722;
+  const double kr = 0.2126;
+  const double kg = 1.0 - kb - kr;
+
+  for(y = 0;y < h;y++) {
+    S *rrow = r;
+    S *grow = g;
+    S *brow = b;
+    for(x = 0;x < w;x++) {
+      double y  = *rrow * kr    + *grow * kg    + *brow * kb;
+      double cb = 0.5 * (*brow  - y) / (1.0 - kb) + coffset;
+      double cr = 0.5 * (*rrow  - y) / (1.0 - kr) + coffset;
+      //
+      // clip to range.
+      y += yoffset;
+      y  = (y  <  min)?( min):(( y >  max)?( max):( y));
+      cb = (cb < cmin)?(cmin):((cb > cmax)?(cmax):(cb));
+      cr = (cr < cmin)?(cmin):((cr > cmax)?(cmax):(cr));
+      //
+      *rrow        = S(y);
+      *((T *)grow) = T(cb);
+      *((T *)brow) = T(cr);
+      //
+      rrow  = (S *)((UBYTE *)(rrow) + bppr);
+      grow  = (S *)((UBYTE *)(grow) + bppg);
+      brow  = (S *)((UBYTE *)(brow) + bppb);
+    }
+    r  = (S *)((UBYTE *)(r) + bprr);
+    g  = (S *)((UBYTE *)(g) + bprg);
+    b  = (S *)((UBYTE *)(b) + bprb);
+  }
+}
 /// 
+
+
+/// YCbCr::ToYCbCr2020
+template<typename S,typename T>
+void YCbCr::ToYCbCr2020(S *r,S *g,S *b,
+		       double yoffset,double coffset,
+		       double min,double max,
+		       double cmin,double cmax,
+		       ULONG bppr,ULONG bppg,ULONG bppb,
+		       ULONG bprr,ULONG bprg,ULONG bprb,
+		       ULONG w, ULONG h)
+{
+  ULONG x,y;
+  const double kb = 0.0593;
+  const double kr = 0.2627;
+  const double kg = 1.0 - kb - kr;
+
+  for(y = 0;y < h;y++) {
+    S *rrow = r;
+    S *grow = g;
+    S *brow = b;
+    for(x = 0;x < w;x++) {
+      double y  = *rrow * kr    + *grow * kg    + *brow * kb    + yoffset;
+      double cb = 0.5 * (*brow  - y) / (1.0 - kb) + coffset;
+      double cr = 0.5 * (*rrow  - y) / (1.0 - kr) + coffset;
+      //
+      // clip to range.
+      y  = (y  <  min)?( min):(( y >  max)?( max):( y));
+      cb = (cb < cmin)?(cmin):((cb > cmax)?(cmax):(cb));
+      cr = (cr < cmin)?(cmin):((cr > cmax)?(cmax):(cr));
+      //
+      *rrow        = S(y);
+      *((T *)grow) = T(cb);
+      *((T *)brow) = T(cr);
+      //
+      rrow  = (S *)((UBYTE *)(rrow) + bppr);
+      grow  = (S *)((UBYTE *)(grow) + bppg);
+      brow  = (S *)((UBYTE *)(brow) + bppb);
+    }
+    r  = (S *)((UBYTE *)(r) + bprr);
+    g  = (S *)((UBYTE *)(g) + bprg);
+    b  = (S *)((UBYTE *)(b) + bprb);
+  }
+}
+/// 
+
 /// YCbCr::FromYCbCr
 template<typename S,typename T>
 void YCbCr::FromYCbCr(S *yp,T *cb,T *cr,
@@ -107,6 +198,86 @@ void YCbCr::FromYCbCr(S *yp,T *cb,T *cr,
       double r  = (*yrow - yoffset) + (*crrow - coffset)*1.402;
       double g  = (*yrow - yoffset) + (*cbrow - coffset)*-0.34413 + (*crrow - coffset)*-0.71414;
       double b  = (*yrow - yoffset) + (*cbrow - coffset)*1.772;
+      //
+      // clip to range.
+      r  = (r < min)?(min):((r > max)?(max):(r));
+      g  = (g < min)?(min):((g > max)?(max):(g));
+      b  = (b < min)?(min):((b > max)?(max):(b));
+      //
+      *yrow         = S(r);
+      *((S *)cbrow) = S(g);
+      *((S *)crrow) = S(b);
+      //
+      yrow   = (S *)((UBYTE *)(yrow ) + bppy);
+      cbrow  = (T *)((UBYTE *)(cbrow) + bppcb);
+      crrow  = (T *)((UBYTE *)(crrow) + bppcr);
+    }
+    yp  = (S *)((UBYTE *)(yp) + bpry);
+    cb  = (T *)((UBYTE *)(cb) + bprcb);
+    cr  = (T *)((UBYTE *)(cr) + bprcr);
+  }
+}
+///
+
+/// YCbCr::FromYCbCr709
+template<typename S,typename T>
+void YCbCr::FromYCbCr709(S *yp,T *cb,T *cr,
+			 double yoffset,double coffset,
+			 double min,double max,
+			 ULONG bppy,ULONG bppcb,ULONG bppcr,
+			 ULONG bpry,ULONG bprcb,ULONG bprcr,
+			 ULONG w, ULONG h)
+{
+  ULONG x,y;
+
+  for(y = 0;y < h;y++) {
+    S *yrow  = yp;
+    T *cbrow = cb;
+    T *crrow = cr;
+    for(x = 0;x < w;x++) {
+      double r  = (*yrow - yoffset) + (*crrow - coffset)*1.5748;
+      double g  = (*yrow - yoffset) + (*cbrow - coffset)*-0.1873242729306488 + (*crrow - coffset)*-0.4681242729306488;
+      double b  = (*yrow - yoffset) + (*cbrow - coffset)*1.8556;
+      //
+      // clip to range.
+      r  = (r < min)?(min):((r > max)?(max):(r));
+      g  = (g < min)?(min):((g > max)?(max):(g));
+      b  = (b < min)?(min):((b > max)?(max):(b));
+      //
+      *yrow         = S(r);
+      *((S *)cbrow) = S(g);
+      *((S *)crrow) = S(b);
+      //
+      yrow   = (S *)((UBYTE *)(yrow ) + bppy);
+      cbrow  = (T *)((UBYTE *)(cbrow) + bppcb);
+      crrow  = (T *)((UBYTE *)(crrow) + bppcr);
+    }
+    yp  = (S *)((UBYTE *)(yp) + bpry);
+    cb  = (T *)((UBYTE *)(cb) + bprcb);
+    cr  = (T *)((UBYTE *)(cr) + bprcr);
+  }
+}
+/// 
+
+/// YCbCr::FromYCbCr2020
+template<typename S,typename T>
+void YCbCr::FromYCbCr2020(S *yp,T *cb,T *cr,
+			  double yoffset,double coffset,
+			  double min,double max,
+			  ULONG bppy,ULONG bppcb,ULONG bppcr,
+			  ULONG bpry,ULONG bprcb,ULONG bprcr,
+			  ULONG w, ULONG h)
+{
+  ULONG x,y;
+
+  for(y = 0;y < h;y++) {
+    S *yrow  = yp;
+    T *cbrow = cb;
+    T *crrow = cr;
+    for(x = 0;x < w;x++) {
+      double r  = (*yrow - yoffset) + (*crrow - coffset)*1.4746;
+      double g  = (*yrow - yoffset) + (*cbrow - coffset)*-0.1645531268436578 + (*crrow - coffset)*-0.5713531268436578;
+      double b  = (*yrow - yoffset) + (*cbrow - coffset)*1.8814;
       //
       // clip to range.
       r  = (r < min)?(min):((r > max)?(max):(r));
@@ -386,78 +557,34 @@ void YCbCr::ToYCbCr(class ImageLayout *img)
   //
   if (isfloat) {
     if (bits <= 32) {
-      ToYCbCr<FLOAT,FLOAT>((FLOAT *)img->DataOf(0),(FLOAT *)img->DataOf(1),(FLOAT *)img->DataOf(2),
-			   yoffset,coffset,ymin,ymax,cmin,cmax,
-			   img->BytesPerPixel(0),img->BytesPerPixel(1),img->BytesPerPixel(2),
-			   img->BytesPerRow(0)  ,img->BytesPerRow(1)  ,img->BytesPerRow(2),
-			   w,h);
+      DispatchToYCbCr<FLOAT,FLOAT>(img,yoffset,coffset,ymin,ymax,cmin,cmax,w,h);
     } else if (bits == 64) {
-      ToYCbCr<DOUBLE,DOUBLE>((DOUBLE *)img->DataOf(0),(DOUBLE *)img->DataOf(1),(DOUBLE *)img->DataOf(2),
-			   yoffset,coffset,ymin,ymax,cmin,cmax,
-			   img->BytesPerPixel(0),img->BytesPerPixel(1),img->BytesPerPixel(2),
-			   img->BytesPerRow(0)  ,img->BytesPerRow(1)  ,img->BytesPerRow(2),
-			   w,h);
+      DispatchToYCbCr<DOUBLE,DOUBLE>(img,yoffset,coffset,ymin,ymax,cmin,cmax,w,h);
     } else throw "unsupported source format";
   } else {
     if (bits <= 8) {
       if (issigned) {
-	ToYCbCr<BYTE,BYTE>((BYTE *)img->DataOf(0),(BYTE *)img->DataOf(1),(BYTE *)img->DataOf(2),
-			   yoffset,coffset,ymin,ymax,cmin,cmax,
-			   img->BytesPerPixel(0),img->BytesPerPixel(1),img->BytesPerPixel(2),
-			   img->BytesPerRow(0)  ,img->BytesPerRow(1)  ,img->BytesPerRow(2),
-			   w,h);
+	DispatchToYCbCr<BYTE,BYTE>(img,yoffset,coffset,ymin,ymax,cmin,cmax,w,h);
       } else if (m_bMakeSigned) {
-	ToYCbCr<UBYTE,BYTE>((UBYTE *)img->DataOf(0),(UBYTE *)img->DataOf(1),(UBYTE *)img->DataOf(2),
-			   yoffset,coffset,ymin,ymax,cmin,cmax,
-			   img->BytesPerPixel(0),img->BytesPerPixel(1),img->BytesPerPixel(2),
-			   img->BytesPerRow(0)  ,img->BytesPerRow(1)  ,img->BytesPerRow(2),
-			   w,h);
+	DispatchToYCbCr<UBYTE,BYTE>(img,yoffset,coffset,ymin,ymax,cmin,cmax,w,h);
       } else {
-	ToYCbCr<UBYTE,UBYTE>((UBYTE *)img->DataOf(0),(UBYTE *)img->DataOf(1),(UBYTE *)img->DataOf(2),
-			     yoffset,coffset,ymin,ymax,cmin,cmax,
-			     img->BytesPerPixel(0),img->BytesPerPixel(1),img->BytesPerPixel(2),
-			     img->BytesPerRow(0)  ,img->BytesPerRow(1)  ,img->BytesPerRow(2),
-			     w,h);
+	DispatchToYCbCr<UBYTE,UBYTE>(img,yoffset,coffset,ymin,ymax,cmin,cmax,w,h);
       }
     } else if (bits <= 16) {
       if (issigned) {
-	ToYCbCr<WORD,WORD>((WORD *)img->DataOf(0),(WORD *)img->DataOf(1),(WORD *)img->DataOf(2),
-			   yoffset,coffset,ymin,ymax,cmin,cmax,
-			   img->BytesPerPixel(0),img->BytesPerPixel(1),img->BytesPerPixel(2),
-			   img->BytesPerRow(0)  ,img->BytesPerRow(1)  ,img->BytesPerRow(2),
-			   w,h);
+	DispatchToYCbCr<WORD,WORD>(img,yoffset,coffset,ymin,ymax,cmin,cmax,w,h);
       } else if (m_bMakeSigned) {
-	ToYCbCr<UWORD,WORD>((UWORD *)img->DataOf(0),(UWORD *)img->DataOf(1),(UWORD *)img->DataOf(2),
-			    yoffset,coffset,ymin,ymax,cmin,cmax,
-			    img->BytesPerPixel(0),img->BytesPerPixel(1),img->BytesPerPixel(2),
-			    img->BytesPerRow(0)  ,img->BytesPerRow(1)  ,img->BytesPerRow(2),
-			    w,h);
+	DispatchToYCbCr<UWORD,WORD>(img,yoffset,coffset,ymin,ymax,cmin,cmax,w,h);
       } else {
-	ToYCbCr<UWORD,UWORD>((UWORD *)img->DataOf(0),(UWORD *)img->DataOf(1),(UWORD *)img->DataOf(2),
-			     yoffset,coffset,ymin,ymax,cmin,cmax,
-			     img->BytesPerPixel(0),img->BytesPerPixel(1),img->BytesPerPixel(2),
-			     img->BytesPerRow(0)  ,img->BytesPerRow(1)  ,img->BytesPerRow(2),
-			     w,h);
+	DispatchToYCbCr<UWORD,UWORD>(img,yoffset,coffset,ymin,ymax,cmin,cmax,w,h);
       }
     } else if (bits <= 32) {
       if (issigned) {
-	ToYCbCr<LONG,LONG>((LONG *)img->DataOf(0),(LONG *)img->DataOf(1),(LONG *)img->DataOf(2),
-			   yoffset,coffset,ymin,ymax,cmin,cmax,
-			   img->BytesPerPixel(0),img->BytesPerPixel(1),img->BytesPerPixel(2),
-			   img->BytesPerRow(0)  ,img->BytesPerRow(1)  ,img->BytesPerRow(2),
-			   w,h);
+	DispatchToYCbCr<LONG,LONG>(img,yoffset,coffset,ymin,ymax,cmin,cmax,w,h);
       } else if (m_bMakeSigned) {
-	ToYCbCr<ULONG,LONG>((ULONG *)img->DataOf(0),(ULONG *)img->DataOf(1),(ULONG *)img->DataOf(2),
-			    yoffset,coffset,ymin,ymax,cmin,cmax,
-			    img->BytesPerPixel(0),img->BytesPerPixel(1),img->BytesPerPixel(2),
-			    img->BytesPerRow(0)  ,img->BytesPerRow(1)  ,img->BytesPerRow(2),
-			    w,h);
+	DispatchToYCbCr<ULONG,LONG>(img,yoffset,coffset,ymin,ymax,cmin,cmax,w,h);
       } else {
-	ToYCbCr<ULONG,ULONG>((ULONG *)img->DataOf(0),(ULONG *)img->DataOf(1),(ULONG *)img->DataOf(2),
-			     yoffset,coffset,ymin,ymax,cmin,cmax,
-			     img->BytesPerPixel(0),img->BytesPerPixel(1),img->BytesPerPixel(2),
-			     img->BytesPerRow(0)  ,img->BytesPerRow(1)  ,img->BytesPerRow(2),
-			     w,h);
+	DispatchToYCbCr<ULONG,ULONG>(img,yoffset,coffset,ymin,ymax,cmin,cmax,w,h);
       }
     } else throw "unsupported source format";
   }
@@ -532,78 +659,34 @@ void YCbCr::FromYCbCr(class ImageLayout *img)
   // Now run the conversion
   if (isfloat) {
     if (bits <= 32) {
-      FromYCbCr<FLOAT,FLOAT>((FLOAT *)img->DataOf(0),(FLOAT *)img->DataOf(1),(FLOAT *)img->DataOf(2),
-			     yoffset,coffset,min,max,
-			     img->BytesPerPixel(0),img->BytesPerPixel(1),img->BytesPerPixel(2),
-			     img->BytesPerRow(0)  ,img->BytesPerRow(1)  ,img->BytesPerRow(2),
-			     w,h);
+      DispatchFromYCbCr<FLOAT,FLOAT>(img,yoffset,coffset,min,max,w,h);
     } else if (bits == 64) {
-      FromYCbCr<DOUBLE,DOUBLE>((DOUBLE *)img->DataOf(0),(DOUBLE *)img->DataOf(1),(DOUBLE *)img->DataOf(2),
-			       yoffset,coffset,min,max,
-			       img->BytesPerPixel(0),img->BytesPerPixel(1),img->BytesPerPixel(2),
-			       img->BytesPerRow(0)  ,img->BytesPerRow(1)  ,img->BytesPerRow(2),
-			       w,h);
+      DispatchFromYCbCr<DOUBLE,DOUBLE>(img,yoffset,coffset,min,max,w,h);
     } else throw "unsupported source format";
   } else {
     if (bits <= 8) {
       if (issigned) {
-	FromYCbCr<BYTE,BYTE>((BYTE *)img->DataOf(0),(BYTE *)img->DataOf(1),(BYTE *)img->DataOf(2),
-			     yoffset,coffset,min,max,
-			     img->BytesPerPixel(0),img->BytesPerPixel(1),img->BytesPerPixel(2),
-			     img->BytesPerRow(0)  ,img->BytesPerRow(1)  ,img->BytesPerRow(2),
-			     w,h);
+	DispatchFromYCbCr<BYTE,BYTE>(img,yoffset,coffset,min,max,w,h);
       } else if (wassigned) {
-	FromYCbCr<UBYTE,BYTE>((UBYTE *)img->DataOf(0),(BYTE *)img->DataOf(1),(BYTE *)img->DataOf(2),
-			      yoffset,coffset,min,max,
-			      img->BytesPerPixel(0),img->BytesPerPixel(1),img->BytesPerPixel(2),
-			      img->BytesPerRow(0)  ,img->BytesPerRow(1)  ,img->BytesPerRow(2),
-			      w,h);
+	DispatchFromYCbCr<UBYTE,BYTE>(img,yoffset,coffset,min,max,w,h);
       } else {
-	FromYCbCr<UBYTE,UBYTE>((UBYTE *)img->DataOf(0),(UBYTE *)img->DataOf(1),(UBYTE *)img->DataOf(2),
-			       yoffset,coffset,min,max,
-			       img->BytesPerPixel(0),img->BytesPerPixel(1),img->BytesPerPixel(2),
-			       img->BytesPerRow(0)  ,img->BytesPerRow(1)  ,img->BytesPerRow(2),
-			       w,h);
+	DispatchFromYCbCr<UBYTE,UBYTE>(img,yoffset,coffset,min,max,w,h);
       }
     } else if (bits <= 16) {
       if (issigned) {
-	FromYCbCr<WORD,WORD>((WORD *)img->DataOf(0),(WORD *)img->DataOf(1),(WORD *)img->DataOf(2),
-			     yoffset,coffset,min,max,
-			     img->BytesPerPixel(0),img->BytesPerPixel(1),img->BytesPerPixel(2),
-			     img->BytesPerRow(0)  ,img->BytesPerRow(1)  ,img->BytesPerRow(2),
-			     w,h);
+	DispatchFromYCbCr<WORD,WORD>(img,yoffset,coffset,min,max,w,h);
       } else if (wassigned) {
-	FromYCbCr<UWORD,WORD>((UWORD *)img->DataOf(0),(WORD *)img->DataOf(1),(WORD *)img->DataOf(2),
-			      yoffset,coffset,min,max,
-			      img->BytesPerPixel(0),img->BytesPerPixel(1),img->BytesPerPixel(2),
-			      img->BytesPerRow(0)  ,img->BytesPerRow(1)  ,img->BytesPerRow(2),
-			      w,h);
+	DispatchFromYCbCr<UWORD,WORD>(img,yoffset,coffset,min,max,w,h);
       } else {
-	FromYCbCr<UWORD,UWORD>((UWORD *)img->DataOf(0),(UWORD *)img->DataOf(1),(UWORD *)img->DataOf(2),
-			       yoffset,coffset,min,max,
-			       img->BytesPerPixel(0),img->BytesPerPixel(1),img->BytesPerPixel(2),
-			       img->BytesPerRow(0)  ,img->BytesPerRow(1)  ,img->BytesPerRow(2),
-			       w,h);
+	DispatchFromYCbCr<UWORD,UWORD>(img,yoffset,coffset,min,max,w,h);
       }
     } else if (bits <= 32) {
       if (issigned) {
-	FromYCbCr<LONG,LONG>((LONG *)img->DataOf(0),(LONG *)img->DataOf(1),(LONG *)img->DataOf(2),
-			     yoffset,coffset,min,max,
-			     img->BytesPerPixel(0),img->BytesPerPixel(1),img->BytesPerPixel(2),
-			     img->BytesPerRow(0)  ,img->BytesPerRow(1)  ,img->BytesPerRow(2),
-			     w,h);
+	DispatchFromYCbCr<LONG,LONG>(img,yoffset,coffset,min,max,w,h);
       } else if (wassigned) {
-	FromYCbCr<ULONG,LONG>((ULONG *)img->DataOf(0),(LONG *)img->DataOf(1),(LONG *)img->DataOf(2),
-			      yoffset,coffset,min,max,
-			      img->BytesPerPixel(0),img->BytesPerPixel(1),img->BytesPerPixel(2),
-			      img->BytesPerRow(0)  ,img->BytesPerRow(1)  ,img->BytesPerRow(2),
-			      w,h);
+	DispatchFromYCbCr<ULONG,LONG>(img,yoffset,coffset,min,max,w,h);
       } else {
-	FromYCbCr<ULONG,ULONG>((ULONG *)img->DataOf(0),(ULONG *)img->DataOf(1),(ULONG *)img->DataOf(2),
-			       yoffset,coffset,min,max,
-			       img->BytesPerPixel(0),img->BytesPerPixel(1),img->BytesPerPixel(2),
-			       img->BytesPerRow(0)  ,img->BytesPerRow(1)  ,img->BytesPerRow(2),
-			       w,h);
+	DispatchFromYCbCr<ULONG,ULONG>(img,yoffset,coffset,min,max,w,h);
       }
     } else throw "unsupported source format";
   }  
@@ -764,6 +847,39 @@ void YCbCr::ToRCT(class ImageLayout *img,UBYTE *(&membuf)[3])
 }
 ///
 
+/// YCbCr::DispatchToYCbCr
+template<typename S,typename T>
+void YCbCr::DispatchToYCbCr(const class ImageLayout *img,double yoffset,double coffset,
+			    double ymin,double ymax,double cmin,double cmax,ULONG w,ULONG h)
+{
+  switch(m_Conversion) {
+  case YCbCr_Trafo:     // this is actually a BT.601 conversion
+    ToYCbCr<S,T>((S *)img->DataOf(0),(S *)img->DataOf(1),(S *)img->DataOf(2),
+		 yoffset,coffset,ymin,ymax,cmin,cmax,
+		 img->BytesPerPixel(0),img->BytesPerPixel(1),img->BytesPerPixel(2),
+		 img->BytesPerRow(0)  ,img->BytesPerRow(1)  ,img->BytesPerRow(2),
+		 w,h);
+    break;
+  case YCbCr709_Trafo:  // This is the BT.709 conversion
+    ToYCbCr709<S,T>((S *)img->DataOf(0),(S *)img->DataOf(1),(S *)img->DataOf(2),
+		    yoffset,coffset,ymin,ymax,cmin,cmax,
+		    img->BytesPerPixel(0),img->BytesPerPixel(1),img->BytesPerPixel(2),
+		    img->BytesPerRow(0)  ,img->BytesPerRow(1)  ,img->BytesPerRow(2),
+		    w,h);
+    break;
+  case YCbCr2020_Trafo: // This is the transformation for BT.2020
+    ToYCbCr2020<S,T>((S *)img->DataOf(0),(S *)img->DataOf(1),(S *)img->DataOf(2),
+		     yoffset,coffset,ymin,ymax,cmin,cmax,
+		     img->BytesPerPixel(0),img->BytesPerPixel(1),img->BytesPerPixel(2),
+		     img->BytesPerRow(0)  ,img->BytesPerRow(1)  ,img->BytesPerRow(2),
+		     w,h);
+    break;
+  default:
+    throw "unknown conversion specified";
+  }
+}
+///
+
 /// YCbCr::DispatchFromRCT
 // This is a stub-function to simplify the dispatching of the conversion from RTC/YCgCo to RGB
 template<typename S,typename T>
@@ -789,6 +905,39 @@ void YCbCr::DispatchFromRCT(const class ImageLayout *img,ULONG yoffset,ULONG cof
 		   this->BytesPerPixel(0),this->BytesPerPixel(1),this->BytesPerPixel(2),
 		   this->BytesPerRow(0)  ,this->BytesPerRow(1)  ,this->BytesPerRow(2),
 		   w,h);
+    break;
+  default:
+    throw "unknown conversion specified";
+  }
+}
+///
+
+/// YCbCr::DispatchFromYCbCr
+// The dispatcher for the reverse transformation direction.
+template<typename S,typename T>
+void YCbCr::DispatchFromYCbCr(const class ImageLayout *img,double yoffset,double coffset,double min,double max,ULONG w,ULONG h)
+{
+  switch(m_Conversion) {
+  case YCbCr_Trafo:     // this is actually a BT.601 conversion
+    FromYCbCr<S,T>((S *)img->DataOf(0),(T *)img->DataOf(1),(T *)img->DataOf(2),
+		   yoffset,coffset,min,max,
+		   img->BytesPerPixel(0),img->BytesPerPixel(1),img->BytesPerPixel(2),
+		   img->BytesPerRow(0)  ,img->BytesPerRow(1)  ,img->BytesPerRow(2),
+		   w,h);
+    break;
+  case YCbCr709_Trafo:  // This is the BT.709 conversion
+    FromYCbCr709<S,T>((S *)img->DataOf(0),(T *)img->DataOf(1),(T *)img->DataOf(2),
+		      yoffset,coffset,min,max,
+		      img->BytesPerPixel(0),img->BytesPerPixel(1),img->BytesPerPixel(2),
+		      img->BytesPerRow(0)  ,img->BytesPerRow(1)  ,img->BytesPerRow(2),
+		      w,h);
+    break;
+  case YCbCr2020_Trafo: // This is the transformation for BT.2020
+    FromYCbCr2020<S,T>((S *)img->DataOf(0),(T *)img->DataOf(1),(T *)img->DataOf(2),
+		       yoffset,coffset,min,max,
+		       img->BytesPerPixel(0),img->BytesPerPixel(1),img->BytesPerPixel(2),
+		       img->BytesPerRow(0)  ,img->BytesPerRow(1)  ,img->BytesPerRow(2),
+		       w,h);
     break;
   default:
     throw "unknown conversion specified";
@@ -934,6 +1083,8 @@ double YCbCr::Measure(class ImageLayout *src,class ImageLayout *dst,double in)
   
   switch(m_Conversion) {
   case YCbCr_Trafo:
+  case YCbCr709_Trafo:
+  case YCbCr2020_Trafo:
     if (m_bInverse) {
       FromYCbCr(src);
       FromYCbCr(dst);
