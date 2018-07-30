@@ -23,7 +23,7 @@ and conversion framework.
 /*
  * This class saves and loads images in any header-less format.
  *
- * $Id: simpleraw.cpp,v 1.20 2017/06/20 13:36:25 thor Exp $
+ * $Id: simpleraw.cpp,v 1.21 2018/07/27 14:52:58 thor Exp $
  */
 
 /// Includes
@@ -585,6 +585,8 @@ void SimpleRaw::LoadImage(const char *nameandspecs,struct ImgSpecs &specs)
       UWORD i = rl->m_usTargetChannel; // This has been checked to be valid.
       struct ComponentLayout *cl = m_pComponent + i;
       size_t bpp = 8;
+      if (i >= m_usNominalDepth)
+	PostError("The raw specification provides information for more channels than the depth of the image");
       //
       // Several components can mapped multiple times now...
       cl->m_ucBits   = rl->m_ucBits;
@@ -627,6 +629,11 @@ void SimpleRaw::LoadImage(const char *nameandspecs,struct ImgSpecs &specs)
       }
       //
     }
+  }
+  //
+  for(UWORD i = 0;i < m_usNominalDepth;i++) {
+    if (m_pComponent[i].m_pPtr == NULL)
+      PostError("The raw format specification did not include definitions for all channels");
   }
   //
   // Make a best guess whether this is yuv.
@@ -903,6 +910,8 @@ void SimpleRaw::SaveImage(const char *nameandspecs,const struct ImgSpecs &)
     if (!rl->m_bIsPadding) {
       UWORD i = rl->m_usTargetChannel;
       struct ComponentLayout *cl = m_pComponent + i;
+      if (i > m_usNominalDepth)
+	PostError("The raw specification provides information for more channels than the depth of the image");
       assert(rl->m_ulWidth > 0);
       if (rl->m_ulWidth > cl->m_ulWidth * rl->m_ucSubX) {
 	PostError("trying to write field %i with width %d while only %d data is available",
