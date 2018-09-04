@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: upsampler.hpp,v 1.6 2017/11/27 13:21:16 thor Exp $
+** $Id: upsampler.hpp,v 1.7 2018/09/04 11:44:48 thor Exp $
 **
 ** This class upsamples in the spatial domain
 */
@@ -55,6 +55,9 @@ private:
   // The component memory itself.
   UBYTE     **m_ppucSource;
   UBYTE     **m_ppucDestination;
+  //
+  // Number of allocated components
+  UWORD       m_usAllocated;
   //
   // Scaling coordinates.
   UBYTE       m_ucScaleX,m_ucScaleY;
@@ -89,7 +92,7 @@ private:
   //
 public:
   Upsampler(UBYTE sx,UBYTE sy,bool chromaonly,FilterType type,bool automatic = false)
-    : m_ppucSource(NULL),m_ppucDestination(NULL),
+    : m_ppucSource(NULL),m_ppucDestination(NULL), m_usAllocated(0),
       m_ucScaleX(sx), m_ucScaleY(sy), m_bChromaOnly(chromaonly),
       m_bAutomatic(automatic), m_FilterType(type)
   { }

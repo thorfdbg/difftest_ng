@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: downsampler.hpp,v 1.5 2017/01/31 11:58:04 thor Exp $
+** $Id: downsampler.hpp,v 1.6 2018/09/04 11:44:48 thor Exp $
 **
 ** This class downscales in the spatial domain
 */
@@ -48,6 +48,9 @@ class Downsampler : public Meter, private ImageLayout {
   UBYTE     **m_ppucSource;
   UBYTE     **m_ppucDestination;
   //
+  // Number of allocated components
+  UWORD       m_usAllocated;
+  //
   // Scaling coordinates.
   UBYTE       m_ucScaleX,m_ucScaleY;
   //
@@ -70,7 +73,7 @@ class Downsampler : public Meter, private ImageLayout {
   //
 public:
   Downsampler(UBYTE sx,UBYTE sy,bool chromaonly)
-    : m_ppucSource(NULL),m_ppucDestination(NULL),
+    : m_ppucSource(NULL),m_ppucDestination(NULL), m_usAllocated(0),
       m_ucScaleX(sx), m_ucScaleY(sy), m_bChromaOnly(chromaonly)
   { }
   //

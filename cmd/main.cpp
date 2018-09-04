@@ -23,7 +23,7 @@ and conversion framework.
 /*
  * Main program
  * 
- * $Id: main.cpp,v 1.87 2018/06/15 09:06:49 thor Exp $
+ * $Id: main.cpp,v 1.88 2018/09/04 11:04:41 thor Exp $
  *
  * This class defines the main program and argument parsing.
  */
@@ -68,6 +68,7 @@ and conversion framework.
 #include "diff/clamp.hpp"
 #include "diff/fill.hpp"
 #include "diff/paste.hpp"
+#include "diff/bayerconv.hpp"
 #include "img/imglayout.hpp"
 #include "img/imgspecs.hpp"
 #include <new>
@@ -199,6 +200,8 @@ void Usage(const char *progname)
 	  "--fromlms          : convert images from LMS to RGB before comparing\n"
 	  "--xyztolms         : convert images from XYZ to LMS before comparing\n"
 	  "--lmstoxyz         : convert images from LMS to XYZ before comparing\n"
+	  "--tobayer          : convert a four-component image to a Bayer-pattern image\n"
+	  "--frombayer        : convert a Bayer patterned grey-scale image to four components\n"
 	  "--fill r,g,b,...   : fill the source image with the given color\n"
 	  "--paste x y        : paste the distorted image at the given position into the source\n"
 	  "--raw              : encode output in raw if applicable\n"
@@ -707,6 +710,10 @@ int main(int argc,char **argv)
 	  m = new XYZ(XYZ::XYZtoLMS,false);
 	} else if (!strcmp(arg,"--lmstoxyz")) {
 	  m = new XYZ(XYZ::XYZtoLMS,true);
+	} else if (!strcmp(arg,"--tobayer")) {
+	  m = new BayerConv(true);
+	} else if (!strcmp(arg,"--frombayer")) {
+	  m = new BayerConv(false);
 	} else if (!strcmp(arg,"--toflt")) {
 	  if (argc < 3)
 	    throw "--toflt requires a file name as argument";
