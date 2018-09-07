@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: shift.cpp,v 1.5 2017/01/31 11:58:04 thor Exp $
+** $Id: shift.cpp,v 1.6 2018/09/07 09:00:11 thor Exp $
 **
 ** This class shifts images in X or Y direction.
 */
@@ -142,10 +142,9 @@ void Shift::shiftUp(T *org,T boundary,ULONG obytesperpixel,ULONG obytesperrow,UL
 
 /// Shift::shift
 // Shift the image in the given direction
-void Shift::shift(class ImageLayout *img) const
+void Shift::shift(class ImageLayout *img,bool isyuv) const
 {
   UWORD comp,d  = img->DepthOf();
-  bool isyuv    = (m_TargetSpecs.YUVEncoded == ImgSpecs::Yes)?true:false;
   
   for(comp = 0;comp < d;comp++) {
     ULONG  w = img->WidthOf(comp);
@@ -196,8 +195,8 @@ void Shift::shift(class ImageLayout *img) const
 /// Shift::Measure
 double Shift::Measure(class ImageLayout *src,class ImageLayout *dst,double in)
 {
-  shift(src);
-  shift(dst);
+  shift(src,m_bSrcIsYUV);
+  shift(dst,m_bDstIsYUV);
 
   return in;
 }

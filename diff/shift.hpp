@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: shift.hpp,v 1.4 2017/01/31 11:58:04 thor Exp $
+** $Id: shift.hpp,v 1.5 2018/09/07 09:00:11 thor Exp $
 **
 ** This class shifts images in X or Y direction.
 */
@@ -47,8 +47,8 @@ class Shift : public Meter {
   int dx;
   int dy;
   //
-  // Output specifications of the destination file.
-  const struct ImgSpecs &m_TargetSpecs;
+  bool m_bSrcIsYUV;
+  bool m_bDstIsYUV;
   //
   // Templated implementations: Shift the image horizontally to the right
   template<typename T>
@@ -88,14 +88,15 @@ class Shift : public Meter {
     }
   }
   //
-  void shift(class ImageLayout *src) const;
+  void shift(class ImageLayout *src,bool yuv) const;
   //
 public:
   //
   //
-  Shift(int deltax,int deltay,const struct ImgSpecs &specs)
+  Shift(int deltax,int deltay,const struct ImgSpecs &specs1,const struct ImgSpecs &specs2)
     : dx(deltax), dy(deltay),
-      m_TargetSpecs(specs)
+      m_bSrcIsYUV(specs1.YUVEncoded == ImgSpecs::Yes),
+      m_bDstIsYUV(specs2.YUVEncoded == ImgSpecs::Yes)
   {
   }
   //

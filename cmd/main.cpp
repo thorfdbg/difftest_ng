@@ -23,7 +23,7 @@ and conversion framework.
 /*
  * Main program
  * 
- * $Id: main.cpp,v 1.91 2018/09/07 07:39:23 thor Exp $
+ * $Id: main.cpp,v 1.92 2018/09/07 09:00:07 thor Exp $
  *
  * This class defines the main program and argument parsing.
  */
@@ -421,6 +421,724 @@ long ParseLong(const char *str)
 }
 ///
 
+/// ParseMetrics
+// Parse all metrics/true measurement tools.
+class Meter *ParseMetrics(int &,char **&argv)
+{
+  const char *arg = argv[1];
+  
+  if (!strcmp(arg,"--psnr")) {
+    return new class PSNR(PSNR::Mean);
+  } else if (!strcmp(arg,"--maxsnr")) {
+    return new class PSNR(PSNR::Mean,false,true);
+  } else if (!strcmp(arg,"--snr")) {
+    return new class PSNR(PSNR::Mean,false,true,true);
+  } else if (!strcmp(arg,"--mse")) {
+    return new class PSNR(PSNR::Mean,true);
+  } else if (!strcmp(arg,"--minpsnr")) {
+    return new class PSNR(PSNR::Min);
+  } else if (!strcmp(arg,"--ycbcrpsnr")) {
+    return new class PSNR(PSNR::YCbCr);
+  } else if (!strcmp(arg,"--yuvpsnr")) {
+    return new class PSNR(PSNR::YUV);
+  } else if (!strcmp(arg,"--swpsnr")) {
+    return new class PSNR(PSNR::SamplingWeighted);
+  } else if (!strcmp(arg,"--mrse")) {
+    return new class MRSE(MRSE::Mean);
+  } else if (!strcmp(arg,"--minmrse")) {
+    return new class MRSE(MRSE::Min);
+  } else if (!strcmp(arg,"--ycbcrmrse")) {
+    return new class MRSE(MRSE::YCbCr);
+  } else if (!strcmp(arg,"--yuvmrse")) {
+    return new class MRSE(MRSE::YUV);
+  } else if (!strcmp(arg,"--swmrse")) {
+    return new class MRSE(MRSE::SamplingWeighted);
+  } else if (!strcmp(arg,"--peak")) {
+    return new class PRE(PRE::Min);
+  } else if (!strcmp(arg,"--avgpeak")) {
+    return new class PRE(PRE::Mean);
+  } else if (!strcmp(arg,"--peakx")) {
+    return new class PeakPos(PeakPos::PeakX);
+  } else if (!strcmp(arg,"--peaky")) {
+    return new class PeakPos(PeakPos::PeakY);
+  } else if (!strcmp(arg,"--min")) {
+    return new class Thres(Thres::Min);
+  } else if (!strcmp(arg,"--max")) {
+    return new class Thres(Thres::Max);
+  } else if (!strcmp(arg,"--drift")) {
+    return new class Thres(Thres::Drift);
+  } else if (!strcmp(arg,"--mae")) {
+    return new class Thres(Thres::Avg);
+  } else if (!strcmp(arg,"--pae")) {
+    return new class Thres(Thres::Peak);
+  }
+
+  return NULL;
+}
+///
+
+/// ParseProperties
+// Parse off elementary settings that return properties of the images.
+class Meter *ParseProperties(int &argc,char **&argv)
+{
+  class Meter *m = NULL;
+  const char *arg = argv[1];
+  
+  if (!strcmp(arg,"--width")) {
+    m = new class Dimension(Dimension::Width);
+  } else if (!strcmp(arg,"--height")) {
+    m = new class Dimension(Dimension::Height);
+  } else if (!strcmp(arg,"--depth")) {
+    m = new class Dimension(Dimension::Depth);
+  } else if (!strcmp(arg,"--precision")) {
+    if (argc < 3)
+      throw "--precision requires a component number";
+    m = new class Dimension(Dimension::Precision,ParseLong(argv[2]));
+    argc--;
+    argv++;
+  } else if (!strcmp(arg,"--signed")) {
+    if (argc < 3)
+      throw "--signed requires a component number";
+    m = new class Dimension(Dimension::Signed,ParseLong(argv[2]));
+    argc--;
+    argv++;
+  } else if (!strcmp(arg,"--float")) {
+    if (argc < 3)
+      throw "--float requires a component number";
+    m = new class Dimension(Dimension::Float,ParseLong(argv[2]));
+    argc--;
+    argv++;
+  }
+  
+  return m;
+}
+///
+
+/// ParseFFT
+// Parse FFT related features that require the GSL
+#ifdef USE_GSL
+class Meter *ParseFFT(int &argc,char **&argv)
+{
+  class Meter *m = NULL;
+  const char *arg = argv[1];
+  
+  if (!strcmp(arg,"--fft")) {
+    if (argc < 3)
+      throw "--fft requires the target file name as argument";
+    m = new class FFTImg(argv[2],false);
+    argc--;
+    argv++;	  
+  } else if (!strcmp(arg,"--wfft")) {
+    if (argc < 3)
+      throw "--wfft requires the target file name as argument";
+    m = new class FFTImg(argv[2],true);
+    argc--;
+    argv++;
+  } else if (!strcmp(arg,"--filt")) {
+    long x,y,r;
+    if (argc < 6)
+      throw "--filt requires four arguments, x,y, radius and file name";
+    x = ParseLong(argv[2]);
+    y = ParseLong(argv[3]);
+    r = ParseLong(argv[4]);
+    m = new class FFTFilt(argv[5],x,y,r,false,0,0);
+    argc -= 4;
+    argv += 4;
+  } else if (!strcmp(arg,"--nfilt")) {
+    long x,y,r;
+    if (argc < 6)
+      throw "--nfilt requires four arguments, x,y, radius and file name";
+    x = ParseLong(argv[2]);
+    y = ParseLong(argv[3]);
+    r = ParseLong(argv[4]);
+    m = new class FFTFilt(argv[5],x,y,r,true,0,0);
+    argc -= 4;
+    argv += 4;
+  } else if (!strcmp(arg,"--comb")) {
+    long x,y,r;
+    if (argc < 6)
+      throw "--comb requires four arguments, x,y, radius and file name";
+    x = ParseLong(argv[2]);
+    y = ParseLong(argv[3]);
+    r = ParseLong(argv[4]);
+    m = new class FFTFilt(argv[5],0,0,r,false,x,y);
+    argc -= 4;
+    argv += 4;
+  } else if (!strcmp(arg,"--ncomb")) {
+    long x,y,r;
+    if (argc < 6)
+      throw "--ncomb requires four arguments, x,y, radius and file name";
+    x = ParseLong(argv[2]);
+    y = ParseLong(argv[3]);
+    r = ParseLong(argv[4]);
+    m = new class FFTFilt(argv[5],0,0,r,true,x,y);
+    argc -= 4;
+    argv += 4;
+  } else if (!strcmp(arg,"--maxfreqr")) {
+    m = new class MaxFreq(MaxFreq::MaxR);
+  } else if (!strcmp(arg,"--maxfreqx")) {
+    m = new class MaxFreq(MaxFreq::MaxH);
+  } else if (!strcmp(arg,"--maxfreqy")) {
+    m = new class MaxFreq(MaxFreq::MaxV);
+  } else if (!strcmp(arg,"--maxfreqv")) {
+    m = new class MaxFreq(MaxFreq::Var);
+  } else if (!strcmp(arg,"--maxfreqv")) {
+    m = new class MaxFreq(MaxFreq::Var);
+  } else if (!strcmp(arg,"--patternidx")) {
+    m = new class MaxFreq(MaxFreq::Pattern);
+  }
+
+  return m;
+}
+#endif
+///
+
+/// ParseColor
+// Parse conversions between various color spaces.
+class Meter *ParseColor(int &,char **&argv,struct ImgSpecs &specout)
+{
+  class Meter *m = NULL;
+  const char *arg = argv[1];
+  
+  if (!strcmp(arg,"--toycbcr")) {
+    specout.YUVEncoded = ImgSpecs::Yes;
+    m = new YCbCr(false,false,false,YCbCr::YCbCr_Trafo);
+  } else if (!strcmp(arg,"--toycbcrbl")) {
+    specout.YUVEncoded = ImgSpecs::Yes;
+    m = new YCbCr(false,false,true,YCbCr::YCbCr_Trafo);
+  } else if (!strcmp(arg,"--tosignedycbcr")) {
+    specout.YUVEncoded = ImgSpecs::Yes;
+    m = new YCbCr(false,true,false,YCbCr::YCbCr_Trafo);
+  } else if (!strcmp(arg,"--fromycbcr")) {
+    specout.YUVEncoded = ImgSpecs::No;
+    m = new YCbCr(true ,false, false,YCbCr::YCbCr_Trafo);
+  } else if (!strcmp(arg,"--fromycbcrbl")) {
+    specout.YUVEncoded = ImgSpecs::No;
+    m = new YCbCr(true ,false, true,YCbCr::YCbCr_Trafo);
+  } else if (!strcmp(arg,"--torct")) {
+    specout.YUVEncoded = ImgSpecs::Yes;
+    m = new YCbCr(false,false,false,YCbCr::RCT_Trafo);
+  } else if (!strcmp(arg,"--tosignedrct")) {
+    specout.YUVEncoded = ImgSpecs::Yes;
+    m = new YCbCr(false,true,false,YCbCr::RCT_Trafo);
+  } else if (!strcmp(arg,"--fromrct")) {
+    specout.YUVEncoded = ImgSpecs::No;
+    m = new YCbCr(true ,false,false,YCbCr::RCT_Trafo);
+  } else if (!strcmp(arg,"--toycgco")) {
+    specout.YUVEncoded = ImgSpecs::Yes;
+    m = new YCbCr(false,false,false,YCbCr::YCgCo_Trafo);
+  } else if (!strcmp(arg,"--tosignedycgco")) {
+    specout.YUVEncoded = ImgSpecs::Yes;
+    m = new YCbCr(false,true,false,YCbCr::YCgCo_Trafo);
+  } else if (!strcmp(arg,"--fromycgco")) {
+    specout.YUVEncoded = ImgSpecs::No;
+    m = new YCbCr(true ,false,false,YCbCr::YCgCo_Trafo);
+  } else if (!strcmp(arg,"--toycbcr709")) {
+    specout.YUVEncoded = ImgSpecs::Yes;
+    m = new YCbCr(false,false,false,YCbCr::YCbCr709_Trafo);
+  } else if (!strcmp(arg,"--toycbcr709bl")) {
+    specout.YUVEncoded = ImgSpecs::Yes;
+    m = new YCbCr(false,false,true,YCbCr::YCbCr709_Trafo);
+  } else if (!strcmp(arg,"--fromycbcr709")) {
+    specout.YUVEncoded = ImgSpecs::No;
+    m = new YCbCr(true ,false, false,YCbCr::YCbCr709_Trafo);
+  } else if (!strcmp(arg,"--fromycbcr709bl")) {
+    specout.YUVEncoded = ImgSpecs::No;
+    m = new YCbCr(true ,false, true,YCbCr::YCbCr709_Trafo);
+  } else if (!strcmp(arg,"--toycbcr2020")) {
+    specout.YUVEncoded = ImgSpecs::Yes;
+    m = new YCbCr(false,false,false,YCbCr::YCbCr2020_Trafo);
+  } else if (!strcmp(arg,"--toycbcr2020bl")) {
+    specout.YUVEncoded = ImgSpecs::Yes;
+    m = new YCbCr(false,false,true,YCbCr::YCbCr2020_Trafo);
+  } else if (!strcmp(arg,"--fromycbcr2020")) {
+    specout.YUVEncoded = ImgSpecs::No;
+    m = new YCbCr(true ,false, false,YCbCr::YCbCr2020_Trafo);
+  } else if (!strcmp(arg,"--fromycbcr2020bl")) {
+    specout.YUVEncoded = ImgSpecs::No;
+    m = new YCbCr(true ,false, true,YCbCr::YCbCr2020_Trafo);
+  } else if (!strcmp(arg,"--toxyz")) {
+    m = new XYZ(XYZ::RGBtoXYZ,false);
+  } else if (!strcmp(arg,"--fromxyz")) {
+    m = new XYZ(XYZ::RGBtoXYZ,true);
+  } else if (!strcmp(arg,"--tolms")) {
+    m = new XYZ(XYZ::RGBtoLMS,false);
+  } else if (!strcmp(arg,"--fromlms")) {
+    m = new XYZ(XYZ::RGBtoLMS,true);
+  } else if (!strcmp(arg,"--xyztolms")) {
+    m = new XYZ(XYZ::XYZtoLMS,false);
+  } else if (!strcmp(arg,"--lmstoxyz")) {
+    m = new XYZ(XYZ::XYZtoLMS,true);
+  }
+
+  return m;
+}
+///
+
+/// ParseBayer
+// Various functions for bayer pattern handling.
+class Meter *ParseBayer(int &argc,char **&argv)
+{
+  class Meter *m = NULL;
+  const char *arg = argv[1];
+  
+  if (!strcmp(arg,"--tobayer")) {
+    m = new BayerConv(true);
+  } else if (!strcmp(arg,"--frombayer")) {
+    m = new BayerConv(false);
+  } else if (!strcmp(arg,"--debayer")) {
+    if (argc < 3)
+      throw "--debayer requires a string argument";
+    if (!strcmp(argv[2],"grbg"))
+      m = new Debayer(Debayer::Bilinear,Debayer::GRBG);
+    else if (!strcmp(argv[2],"rggb"))
+      m = new Debayer(Debayer::Bilinear,Debayer::RGGB);
+    else if (!strcmp(argv[2],"gbrg"))
+      m = new Debayer(Debayer::Bilinear,Debayer::GBRG);
+    else if (!strcmp(argv[2],"bggr"))
+      m = new Debayer(Debayer::Bilinear,Debayer::BGGR);
+    else
+      throw "unknown Bayer subpixel arrangement";
+    argc--;
+    argv++;
+  } else if (!strcmp(arg,"--debayeradh")) {
+    if (argc < 3)
+      throw "--debayeradh requires a string argument";
+    if (!strcmp(argv[2],"grbg"))
+      m = new Debayer(Debayer::ADH,Debayer::GRBG);
+    else if (!strcmp(argv[2],"rggb"))
+      m = new Debayer(Debayer::ADH,Debayer::RGGB);
+    else if (!strcmp(argv[2],"gbrg"))
+      m = new Debayer(Debayer::ADH,Debayer::GBRG);
+    else if (!strcmp(argv[2],"bggr"))
+      m = new Debayer(Debayer::ADH,Debayer::BGGR);
+    else
+      throw "unknown Bayer subpixel arrangement";
+    argc--;
+    argv++;
+  }
+
+  return m;
+}
+///
+
+/// ParseConversions
+// Various format conversions/alterations.
+class Meter *ParseConversions(int &argc,char **&argv,struct ImgSpecs &specout)
+{
+  class Meter *m = NULL;
+  const char *arg = argv[1];
+  
+  if (!strcmp(arg,"--toflt")) {
+    if (argc < 3)
+      throw "--toflt requires a file name as argument";
+    m = new class Scale(argv[2],false,true,false,false,32,false,specout);
+    argc--;
+    argv++;
+  } else if (!strcmp(arg,"--tohfl")) {
+    if (argc < 3)
+      throw "--tohlf requires a file name as argument";
+    m = new class Scale(argv[2],false,true,false,false,16,false,specout);
+    argc--;
+    argv++;	  
+  } else if (!strcmp(arg,"--touns")) {
+    long bpp;
+    if (argc < 4)
+      throw "--touns requires a bit depth and a file name as argument";
+    bpp = ParseLong(argv[2]);
+    m   = new class Scale(argv[3],true,false,true,false,bpp,false,specout);
+    argc -= 2;
+    argv += 2;
+  } else if (!strcmp(arg,"--asuns")) {
+    long bpp;
+    if (argc < 3)
+      throw "--asuns requires a bit depth as argument";
+    bpp = ParseLong(argv[2]);
+    m   = new class Scale(NULL,true,false,true,false,bpp,false,specout);
+    argc--;
+    argv++;
+  } else if (!strcmp(arg,"--tosgn")) {
+    long bpp;
+    if (argc < 4)
+      throw "--tosgn requires a bit depth and a file name as argument";
+    bpp = ParseLong(argv[2]);
+    m   = new class Scale(argv[3],true,false,false,true,bpp,false,specout);
+    argc -= 2;
+    argv += 2;
+  } else if (!strcmp(arg,"--assgn")) {
+    long bpp;
+    if (argc < 3)
+      throw "--assgn requires a bit depth as argument";
+    bpp = ParseLong(argv[2]);
+    m   = new class Scale(NULL,true,false,false,true,bpp,false,specout);
+    argc--;
+    argv++;
+  } else if (!strcmp(arg,"--pad")) {
+    long bpp;
+    if (argc < 4)
+      throw "--pad requires a bit depth and a file name as argument";
+    bpp = ParseLong(argv[2]);
+    m   = new class Scale(argv[3],true,false,false,false,bpp,true,specout);
+    argc -= 2;
+    argv += 2;
+  } else if (!strcmp(arg,"--asprec")) {
+    long bpp;
+    if (argc < 3)
+      throw "--asprec requires a bit depth as argument";
+    bpp = ParseLong(argv[2]);
+    m   = new class Scale(NULL,true,false,false,false,bpp,true,specout);
+    argc--;
+    argv++;
+  } 
+  
+  return m;
+}
+///
+
+/// ParseTransferFunctions
+// Parse various transfer function related methods.
+class Meter *ParseTransferFunctions(int &argc,char **&argv,struct ImgSpecs &specout)
+{
+  class Meter *m = NULL;
+  const char *arg = argv[1];
+  
+  if (!strcmp(arg,"--gamma")) {
+    long bpp;
+    double gamma;
+    if (argc < 5)
+      throw "--gamma requires three arguments, a bit depth, a gamma value and a file name";
+    bpp   = ParseLong(argv[2]);
+    gamma = ParseDouble(argv[3]);
+    m     = new class Mapping(argv[4],Mapping::Gamma,gamma,false,bpp,false,specout);
+    argc -= 3;
+    argv += 3;
+  } else if (!strcmp(arg,"--invgamma")) {
+    double gamma;
+    if (argc < 4)
+      throw "--invgamma requires two arguments, the gamma value and a file name";
+    gamma = ParseDouble(argv[2]);
+    m     = new class Mapping(argv[3],Mapping::Gamma,gamma,true,0,false,specout);
+    argc -= 2;
+    argv += 2;
+  } else if (!strcmp(arg,"--halflog")) {
+    if (argc < 3)
+      throw "--halflog requires a file name argument";
+    m     = new class Mapping(argv[2],Mapping::HalfLog,1.0,false,16,false,specout);
+    argc--;
+    argv++;
+  } else if (!strcmp(arg,"--halfexp")) {
+    if (argc < 3)
+      throw "--halfexp requires a file name argument";
+    m     = new class Mapping(argv[2],Mapping::HalfLog,1.0,true,16,false,specout);
+    argc--;
+    argv++;
+  } else if (!strcmp(arg,"--togamma")) {
+    long bpp;
+    double gamma;
+    if (argc < 4)
+      throw "--togamma requires two arguments, a bit depth and a gamma value";
+    bpp   = ParseLong(argv[2]);
+    gamma = ParseDouble(argv[3]);
+    m     = new class Mapping(NULL,Mapping::Gamma,gamma,false,bpp,true,specout);
+    argc -= 2;
+    argv += 2;
+  } else if (!strcmp(arg,"--fromgamma")) {
+    double gamma;
+    if (argc < 3)
+      throw "--fromgamma requires the gamma value as argument";
+    gamma = ParseDouble(argv[2]);
+    m     = new class Mapping(NULL,Mapping::Gamma,gamma,true,0,true,specout);
+    argc -= 1;
+    argv += 1;
+  } else if (!strcmp(arg,"--tohalflog")) {
+    m     = new class Mapping(NULL,Mapping::HalfLog,1.0,false,16,true,specout);
+  } else if (!strcmp(arg,"--fromhalflog")) {
+    m     = new class Mapping(NULL,Mapping::HalfLog,1.0,true,16,true,specout);
+  } else if (!strcmp(arg,"--tolog")) {
+    double clamp;
+    if (argc < 3)
+      throw "--tolog requires an argument, the clamp value";
+    clamp = ParseDouble(argv[2]);
+    m     = new class Mapping(NULL,Mapping::Log,clamp,false,32,true,specout);
+    argc -= 1;
+    argv += 1;
+  } else if (!strcmp(arg,"--topercept")) {
+    m     = new class Mapping(NULL,Mapping::PU2,0.0,false,32,true,specout);
+  } else if (!strcmp(arg,"--topq")) {
+    long bits;
+    if (argc < 3)
+      throw "--topq requires a bit depth as argument";
+    bits  = ParseLong(argv[2]);
+    if (bits < 8 || bits > 32)
+      throw "--topq requires a bit depth between 8 and 32 bits";
+    m     = new class Mapping(NULL,Mapping::PQ,1.0,false,bits,true,specout);
+    argc -= 1;
+    argv += 1;
+  } else if (!strcmp(arg,"--frompq")) {
+    m   = new class Mapping(NULL,Mapping::PQ,1.0,true, 0, true,specout);
+  }
+
+  return m;
+}
+///
+
+/// ParseSubsampling
+// Parse functions related to downsampling and upsampling
+class Meter *ParseSubsampling(int &argc,char **&argv)
+{
+  class Meter *m = NULL;
+  const char *arg = argv[1];
+  
+  if (!strcmp(arg,"--sub")) {
+    long sx,sy;
+    if (argc < 4)
+      throw "--sub requires two arguments, subsampling factors in x and y direction";
+    sx = ParseLong(argv[2]);
+    sy = ParseLong(argv[3]);
+    if (sx >= 16 || sx <= 0 || sy >= 16 || sy <= 0)
+      throw "subsampling factors must be positive and smaller than 16";
+    m     = new class Downsampler(sx,sy,false);
+    argc -= 2;
+    argv += 2;
+  } else if (!strcmp(arg,"--csub")) {
+    long sx,sy;
+    if (argc < 4)
+      throw "--sub requires two arguments, subsampling factors in x and y direction";
+    sx = ParseLong(argv[2]);
+    sy = ParseLong(argv[3]);
+    if (sx >= 16 || sx <= 0 || sy >= 16 || sy <= 0)
+      throw "subsampling factors must be positive and smaller than 16";
+    m     = new class Downsampler(sx,sy,true);
+    argc -= 2;
+    argv += 2;
+  } else if (!strcmp(arg,"--up")) {
+    long sx,sy;
+    bool automatic = false;
+    if (argc < 3)
+      throw "--up requires two arguments, subsampling factors in x and y direction";
+    if (!strcmp(argv[2],"auto")) {
+      sx = 1;
+      sy = 1;
+      automatic = true;
+    } else {
+      if (argc < 4)
+	throw "--up requires two arguments, subsampling factors in x and y direction";
+      sx = ParseLong(argv[2]);
+      sy = ParseLong(argv[3]);
+    }
+    if (sx >= 16 || sx <= 0 || sy >= 16 || sy <= 0)
+      throw "upsampling factors must be positive and smaller than 16";
+    m     = new class Upsampler(sx,sy,false,Upsampler::Centered,automatic);
+    if (automatic) {
+      argc--;
+      argv++;
+    } else {
+      argc -= 2;
+      argv += 2;
+    }
+  } else if (!strcmp(arg,"--cup")) {
+    long sx,sy;
+    if (argc < 4)
+      throw "--cup requires two arguments, subsampling factors in x and y direction";
+    sx = ParseLong(argv[2]);
+    sy = ParseLong(argv[3]);
+    if (sx >= 16 || sx <= 0 || sy >= 16 || sy <= 0)
+      throw "upsampling factors must be positive and smaller than 16";
+    m     = new class Upsampler(sx,sy,true,Upsampler::Centered);
+    argc -= 2;
+    argv += 2;
+  } else if (!strcmp(arg,"--coup")) {
+    long sx,sy;
+    bool automatic = false;
+    if (argc < 3)
+      throw "--coup requires two arguments, subsampling factors in x and y direction";
+    if (!strcmp(argv[2],"auto")) {
+      sx = 1;
+      sy = 1;
+      automatic = true;
+    } else {
+      if (argc < 4)
+	throw "--coup requires two arguments, subsampling factors in x and y direction";
+      sx = ParseLong(argv[2]);
+      sy = ParseLong(argv[3]);
+    }
+    if (sx >= 16 || sx <= 0 || sy >= 16 || sy <= 0)
+      throw "upsampling factors must be positive and smaller than 16";
+    m     = new class Upsampler(sx,sy,false,Upsampler::Cosited,automatic);
+    if (automatic) {
+      argc--;
+      argv++;
+    } else {
+      argc -= 2;
+      argv += 2;
+    }
+  } else if (!strcmp(arg,"--cocup")) {
+    long sx,sy;
+    if (argc < 4)
+      throw "--cocup requires two arguments, subsampling factors in x and y direction";
+    sx = ParseLong(argv[2]);
+    sy = ParseLong(argv[3]);
+    if (sx >= 16 || sx <= 0 || sy >= 16 || sy <= 0)
+      throw "upsampling factors must be positive and smaller than 16";
+    m     = new class Upsampler(sx,sy,true,Upsampler::Cosited);
+    argc -= 2;
+    argv += 2;
+  } else if (!strcmp(arg,"--boxup")) {
+    long sx,sy;
+    if (argc < 4)
+      throw "--boxup requires two arguments, subsampling factors in x and y direction";
+    sx = ParseLong(argv[2]);
+    sy = ParseLong(argv[3]);
+    if (sx >= 16 || sx <= 0 || sy >= 16 || sy <= 0)
+      throw "upsampling factors must be positive and smaller than 16";
+    m     = new class Upsampler(sx,sy,false,Upsampler::Boxed);
+    argc -= 2;
+    argv += 2;
+  } else if (!strcmp(arg,"--boxcup")) {
+    long sx,sy;
+    if (argc < 4)
+      throw "--boxcup requires two arguments, subsampling factors in x and y direction";
+    sx = ParseLong(argv[2]);
+    sy = ParseLong(argv[3]);
+    if (sx >= 16 || sx <= 0 || sy >= 16 || sy <= 0)
+      throw "upsampling factors must be positive and smaller than 16";
+    m     = new class Upsampler(sx,sy,true,Upsampler::Boxed);
+    argc -= 2;
+    argv += 2;
+  }
+
+  return m;
+}
+///
+
+/// ParseGeometric
+// Parse various geometric manipulation functions.
+class Meter *ParseGeometric(int &argc,char **&argv,const struct ImgSpecs &spec1,const struct ImgSpecs &spec2)
+{
+  class Meter *m = NULL;
+  const char *arg = argv[1];
+  
+  if (!strcmp(arg,"--flipx")) {
+    m   = new class Flip(Flip::FlipX);
+  } else if (!strcmp(arg,"--flipy")) {
+    m   = new class Flip(Flip::FlipY);
+  } else if (!strcmp(arg,"--shift")) {
+    long dx,dy;
+    if (argc < 4)
+      throw "--shift requires two arguments, shift distance in horizontal and vertical direction";
+    dx = ParseLong(argv[2]);
+    dy = ParseLong(argv[3]);
+    m     = new class Shift(dx,dy,spec1,spec2);
+    argc -= 2;
+    argv += 2;
+  } else if (!strcmp(arg,"--crop")) {
+    long x1,y1,x2,y2;
+    if (argc < 2+4)
+      throw "--crop requires the coordinates of the rectangle as arguments";
+    x1 = ParseLong(argv[2]);
+    y1 = ParseLong(argv[3]);
+    x2 = ParseLong(argv[4]);
+    y2 = ParseLong(argv[5]);
+    if (x1 < 0 || y1 < 0 || x2 < 0 || y2 < 0)
+      throw "--crop requires non-negative arguments";
+    m = new class Crop(x1,y1,x2,y2,Crop::CropBoth);
+    argc -= 4;
+    argv += 4;
+  } else if (!strcmp(arg,"--cropd")) {
+    long x1,y1,x2,y2;
+    if (argc < 2+4)
+      throw "--cropd requires the coordinates of the rectangle as arguments";
+    x1 = ParseLong(argv[2]);
+    y1 = ParseLong(argv[3]);
+    x2 = ParseLong(argv[4]);
+    y2 = ParseLong(argv[5]);
+    if (x1 < 0 || y1 < 0 || x2 < 0 || y2 < 0)
+      throw "--cropd requires non-negative arguments";
+    m = new class Crop(x1,y1,x2,y2,Crop::CropDst);
+    argc -= 4;
+    argv += 4;
+  } else if (!strcmp(arg,"--paste")) {
+    long x1,y1;
+    if (argc < 4)
+      throw "--paste requires two arguments, the target x and y position";
+    x1 = ParseLong(argv[2]);
+    y1 = ParseLong(argv[3]);
+    if (x1 < 0 || y1 < 0)
+      throw "--paste requires non-negative arguments";
+    m = new class Paste(x1,y1);
+    argc -= 2;
+    argv += 2;
+  }
+
+  return m;
+}
+///
+
+/// ParseComponent
+// Parse component-related manipulation functions.
+class Meter *ParseComponent(int &argc,char **&argv)
+{
+  class Meter *m = NULL;
+  const char *arg = argv[1];
+ 
+  if (!strcmp(arg,"--only")) {
+    long comp;
+    if (argc < 3)
+      throw "--only requires the target component as argument";
+    comp = ParseLong(argv[2]);
+    if (comp < 0 || comp > MAX_UWORD)
+      throw "--only argument is out of range";
+    m = new class Restrict(UWORD(comp),1);
+    argc--;
+    argv++;
+  } else if (!strcmp(arg,"--upto")) {
+    long comp;
+    if (argc < 3)
+      throw "--upto requires the target component as argument";
+    comp = ParseLong(argv[2]);
+    if (comp < 0 || comp > MAX_UWORD)
+      throw "--upto argument is out of range";
+    m = new class Restrict(0,comp);
+    argc--;
+    argv++;
+  } else if (!strcmp(arg,"--rgb")) {
+    m = new class Restrict(0,3);
+  }
+
+  return m;
+}
+///
+
+/// ParseTotal
+// Parse functions that affect one or multiple components in total.
+class Meter *ParseTotal(int &argc,char **&argv)
+{
+  class Meter *m = NULL;
+  const char *arg = argv[1];
+  
+  if (!strcmp(arg,"--invert")) {
+    m   = new class Invert();
+  } else if (!strcmp(arg,"--clamp")) {
+    DOUBLE min,max;
+    if (argc < 4)
+      throw "--clamp requires two arguments, minimum and maximum of the valid range";
+    min   = ParseDouble(argv[2]);
+    max   = ParseDouble(argv[3]);
+    m     = new class Clamp(min,max);
+    argc -= 2;
+    argv += 2;
+  } else if (!strcmp(arg,"--fill")) {
+    if (argc < 3)
+      throw "--fill requires a comma-separated list of fill values as argument";
+    m = new class Fill(argv[2]);
+    argc--;
+    argv++;
+  }
+
+  return m;
+}
+///
+
 /// main
 int main(int argc,char **argv)
 {
@@ -449,76 +1167,12 @@ int main(int argc,char **argv)
 	} else if (!strcmp(arg,"--rawhelp")) {
 	  RawHelp();
 	  return 0;
-	} else if (!strcmp(arg,"--psnr")) {
-	  m = new class PSNR(PSNR::Mean);
-	} else if (!strcmp(arg,"--maxsnr")) {
-	  m = new class PSNR(PSNR::Mean,false,true);
-	} else if (!strcmp(arg,"--snr")) {
-	  m = new class PSNR(PSNR::Mean,false,true,true);
-	} else if (!strcmp(arg,"--mse")) {
-	  m = new class PSNR(PSNR::Mean,true);
-	} else if (!strcmp(arg,"--minpsnr")) {
-	  m = new class PSNR(PSNR::Min);
-	} else if (!strcmp(arg,"--ycbcrpsnr")) {
-	  m = new class PSNR(PSNR::YCbCr);
-	} else if (!strcmp(arg,"--yuvpsnr")) {
-	  m = new class PSNR(PSNR::YUV);
-	} else if (!strcmp(arg,"--swpsnr")) {
-	  m = new class PSNR(PSNR::SamplingWeighted);
-	} else if (!strcmp(arg,"--mrse")) {
-	  m = new class MRSE(MRSE::Mean);
-	} else if (!strcmp(arg,"--minmrse")) {
-	  m = new class MRSE(MRSE::Min);
-	} else if (!strcmp(arg,"--ycbcrmrse")) {
-	  m = new class MRSE(MRSE::YCbCr);
-	} else if (!strcmp(arg,"--yuvmrse")) {
-	  m = new class MRSE(MRSE::YUV);
-	} else if (!strcmp(arg,"--swmrse")) {
-	  m = new class MRSE(MRSE::SamplingWeighted);
-	} else if (!strcmp(arg,"--peak")) {
-	  m = new class PRE(PRE::Min);
-	} else if (!strcmp(arg,"--avgpeak")) {
-	  m = new class PRE(PRE::Mean);
-	} else if (!strcmp(arg,"--peakx")) {
-	  m = new class PeakPos(PeakPos::PeakX);
-	} else if (!strcmp(arg,"--peaky")) {
-	  m = new class PeakPos(PeakPos::PeakY);
-	} else if (!strcmp(arg,"--min")) {
-	  m = new class Thres(Thres::Min);
-	} else if (!strcmp(arg,"--max")) {
-	  m = new class Thres(Thres::Max);
-	} else if (!strcmp(arg,"--drift")) {
-	  m = new class Thres(Thres::Drift);
-	} else if (!strcmp(arg,"--mae")) {
-	  m = new class Thres(Thres::Avg);
-	} else if (!strcmp(arg,"--pae")) {
-	  m = new class Thres(Thres::Peak);
+	} else if ((m = ParseMetrics(argc,argv))) {
+	  // Done with it.
 	} else if (!strcmp(arg,"--stripe")) {
 	  m = new class Stripe();
-	} else if (!strcmp(arg,"--width")) {
-	  m = new class Dimension(Dimension::Width);
-	} else if (!strcmp(arg,"--height")) {
-	  m = new class Dimension(Dimension::Height);
-	} else if (!strcmp(arg,"--depth")) {
-	  m = new class Dimension(Dimension::Depth);
-	} else if (!strcmp(arg,"--precision")) {
-	  if (argc < 3)
-	    throw "--precision requires a component number";
-	  m = new class Dimension(Dimension::Precision,ParseLong(argv[2]));
-	  argc--;
-	  argv++;
-	} else if (!strcmp(arg,"--signed")) {
-	  if (argc < 3)
-	    throw "--signed requires a component number";
-	  m = new class Dimension(Dimension::Signed,ParseLong(argv[2]));
-	  argc--;
-	  argv++;
-	} else if (!strcmp(arg,"--float")) {
-	  if (argc < 3)
-	    throw "--float requires a component number";
-	  m = new class Dimension(Dimension::Float,ParseLong(argv[2]));
-	  argc--;
-	  argv++;
+	} else if ((m = ParseProperties(argc,argv))) {
+	  // Done with it.
 	} else if (!strcmp(arg,"--diff") || !strcmp(arg,"-i")) {
 	  if (argc < 3)
 	    throw "--diff requires the target file name as argument";
@@ -562,58 +1216,8 @@ int main(int argc,char **argv)
 	  argc--;
 	  argv++;
 #ifdef USE_GSL
-	} else if (!strcmp(arg,"--fft")) {
-	  if (argc < 3)
-	    throw "--fft requires the target file name as argument";
-	  m = new class FFTImg(argv[2],false);
-	  argc--;
-	  argv++;	  
-	} else if (!strcmp(arg,"--wfft")) {
-	  if (argc < 3)
-	    throw "--wfft requires the target file name as argument";
-	  m = new class FFTImg(argv[2],true);
-	  argc--;
-	  argv++;
-	} else if (!strcmp(arg,"--filt")) {
-	  long x,y,r;
-	  if (argc < 6)
-	    throw "--filt requires four arguments, x,y, radius and file name";
-	  x = ParseLong(argv[2]);
-	  y = ParseLong(argv[3]);
-	  r = ParseLong(argv[4]);
-	  m = new class FFTFilt(argv[5],x,y,r,false,0,0);
-	  argc -= 4;
-	  argv += 4;
-	} else if (!strcmp(arg,"--nfilt")) {
-	  long x,y,r;
-	  if (argc < 6)
-	    throw "--nfilt requires four arguments, x,y, radius and file name";
-	  x = ParseLong(argv[2]);
-	  y = ParseLong(argv[3]);
-	  r = ParseLong(argv[4]);
-	  m = new class FFTFilt(argv[5],x,y,r,true,0,0);
-	  argc -= 4;
-	  argv += 4;
-	} else if (!strcmp(arg,"--comb")) {
-	  long x,y,r;
-	  if (argc < 6)
-	    throw "--comb requires four arguments, x,y, radius and file name";
-	  x = ParseLong(argv[2]);
-	  y = ParseLong(argv[3]);
-	  r = ParseLong(argv[4]);
-	  m = new class FFTFilt(argv[5],0,0,r,false,x,y);
-	  argc -= 4;
-	  argv += 4;
-	} else if (!strcmp(arg,"--ncomb")) {
-	  long x,y,r;
-	  if (argc < 6)
-	    throw "--ncomb requires four arguments, x,y, radius and file name";
-	  x = ParseLong(argv[2]);
-	  y = ParseLong(argv[3]);
-	  r = ParseLong(argv[4]);
-	  m = new class FFTFilt(argv[5],0,0,r,true,x,y);
-	  argc -= 4;
-	  argv += 4;
+	} else if ((m = ParseFFT(argc,argv))) {
+	  // done with it.
 #endif
 	} else if (!strcmp(arg,"--hist")) {
 	  if (argc < 3)
@@ -631,464 +1235,24 @@ int main(int argc,char **argv)
 	  m = new class ColorHistogram(1.0 / b);
 	  argc--;
 	  argv++;
-#ifdef USE_GSL
-	} else if (!strcmp(arg,"--maxfreqr")) {
-	  m = new class MaxFreq(MaxFreq::MaxR);
-	} else if (!strcmp(arg,"--maxfreqx")) {
-	  m = new class MaxFreq(MaxFreq::MaxH);
-	} else if (!strcmp(arg,"--maxfreqy")) {
-	  m = new class MaxFreq(MaxFreq::MaxV);
-	} else if (!strcmp(arg,"--maxfreqv")) {
-	  m = new class MaxFreq(MaxFreq::Var);
-	} else if (!strcmp(arg,"--maxfreqv")) {
-	  m = new class MaxFreq(MaxFreq::Var);
-	} else if (!strcmp(arg,"--patternidx")) {
-	  m = new class MaxFreq(MaxFreq::Pattern);
-#endif
-	} else if (!strcmp(arg,"--toycbcr")) {
-	  specout.YUVEncoded = ImgSpecs::Yes;
-	  m = new YCbCr(false,false,false,YCbCr::YCbCr_Trafo);
-	} else if (!strcmp(arg,"--toycbcrbl")) {
-	  specout.YUVEncoded = ImgSpecs::Yes;
-	  m = new YCbCr(false,false,true,YCbCr::YCbCr_Trafo);
-	} else if (!strcmp(arg,"--tosignedycbcr")) {
-	  specout.YUVEncoded = ImgSpecs::Yes;
-	  m = new YCbCr(false,true,false,YCbCr::YCbCr_Trafo);
-	} else if (!strcmp(arg,"--fromycbcr")) {
-	  specout.YUVEncoded = ImgSpecs::No;
-	  m = new YCbCr(true ,false, false,YCbCr::YCbCr_Trafo);
-	} else if (!strcmp(arg,"--fromycbcrbl")) {
-	  specout.YUVEncoded = ImgSpecs::No;
-	  m = new YCbCr(true ,false, true,YCbCr::YCbCr_Trafo);
-	} else if (!strcmp(arg,"--torct")) {
-	  specout.YUVEncoded = ImgSpecs::Yes;
-	  m = new YCbCr(false,false,false,YCbCr::RCT_Trafo);
-	} else if (!strcmp(arg,"--tosignedrct")) {
-	  specout.YUVEncoded = ImgSpecs::Yes;
-	  m = new YCbCr(false,true,false,YCbCr::RCT_Trafo);
-	} else if (!strcmp(arg,"--fromrct")) {
-	  specout.YUVEncoded = ImgSpecs::No;
-	  m = new YCbCr(true ,false,false,YCbCr::RCT_Trafo);
-	} else if (!strcmp(arg,"--toycgco")) {
-	  specout.YUVEncoded = ImgSpecs::Yes;
-	  m = new YCbCr(false,false,false,YCbCr::YCgCo_Trafo);
-	} else if (!strcmp(arg,"--tosignedycgco")) {
-	  specout.YUVEncoded = ImgSpecs::Yes;
-	  m = new YCbCr(false,true,false,YCbCr::YCgCo_Trafo);
-	} else if (!strcmp(arg,"--fromycgco")) {
-	  specout.YUVEncoded = ImgSpecs::No;
-	  m = new YCbCr(true ,false,false,YCbCr::YCgCo_Trafo);
-	} else if (!strcmp(arg,"--toycbcr709")) {
-	  specout.YUVEncoded = ImgSpecs::Yes;
-	  m = new YCbCr(false,false,false,YCbCr::YCbCr709_Trafo);
-	} else if (!strcmp(arg,"--toycbcr709bl")) {
-	  specout.YUVEncoded = ImgSpecs::Yes;
-	  m = new YCbCr(false,false,true,YCbCr::YCbCr709_Trafo);
-	} else if (!strcmp(arg,"--fromycbcr709")) {
-	  specout.YUVEncoded = ImgSpecs::No;
-	  m = new YCbCr(true ,false, false,YCbCr::YCbCr709_Trafo);
-	} else if (!strcmp(arg,"--fromycbcr709bl")) {
-	  specout.YUVEncoded = ImgSpecs::No;
-	  m = new YCbCr(true ,false, true,YCbCr::YCbCr709_Trafo);
-	} else if (!strcmp(arg,"--toycbcr2020")) {
-	  specout.YUVEncoded = ImgSpecs::Yes;
-	  m = new YCbCr(false,false,false,YCbCr::YCbCr2020_Trafo);
-	} else if (!strcmp(arg,"--toycbcr2020bl")) {
-	  specout.YUVEncoded = ImgSpecs::Yes;
-	  m = new YCbCr(false,false,true,YCbCr::YCbCr2020_Trafo);
-	} else if (!strcmp(arg,"--fromycbcr2020")) {
-	  specout.YUVEncoded = ImgSpecs::No;
-	  m = new YCbCr(true ,false, false,YCbCr::YCbCr2020_Trafo);
-	} else if (!strcmp(arg,"--fromycbcr2020bl")) {
-	  specout.YUVEncoded = ImgSpecs::No;
-	  m = new YCbCr(true ,false, true,YCbCr::YCbCr2020_Trafo);
-	} else if (!strcmp(arg,"--toxyz")) {
-	  m = new XYZ(XYZ::RGBtoXYZ,false);
-	} else if (!strcmp(arg,"--fromxyz")) {
-	  m = new XYZ(XYZ::RGBtoXYZ,true);
-	} else if (!strcmp(arg,"--tolms")) {
-	  m = new XYZ(XYZ::RGBtoLMS,false);
-	} else if (!strcmp(arg,"--fromlms")) {
-	  m = new XYZ(XYZ::RGBtoLMS,true);
-	} else if (!strcmp(arg,"--xyztolms")) {
-	  m = new XYZ(XYZ::XYZtoLMS,false);
-	} else if (!strcmp(arg,"--lmstoxyz")) {
-	  m = new XYZ(XYZ::XYZtoLMS,true);
-	} else if (!strcmp(arg,"--tobayer")) {
-	  m = new BayerConv(true);
-	} else if (!strcmp(arg,"--frombayer")) {
-	  m = new BayerConv(false);
-	} else if (!strcmp(arg,"--debayer")) {
-	  if (argc < 3)
-	    throw "--debayer requires a string argument";
-	  if (!strcmp(argv[2],"grbg"))
-	    m = new Debayer(Debayer::Bilinear,Debayer::GRBG);
-	  else if (!strcmp(argv[2],"rggb"))
-	    m = new Debayer(Debayer::Bilinear,Debayer::RGGB);
-	  else if (!strcmp(argv[2],"gbrg"))
-	    m = new Debayer(Debayer::Bilinear,Debayer::GBRG);
-	  else if (!strcmp(argv[2],"bggr"))
-	    m = new Debayer(Debayer::Bilinear,Debayer::BGGR);
-	  else
-	    throw "unknown Bayer subpixel arrangement";
-	  argc--;
-	  argv++;
-	} else if (!strcmp(arg,"--debayeradh")) {
-	  if (argc < 3)
-	    throw "--debayeradh requires a string argument";
-	  if (!strcmp(argv[2],"grbg"))
-	    m = new Debayer(Debayer::ADH,Debayer::GRBG);
-	  else if (!strcmp(argv[2],"rggb"))
-	    m = new Debayer(Debayer::ADH,Debayer::RGGB);
-	  else if (!strcmp(argv[2],"gbrg"))
-	    m = new Debayer(Debayer::ADH,Debayer::GBRG);
-	  else if (!strcmp(argv[2],"bggr"))
-	    m = new Debayer(Debayer::ADH,Debayer::BGGR);
-	  else
-	    throw "unknown Bayer subpixel arrangement";
-	  argc--;
-	  argv++;
-	} else if (!strcmp(arg,"--toflt")) {
-	  if (argc < 3)
-	    throw "--toflt requires a file name as argument";
-	  m = new class Scale(argv[2],false,true,false,false,32,false,specout);
-	  argc--;
-	  argv++;
-	} else if (!strcmp(arg,"--tohfl")) {
-	  if (argc < 3)
-	    throw "--tohlf requires a file name as argument";
-	  m = new class Scale(argv[2],false,true,false,false,16,false,specout);
-	  argc--;
-	  argv++;	  
-	} else if (!strcmp(arg,"--touns")) {
-	  long bpp;
-	  if (argc < 4)
-	    throw "--touns requires a bit depth and a file name as argument";
-	  bpp = ParseLong(argv[2]);
-	  m   = new class Scale(argv[3],true,false,true,false,bpp,false,specout);
-	  argc -= 2;
-	  argv += 2;
-	} else if (!strcmp(arg,"--asuns")) {
-	  long bpp;
-	  if (argc < 3)
-	    throw "--asuns requires a bit depth as argument";
-	  bpp = ParseLong(argv[2]);
-	  m   = new class Scale(NULL,true,false,true,false,bpp,false,specout);
-	  argc--;
-	  argv++;
-	} else if (!strcmp(arg,"--tosgn")) {
-	  long bpp;
-	  if (argc < 4)
-	    throw "--tosgn requires a bit depth and a file name as argument";
-	  bpp = ParseLong(argv[2]);
-	  m   = new class Scale(argv[3],true,false,false,true,bpp,false,specout);
-	  argc -= 2;
-	  argv += 2;
-	} else if (!strcmp(arg,"--assgn")) {
-	  long bpp;
-	  if (argc < 3)
-	    throw "--assgn requires a bit depth as argument";
-	  bpp = ParseLong(argv[2]);
-	  m   = new class Scale(NULL,true,false,false,true,bpp,false,specout);
-	  argc--;
-	  argv++;
-	} else if (!strcmp(arg,"--gamma")) {
-	  long bpp;
-	  double gamma;
-	  if (argc < 5)
-	    throw "--gamma requires three arguments, a bit depth, a gamma value and a file name";
-	  bpp   = ParseLong(argv[2]);
-	  gamma = ParseDouble(argv[3]);
-	  m     = new class Mapping(argv[4],Mapping::Gamma,gamma,false,bpp,false,specout);
-	  argc -= 3;
-	  argv += 3;
-	} else if (!strcmp(arg,"--invgamma")) {
-	  double gamma;
-	  if (argc < 4)
-	    throw "--invgamma requires two arguments, the gamma value and a file name";
-	  gamma = ParseDouble(argv[2]);
-	  m     = new class Mapping(argv[3],Mapping::Gamma,gamma,true,0,false,specout);
-	  argc -= 2;
-	  argv += 2;
-	} else if (!strcmp(arg,"--halflog")) {
-	  if (argc < 3)
-	    throw "--halflog requires a file name argument";
-	  m     = new class Mapping(argv[2],Mapping::HalfLog,1.0,false,16,false,specout);
-	  argc--;
-	  argv++;
-	} else if (!strcmp(arg,"--halfexp")) {
-	  if (argc < 3)
-	    throw "--halfexp requires a file name argument";
-	  m     = new class Mapping(argv[2],Mapping::HalfLog,1.0,true,16,false,specout);
-	  argc--;
-	  argv++;
-	} else if (!strcmp(arg,"--togamma")) {
-	  long bpp;
-	  double gamma;
-	  if (argc < 4)
-	    throw "--togamma requires two arguments, a bit depth and a gamma value";
-	  bpp   = ParseLong(argv[2]);
-	  gamma = ParseDouble(argv[3]);
-	  m     = new class Mapping(NULL,Mapping::Gamma,gamma,false,bpp,true,specout);
-	  argc -= 2;
-	  argv += 2;
-	} else if (!strcmp(arg,"--fromgamma")) {
-	  double gamma;
-	  if (argc < 3)
-	    throw "--fromgamma requires the gamma value as argument";
-	  gamma = ParseDouble(argv[2]);
-	  m     = new class Mapping(NULL,Mapping::Gamma,gamma,true,0,true,specout);
-	  argc -= 1;
-	  argv += 1;
-	} else if (!strcmp(arg,"--tohalflog")) {
-	  m     = new class Mapping(NULL,Mapping::HalfLog,1.0,false,16,true,specout);
-	} else if (!strcmp(arg,"--fromhalflog")) {
-	  m     = new class Mapping(NULL,Mapping::HalfLog,1.0,true,16,true,specout);
-	} else if (!strcmp(arg,"--tolog")) {
-	  double clamp;
-	  if (argc < 3)
-	    throw "--tolog requires an argument, the clamp value";
-	  clamp = ParseDouble(argv[2]);
-	  m     = new class Mapping(NULL,Mapping::Log,clamp,false,32,true,specout);
-	  argc -= 1;
-	  argv += 1;
-	} else if (!strcmp(arg,"--topercept")) {
-	  m     = new class Mapping(NULL,Mapping::PU2,0.0,false,32,true,specout);
-	} else if (!strcmp(arg,"--topq")) {
-	  long bits;
-	  if (argc < 3)
-	    throw "--topq requires a bit depth as argument";
-	  bits  = ParseLong(argv[2]);
-	  if (bits < 8 || bits > 32)
-	    throw "--topq requires a bit depth between 8 and 32 bits";
-	  m     = new class Mapping(NULL,Mapping::PQ,1.0,false,bits,true,specout);
-	  argc -= 1;
-	  argv += 1;
-	} else if (!strcmp(arg,"--frompq")) {
-	  m   = new class Mapping(NULL,Mapping::PQ,1.0,true, 0, true,specout);
-	} else if (!strcmp(arg,"--invert")) {
-	  m   = new class Invert();
-	} else if (!strcmp(arg,"--flipx")) {
-	  m   = new class Flip(Flip::FlipX);
-	} else if (!strcmp(arg,"--flipy")) {
-	  m   = new class Flip(Flip::FlipY);
-	} else if (!strcmp(arg,"--shift")) {
-	  long dx,dy;
-	  if (argc < 4)
-	    throw "--shift requires two arguments, shift distance in horizontal and vertical direction";
-	  dx = ParseLong(argv[2]);
-	  dy = ParseLong(argv[3]);
-	  m     = new class Shift(dx,dy,spec1);
-	  argc -= 2;
-	  argv += 2;
-	} else if (!strcmp(arg,"--pad")) {
-	  long bpp;
-	  if (argc < 4)
-	    throw "--pad requires a bit depth and a file name as argument";
-	  bpp = ParseLong(argv[2]);
-	  m   = new class Scale(argv[3],true,false,false,false,bpp,true,specout);
-	  argc -= 2;
-	  argv += 2;
-	} else if (!strcmp(arg,"--asprec")) {
-	  long bpp;
-	  if (argc < 3)
-	    throw "--asprec requires a bit depth as argument";
-	  bpp = ParseLong(argv[2]);
-	  m   = new class Scale(NULL,true,false,false,false,bpp,true,specout);
-	  argc--;
-	  argv++;
-	} else if (!strcmp(arg,"--sub")) {
-	  long sx,sy;
-	  if (argc < 4)
-	    throw "--sub requires two arguments, subsampling factors in x and y direction";
-	  sx = ParseLong(argv[2]);
-	  sy = ParseLong(argv[3]);
-	  if (sx >= 16 || sx <= 0 || sy >= 16 || sy <= 0)
-	    throw "subsampling factors must be positive and smaller than 16";
-	  m     = new class Downsampler(sx,sy,false);
-	  argc -= 2;
-	  argv += 2;
-	} else if (!strcmp(arg,"--csub")) {
-	  long sx,sy;
-	  if (argc < 4)
-	    throw "--sub requires two arguments, subsampling factors in x and y direction";
-	  sx = ParseLong(argv[2]);
-	  sy = ParseLong(argv[3]);
-	  if (sx >= 16 || sx <= 0 || sy >= 16 || sy <= 0)
-	    throw "subsampling factors must be positive and smaller than 16";
-	  m     = new class Downsampler(sx,sy,true);
-	  argc -= 2;
-	  argv += 2;
-	} else if (!strcmp(arg,"--up")) {
-	  long sx,sy;
-	  bool automatic = false;
-	  if (argc < 3)
-	    throw "--up requires two arguments, subsampling factors in x and y direction";
-	  if (!strcmp(argv[2],"auto")) {
-	    sx = 1;
-	    sy = 1;
-	    automatic = true;
-	  } else {
-	    if (argc < 4)
-	      throw "--up requires two arguments, subsampling factors in x and y direction";
-	    sx = ParseLong(argv[2]);
-	    sy = ParseLong(argv[3]);
-	  }
-	  if (sx >= 16 || sx <= 0 || sy >= 16 || sy <= 0)
-	    throw "upsampling factors must be positive and smaller than 16";
-	  m     = new class Upsampler(sx,sy,false,Upsampler::Centered,automatic);
-	  if (automatic) {
-	    argc--;
-	    argv++;
-	  } else {
-	    argc -= 2;
-	    argv += 2;
-	  }
-	} else if (!strcmp(arg,"--cup")) {
-	  long sx,sy;
-	  if (argc < 4)
-	    throw "--cup requires two arguments, subsampling factors in x and y direction";
-	  sx = ParseLong(argv[2]);
-	  sy = ParseLong(argv[3]);
-	  if (sx >= 16 || sx <= 0 || sy >= 16 || sy <= 0)
-	    throw "upsampling factors must be positive and smaller than 16";
-	  m     = new class Upsampler(sx,sy,true,Upsampler::Centered);
-	  argc -= 2;
-	  argv += 2;
-	} else if (!strcmp(arg,"--coup")) {
-	  long sx,sy;
-	  bool automatic = false;
-	  if (argc < 3)
-	    throw "--coup requires two arguments, subsampling factors in x and y direction";
-	  if (!strcmp(argv[2],"auto")) {
-	    sx = 1;
-	    sy = 1;
-	    automatic = true;
-	  } else {
-	    if (argc < 4)
-	      throw "--coup requires two arguments, subsampling factors in x and y direction";
-	    sx = ParseLong(argv[2]);
-	    sy = ParseLong(argv[3]);
-	  }
-	  if (sx >= 16 || sx <= 0 || sy >= 16 || sy <= 0)
-	    throw "upsampling factors must be positive and smaller than 16";
-	  m     = new class Upsampler(sx,sy,false,Upsampler::Cosited,automatic);
-	  if (automatic) {
-	    argc--;
-	    argv++;
-	  } else {
-	    argc -= 2;
-	    argv += 2;
-	  }
-	} else if (!strcmp(arg,"--cocup")) {
-	  long sx,sy;
-	  if (argc < 4)
-	    throw "--cocup requires two arguments, subsampling factors in x and y direction";
-	  sx = ParseLong(argv[2]);
-	  sy = ParseLong(argv[3]);
-	  if (sx >= 16 || sx <= 0 || sy >= 16 || sy <= 0)
-	    throw "upsampling factors must be positive and smaller than 16";
-	  m     = new class Upsampler(sx,sy,true,Upsampler::Cosited);
-	  argc -= 2;
-	  argv += 2;
-	} else if (!strcmp(arg,"--boxup")) {
-	  long sx,sy;
-	  if (argc < 4)
-	    throw "--boxup requires two arguments, subsampling factors in x and y direction";
-	  sx = ParseLong(argv[2]);
-	  sy = ParseLong(argv[3]);
-	  if (sx >= 16 || sx <= 0 || sy >= 16 || sy <= 0)
-	    throw "upsampling factors must be positive and smaller than 16";
-	  m     = new class Upsampler(sx,sy,false,Upsampler::Boxed);
-	  argc -= 2;
-	  argv += 2;
-	} else if (!strcmp(arg,"--boxcup")) {
-	  long sx,sy;
-	  if (argc < 4)
-	    throw "--boxcup requires two arguments, subsampling factors in x and y direction";
-	  sx = ParseLong(argv[2]);
-	  sy = ParseLong(argv[3]);
-	  if (sx >= 16 || sx <= 0 || sy >= 16 || sy <= 0)
-	    throw "upsampling factors must be positive and smaller than 16";
-	  m     = new class Upsampler(sx,sy,true,Upsampler::Boxed);
-	  argc -= 2;
-	  argv += 2;
-	} else if (!strcmp(arg,"--clamp")) {
-	  DOUBLE min,max;
-	  if (argc < 4)
-	    throw "--clamp requires two arguments, minimum and maximum of the valid range";
-	  min   = ParseDouble(argv[2]);
-	  max   = ParseDouble(argv[3]);
-	  m     = new class Clamp(min,max);
-	  argc -= 2;
-	  argv += 2;
-	} else if (!strcmp(arg,"--only")) {
-	  long comp;
-	  if (argc < 3)
-	    throw "--only requires the target component as argument";
-	  comp = ParseLong(argv[2]);
-	  if (comp < 0 || comp > MAX_UWORD)
-	    throw "--only argument is out of range";
-	  m = new class Restrict(UWORD(comp),1);
-	  argc--;
-	  argv++;
-	} else if (!strcmp(arg,"--upto")) {
-	  long comp;
-	  if (argc < 3)
-	    throw "--upto requires the target component as argument";
-	  comp = ParseLong(argv[2]);
-	  if (comp < 0 || comp > MAX_UWORD)
-	    throw "--upto argument is out of range";
-	  m = new class Restrict(0,comp);
-	  argc--;
-	  argv++;
-	} else if (!strcmp(arg,"--rgb")) {
-	  m = new class Restrict(0,3);
-        } else if (!strcmp(arg,"--crop")) {
-	  long x1,y1,x2,y2;
-	  if (argc < 2+4)
-	    throw "--crop requires the coordinates of the rectangle as arguments";
-	  x1 = ParseLong(argv[2]);
-	  y1 = ParseLong(argv[3]);
-	  x2 = ParseLong(argv[4]);
-	  y2 = ParseLong(argv[5]);
-	  if (x1 < 0 || y1 < 0 || x2 < 0 || y2 < 0)
-	    throw "--crop requires non-negative arguments";
-	  m = new class Crop(x1,y1,x2,y2,Crop::CropBoth);
-	  argc -= 4;
-	  argv += 4;
-	} else if (!strcmp(arg,"--cropd")) {
-	  long x1,y1,x2,y2;
-	  if (argc < 2+4)
-	    throw "--cropd requires the coordinates of the rectangle as arguments";
-	  x1 = ParseLong(argv[2]);
-	  y1 = ParseLong(argv[3]);
-	  x2 = ParseLong(argv[4]);
-	  y2 = ParseLong(argv[5]);
-	  if (x1 < 0 || y1 < 0 || x2 < 0 || y2 < 0)
-	    throw "--cropd requires non-negative arguments";
-	  m = new class Crop(x1,y1,x2,y2,Crop::CropDst);
-	  argc -= 4;
-	  argv += 4;
+	} else if ((m = ParseColor(argc,argv,specout))) {
+	  // done with it.
+	} else if ((m = ParseBayer(argc,argv))) {
+	  // done with it.
+	} else if ((m = ParseConversions(argc,argv,specout))) {
+	  // done with it.
+	} else if ((m = ParseTransferFunctions(argc,argv,specout))) {
+	  // done with it.
+	} else if ((m = ParseTotal(argc,argv))) {
+	  // done with it.
+	} else if ((m = ParseGeometric(argc,argv,spec1,spec2))) {
+	  // done with it.
+	} else if ((m = ParseSubsampling(argc,argv))) {
+	  // Done with it.
+	} else if ((m = ParseComponent(argc,argv))) {
+	  // done with it.
 	} else if (!strcmp(arg,"--restore")) {
 	  m = new class Restore(orgcpy,dstcpy);
-	} else if (!strcmp(arg,"--fill")) {
-	  if (argc < 3)
-	    throw "--fill requires a comma-separated list of fill values as argument";
-	  m = new class Fill(argv[2]);
-	  argc--;
-	  argv++;
-	} else if (!strcmp(arg,"--paste")) {
-	  long x1,y1;
-	  if (argc < 4)
-	    throw "--paste requires two arguments, the target x and y position";
-	  x1 = ParseLong(argv[2]);
-	  y1 = ParseLong(argv[3]);
-	  if (x1 < 0 || y1 < 0)
-	    throw "--paste requires non-negative arguments";
-	  m = new class Paste(x1,y1);
-	  argc -= 2;
-	  argv += 2;
 	} else if (!strcmp(arg,"--raw")) {
 	  specout.ASCII = ImgSpecs::No;
 	} else if (!strcmp(arg,"--ascii")) {
