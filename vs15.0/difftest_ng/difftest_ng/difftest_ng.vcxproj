@@ -92,7 +92,9 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\diff\add.cpp" />
+    <ClCompile Include="..\..\..\diff\bayerconv.cpp" />
     <ClCompile Include="..\..\..\diff\clamp.cpp" />
+    <ClCompile Include="..\..\..\diff\debayer.cpp" />
     <ClCompile Include="..\..\..\diff\downsampler.cpp" />
     <ClCompile Include="..\..\..\diff\fill.cpp" />
     <ClCompile Include="..\..\..\diff\flip.cpp" />
@@ -159,6 +161,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\diff\add.hpp" />
+    <ClInclude Include="..\..\..\diff\bayerconv.hpp" />
+    <ClInclude Include="..\..\..\diff\debayer.hpp" />
     <ClInclude Include="..\..\..\diff\downsampler.hpp" />
     <ClInclude Include="..\..\..\diff\flip.hpp" />
     <ClInclude Include="..\..\..\diff\invert.hpp" />
