@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: bayerconv.hpp,v 1.2 2018/09/04 11:44:48 thor Exp $
+** $Id: bayerconv.hpp,v 1.3 2018/09/06 06:19:12 thor Exp $
 **
 ** This class converts bayer pattern images into four-component images
 ** and back. It *does not* attempt to de-bayer the images.
@@ -68,7 +68,7 @@ class BayerConv : public Meter, private ImageLayout {
   //
   // Release the memory for the target components
   // that have been allocated.
-  void ReleaseComponents(UBYTE **p);
+  void ReleaseComponents(UBYTE **&p);
   //
   // Convert from Bayer to four-components.
   void ConvertFromBayer(UBYTE **&dest,class ImageLayout *src);
