@@ -23,7 +23,7 @@ and conversion framework.
 /*
  * Main program
  * 
- * $Id: main.cpp,v 1.92 2018/09/07 09:00:07 thor Exp $
+ * $Id: main.cpp,v 1.93 2018/09/12 11:24:59 thor Exp $
  *
  * This class defines the main program and argument parsing.
  */
@@ -205,7 +205,7 @@ void Usage(const char *progname)
 	  "--frombayer        : convert a Bayer patterned grey-scale image to four components\n"
 	  "--debayer argmnt   : de-Bayer a bayer pattern image with bi-linear interpolation, org describes\n"
 	  "                     the sample organization and can be grbg,rggb,gbrg or bggr\n"
-	  "--debayeradh argmt : de-Bayer with the Adaptive Homogeneity-Directed Demosaic Algorithm\n"
+	  "--debayerahd argmt : de-Bayer with the Adaptive Homogeneity-Directed Demosaic Algorithm\n"
 	  "--fill r,g,b,...   : fill the source image with the given color\n"
 	  "--paste x y        : paste the distorted image at the given position into the source\n"
 	  "--raw              : encode output in raw if applicable\n"
@@ -701,7 +701,7 @@ class Meter *ParseBayer(int &argc,char **&argv)
       throw "unknown Bayer subpixel arrangement";
     argc--;
     argv++;
-  } else if (!strcmp(arg,"--debayeradh")) {
+  } else if (!strcmp(arg,"--debayerahd")) {
     if (argc < 3)
       throw "--debayeradh requires a string argument";
     if (!strcmp(argv[2],"grbg"))

@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: debayer.cpp,v 1.3 2018/09/07 07:39:27 thor Exp $
+** $Id: debayer.cpp,v 1.4 2018/09/12 11:25:08 thor Exp $
 **
 ** This class runs a debayer filter on the image converting it from grey scale
 ** to RGB. This is mostly experimental.
@@ -132,15 +132,15 @@ void Debayer::ADHKernel(const T *src,
       //
       // Filter green horizontally and vertically.
       if (x + gx < w && y + ky < h) {
-	horg[(x + gx) + w * (y + ky)] = ((AT(x + gx - 1, y + ky) + AT(x + gx,y + ky) + AT(x + gx + 1,y + ky)) * 2.0 - AT(x + gx - 2, y + ky) - AT(x + gx - 2, y + ky)) / 4.0;
-	verg[(x + gx) + w * (y + ky)] = ((AT(x + gx, y + ky - 1) + AT(x + gx,y + ky) + AT(x + gx,y + ky + 1)) * 2.0 - AT(x + gx, y + ky - 2) - AT(x + gx, y + ky - 2)) / 4.0;
+	horg[(x + gx) + w * (y + ky)] = ((AT(x + gx - 1, y + ky) + AT(x + gx,y + ky) + AT(x + gx + 1,y + ky)) * 2.0 - AT(x + gx - 2, y + ky) - AT(x + gx + 2, y + ky)) / 4.0;
+	verg[(x + gx) + w * (y + ky)] = ((AT(x + gx, y + ky - 1) + AT(x + gx,y + ky) + AT(x + gx,y + ky + 1)) * 2.0 - AT(x + gx, y + ky - 2) - AT(x + gx, y + ky + 2)) / 4.0;
 	//dcraw also clamps the interpolated values between the two real values
       }
       //
       // Same for the alternative position.
       if (x + kx < w && y + gy < h) {
-	horg[(x + kx) + w * (y + gy)] = ((AT(x + kx - 1, y + gy) + AT(x + kx,y + gy) + AT(x + kx + 1,y + gy)) * 2.0 - AT(x + kx - 2, y + gy) - AT(x + kx - 2, y + gy)) / 4.0;
-	verg[(x + kx) + w * (y + gy)] = ((AT(x + kx, y + gy - 1) + AT(x + kx,y + gy) + AT(x + kx,y + gy + 1)) * 2.0 - AT(x + kx, y + gy - 2) - AT(x + kx, y + gy - 2)) / 4.0;
+	horg[(x + kx) + w * (y + gy)] = ((AT(x + kx - 1, y + gy) + AT(x + kx,y + gy) + AT(x + kx + 1,y + gy)) * 2.0 - AT(x + kx - 2, y + gy) - AT(x + kx + 2, y + gy)) / 4.0;
+	verg[(x + kx) + w * (y + gy)] = ((AT(x + kx, y + gy - 1) + AT(x + kx,y + gy) + AT(x + kx,y + gy + 1)) * 2.0 - AT(x + kx, y + gy - 2) - AT(x + kx, y + gy + 2)) / 4.0;
 	//dcraw also clamps the interpolated values between the two real values
       }
     }
