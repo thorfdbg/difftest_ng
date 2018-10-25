@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: bayerconv.cpp,v 1.3 2018/09/06 06:19:11 thor Exp $
+** $Id: bayerconv.cpp,v 1.4 2018/10/25 09:23:53 thor Exp $
 **
 ** This class converts bayer pattern images into four-component images
 ** and back. It *does not* attempt to de-bayer the images.
@@ -40,7 +40,7 @@ and conversion framework.
 // Templated extractor class. This takes a subpixel from the
 // source and copies it to the target.
 template<typename T>
-void BayerConv::ExtractSubPixels(T *dst,ULONG dbytesperpixel,ULONG dbytesperrow,
+void BayerConv::ExtractSubPixels(ULONG width,T *dst,ULONG dbytesperpixel,ULONG dbytesperrow,
 				 const T *src,ULONG sbytesperpixel,ULONG sbytesperrow,
 				 ULONG subx,ULONG suby)
 {
@@ -54,7 +54,7 @@ void BayerConv::ExtractSubPixels(T *dst,ULONG dbytesperpixel,ULONG dbytesperrow,
     const T *s = src;
     T *d = dst;
     //
-    for(x = 0;x < m_ulWidth; x++) {
+    for(x = 0;x < width; x++) {
       *d = *s;
       s  = (const T *)((const UBYTE *)(s) + sbytesperpixel);
       d  = (T *)((UBYTE *)(d) + dbytesperpixel);
@@ -69,7 +69,7 @@ void BayerConv::ExtractSubPixels(T *dst,ULONG dbytesperpixel,ULONG dbytesperrow,
 // Templated injector class. This creates subpixels from the source and
 // injects them into the target.
 template<typename T>
-void BayerConv::InsertSubPixels(T *dst,ULONG dbytesperpixel,ULONG dbytesperrow,
+void BayerConv::InsertSubPixels(ULONG width,T *dst,ULONG dbytesperpixel,ULONG dbytesperrow,
 				const T *src,ULONG sbytesperpixel,ULONG sbytesperrow,
 				ULONG subx,ULONG suby)
 {
@@ -83,7 +83,7 @@ void BayerConv::InsertSubPixels(T *dst,ULONG dbytesperpixel,ULONG dbytesperrow,
     const T *s = src;
     T *d = dst;
     //
-    for(x = subx;x < m_ulWidth; x += 2) {
+    for(x = subx;x < width; x += 2) {
       *d = *s;
       s  = (const T *)((const UBYTE *)(s) + sbytesperpixel);
       d  = (T *)((UBYTE *)(d) + dbytesperpixel);
@@ -193,23 +193,23 @@ void BayerConv::ConvertFromBayer(UBYTE **&dest,class ImageLayout *src)
     //
     if (isSigned(i)) {
       if (BitsOf(i) <= 8) {
-	ExtractSubPixels<BYTE>((BYTE *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
+	ExtractSubPixels<BYTE>(m_ulWidth,(BYTE *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
 			       (BYTE *)src->DataOf(0),src->BytesPerPixel(0),src->BytesPerRow(0),
 			       sx,sy);
       } else if (!isFloat(i) && BitsOf(i) <= 16) {
-	ExtractSubPixels<WORD>((WORD *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
+	ExtractSubPixels<WORD>(m_ulWidth,(WORD *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
 			       (WORD *)src->DataOf(0),src->BytesPerPixel(0),src->BytesPerRow(0),
 			       sx,sy);
       } else if (!isFloat(i) && BitsOf(i) <= 32) {
-	ExtractSubPixels<LONG>((LONG *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
+	ExtractSubPixels<LONG>(m_ulWidth,(LONG *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
 			       (LONG *)src->DataOf(0),src->BytesPerPixel(0),src->BytesPerRow(0),
 			       sx,sy);
       } else if (isFloat(i) && BitsOf(i) <= 32) {
-	ExtractSubPixels<FLOAT>((FLOAT *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
+	ExtractSubPixels<FLOAT>(m_ulWidth,(FLOAT *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
 				(FLOAT *)src->DataOf(0),src->BytesPerPixel(0),src->BytesPerRow(0),
 				sx,sy);
       } else if (isFloat(i) && BitsOf(i) == 64) {
-	ExtractSubPixels<DOUBLE>((DOUBLE *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
+	ExtractSubPixels<DOUBLE>(m_ulWidth,(DOUBLE *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
 				 (DOUBLE *)src->DataOf(0),src->BytesPerPixel(0),src->BytesPerRow(0),
 				 sx,sy);
       } else {
@@ -217,23 +217,23 @@ void BayerConv::ConvertFromBayer(UBYTE **&dest,class ImageLayout *src)
       }
     } else {
       if (BitsOf(i) <= 8) {
-	ExtractSubPixels<UBYTE>((UBYTE *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
+	ExtractSubPixels<UBYTE>(m_ulWidth,(UBYTE *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
 				(UBYTE *)src->DataOf(0),src->BytesPerPixel(0),src->BytesPerRow(0),
 				sx,sy);
       } else if (!isFloat(i) && BitsOf(i) <= 16) {
-	ExtractSubPixels<UWORD>((UWORD *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
+	ExtractSubPixels<UWORD>(m_ulWidth,(UWORD *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
 				(UWORD *)src->DataOf(0),src->BytesPerPixel(0),src->BytesPerRow(0),
 				sx,sy);
       } else if (!isFloat(i) && BitsOf(i) <= 32) {
-	ExtractSubPixels<ULONG>((ULONG *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
+	ExtractSubPixels<ULONG>(m_ulWidth,(ULONG *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
 				(ULONG *)src->DataOf(0),src->BytesPerPixel(0),src->BytesPerRow(0),
 				sx,sy);
       } else if (isFloat(i) && BitsOf(i) <= 32) {
-	ExtractSubPixels<FLOAT>((FLOAT *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
+	ExtractSubPixels<FLOAT>(m_ulWidth,(FLOAT *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
 				(FLOAT *)src->DataOf(0),src->BytesPerPixel(0),src->BytesPerRow(0),
 				sx,sy);
       } else if (isFloat(i) && BitsOf(i) == 64) {
-	ExtractSubPixels<DOUBLE>((DOUBLE *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
+	ExtractSubPixels<DOUBLE>(m_ulWidth,(DOUBLE *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
 				 (DOUBLE *)src->DataOf(0),src->BytesPerPixel(0),src->BytesPerRow(0),
 				 sx,sy);
       } else {
@@ -263,8 +263,8 @@ void BayerConv::ConvertToBayer(UBYTE **&dest,class ImageLayout *src)
   //
   // All sub-images must have the same size
   for(i = 0;i < 4;i++) {
-    if (src->WidthOf(i)  != src->WidthOf(0) ||
-	src->HeightOf(i) != src->HeightOf(i))
+    if (src->WidthOf(i)  != src->WidthOf() ||
+	src->HeightOf(i) != src->HeightOf())
       throw "source image components must have all the same size";
     if (src->SubXOf(i) != 1 || src->SubYOf(i) != 1)
       throw "source image image subsampling must be all 1,1";
@@ -291,23 +291,23 @@ void BayerConv::ConvertToBayer(UBYTE **&dest,class ImageLayout *src)
     //
     if (isSigned(0)) {
       if (BitsOf(0) <= 8) {
-	InsertSubPixels<BYTE>((BYTE *)DataOf(0),BytesPerPixel(0),BytesPerRow(0),
+	InsertSubPixels<BYTE>(m_ulWidth,(BYTE *)DataOf(0),BytesPerPixel(0),BytesPerRow(0),
 			      (BYTE *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
 			      sx,sy);
       } else if (!isFloat(0) && BitsOf(0) <= 16) {
-	InsertSubPixels<WORD>((WORD *)DataOf(0),BytesPerPixel(0),BytesPerRow(0),
+	InsertSubPixels<WORD>(m_ulWidth,(WORD *)DataOf(0),BytesPerPixel(0),BytesPerRow(0),
 			      (WORD *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
 			      sx,sy);
       } else if (!isFloat(0) && BitsOf(0) <= 32) {
-	InsertSubPixels<LONG>((LONG *)DataOf(0),BytesPerPixel(0),BytesPerRow(0),
+	InsertSubPixels<LONG>(m_ulWidth,(LONG *)DataOf(0),BytesPerPixel(0),BytesPerRow(0),
 			      (LONG *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
 			      sx,sy);
       } else if (isFloat(0) && BitsOf(0) <= 32) {
-	InsertSubPixels<FLOAT>((FLOAT *)DataOf(0),BytesPerPixel(0),BytesPerRow(0),
+	InsertSubPixels<FLOAT>(m_ulWidth,(FLOAT *)DataOf(0),BytesPerPixel(0),BytesPerRow(0),
 			       (FLOAT *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
 			       sx,sy);
       } else if (isFloat(0) && BitsOf(0) == 64) {
-	InsertSubPixels<DOUBLE>((DOUBLE *)DataOf(0),BytesPerPixel(0),BytesPerRow(0),
+	InsertSubPixels<DOUBLE>(m_ulWidth,(DOUBLE *)DataOf(0),BytesPerPixel(0),BytesPerRow(0),
 				(DOUBLE *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
 				sx,sy);
       } else {
@@ -315,24 +315,262 @@ void BayerConv::ConvertToBayer(UBYTE **&dest,class ImageLayout *src)
       }
     } else {
       if (BitsOf(0) <= 8) {
-	InsertSubPixels<UBYTE>((UBYTE *)DataOf(0),BytesPerPixel(0),BytesPerRow(0),
+	InsertSubPixels<UBYTE>(m_ulWidth,(UBYTE *)DataOf(0),BytesPerPixel(0),BytesPerRow(0),
 			       (UBYTE *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
 			       sx,sy);
       } else if (!isFloat(0) && BitsOf(0) <= 16) {
-	InsertSubPixels<UWORD>((UWORD *)DataOf(0),BytesPerPixel(0),BytesPerRow(0),
+	InsertSubPixels<UWORD>(m_ulWidth,(UWORD *)DataOf(0),BytesPerPixel(0),BytesPerRow(0),
 			       (UWORD *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
 			       sx,sy);
       } else if (!isFloat(0) && BitsOf(0) <= 32) {
-	InsertSubPixels<ULONG>((ULONG *)DataOf(0),BytesPerPixel(0),BytesPerRow(0),
+	InsertSubPixels<ULONG>(m_ulWidth,(ULONG *)DataOf(0),BytesPerPixel(0),BytesPerRow(0),
 			       (ULONG *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
 			       sx,sy);
       } else if (isFloat(0) && BitsOf(0) <= 32) {
-	InsertSubPixels<FLOAT>((FLOAT *)DataOf(0),BytesPerPixel(0),BytesPerRow(0),
+	InsertSubPixels<FLOAT>(m_ulWidth,(FLOAT *)DataOf(0),BytesPerPixel(0),BytesPerRow(0),
 			       (FLOAT *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
 			       sx,sy);
       } else if (isFloat(0) && BitsOf(0) == 64) {
-	InsertSubPixels<DOUBLE>((DOUBLE *)DataOf(0),BytesPerPixel(0),BytesPerRow(0),
+	InsertSubPixels<DOUBLE>(m_ulWidth,(DOUBLE *)DataOf(0),BytesPerPixel(0),BytesPerRow(0),
 				(DOUBLE *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
+				sx,sy);
+      } else {
+	throw "unsupported data type";
+      }
+    }
+  }
+  //
+  Swap(*src);
+}
+///
+ 
+/// BayerConv::Convert422FromBayer
+// Convert from Bayer to 422 three-components.
+void BayerConv::Convert422FromBayer(UBYTE **&dest,class ImageLayout *src)
+{
+  UWORD i;
+  //
+  // Delete the (potential) old component.
+  delete[] m_pComponent;
+  m_pComponent = NULL;
+  ReleaseComponents(dest);
+  //
+  // Check the depth.
+  if (src->DepthOf() != 1)
+    throw "the source image is not grey-scale, must have exactly one component for the conversion";
+  // Dimensions must be even.
+  if ((src->WidthOf() & 1) | (src->HeightOf() & 1))
+    throw "the source image dimensions are odd, but they must be even";
+  //
+  // Compute the dimensions of the bayern sub-images.
+  m_ulWidth    = src->WidthOf();
+  m_ulHeight   = src->HeightOf() >> 1;
+  m_usDepth    = 3;
+  CreateImageData(dest,src);
+  m_pComponent[1].m_ucSubX  = 2;
+  m_pComponent[1].m_ulWidth = m_ulWidth >> 1;
+  m_pComponent[2].m_ucSubX  = 2;
+  m_pComponent[2].m_ulWidth = m_ulWidth >> 1;
+  //
+  // Now perform the extraction.
+  for(i = 0;i < 4;i++) {
+    LONG sx    = i & 1;
+    LONG sy    = i >> 1;
+    ULONG width = m_ulWidth >> 1;
+    ULONG bpp;    // destination bytes per pixel. 
+    ULONG dx = 0; // destination offset
+    UWORD j;      // target component.
+    if ((sx == m_lgx && sy == m_lgy) ||
+	(sx == m_lkx && sy == m_lky)) {
+      // Source is first or second green component.
+      j   = 0;
+      bpp = BytesPerPixel(0) << 1; // Interleave components
+      dx  = sx; // Keep them in the right order horizontally.
+    } else if (sx == m_lrx && sy == m_lry) {
+      // Source is red.
+      j   = 1;
+      bpp = BytesPerPixel(1); // Interleave components
+    } else if (sx == m_lbx && sy == m_lby) {
+      // Source is blue.
+      j   = 2;
+      bpp = BytesPerPixel(2);
+    }
+    //
+    if (isSigned(j)) {
+      if (BitsOf(j) <= 8) {
+	ExtractSubPixels<BYTE>(width,dx + (BYTE *)DataOf(j),bpp,BytesPerRow(j),
+			       (BYTE *)src->DataOf(0),src->BytesPerPixel(0),src->BytesPerRow(0),
+			       sx,sy);
+      } else if (!isFloat(j) && BitsOf(j) <= 16) {
+	ExtractSubPixels<WORD>(width,dx + (WORD *)DataOf(j),bpp,BytesPerRow(j),
+			       (WORD *)src->DataOf(0),src->BytesPerPixel(0),src->BytesPerRow(0),
+			       sx,sy);
+      } else if (!isFloat(j) && BitsOf(j) <= 32) {
+	ExtractSubPixels<LONG>(width,dx + (LONG *)DataOf(j),bpp,BytesPerRow(j),
+			       (LONG *)src->DataOf(0),src->BytesPerPixel(0),src->BytesPerRow(0),
+			       sx,sy);
+      } else if (isFloat(j) && BitsOf(j) <= 32) {
+	ExtractSubPixels<FLOAT>(width,dx + (FLOAT *)DataOf(j),bpp,BytesPerRow(j),
+				(FLOAT *)src->DataOf(0),src->BytesPerPixel(0),src->BytesPerRow(0),
+				sx,sy);
+      } else if (isFloat(j) && BitsOf(j) == 64) {
+	ExtractSubPixels<DOUBLE>(width,dx + (DOUBLE *)DataOf(j),bpp,BytesPerRow(j),
+				 (DOUBLE *)src->DataOf(0),src->BytesPerPixel(0),src->BytesPerRow(0),
+				 sx,sy);
+      } else {
+	throw "unsupported data type";
+      }
+    } else {
+      if (BitsOf(j) <= 8) {
+	ExtractSubPixels<UBYTE>(width,dx + (UBYTE *)DataOf(j),bpp,BytesPerRow(j),
+				(UBYTE *)src->DataOf(0),src->BytesPerPixel(0),src->BytesPerRow(0),
+				sx,sy);
+      } else if (!isFloat(j) && BitsOf(j) <= 16) {
+	ExtractSubPixels<UWORD>(width,dx + (UWORD *)DataOf(j),bpp,BytesPerRow(j),
+				(UWORD *)src->DataOf(0),src->BytesPerPixel(0),src->BytesPerRow(0),
+				sx,sy);
+      } else if (!isFloat(j) && BitsOf(j) <= 32) {
+	ExtractSubPixels<ULONG>(width,dx + (ULONG *)DataOf(j),bpp,BytesPerRow(j),
+				(ULONG *)src->DataOf(0),src->BytesPerPixel(0),src->BytesPerRow(0),
+				sx,sy);
+      } else if (isFloat(j) && BitsOf(j) <= 32) {
+	ExtractSubPixels<FLOAT>(width,dx + (FLOAT *)DataOf(j),bpp,BytesPerRow(j),
+				(FLOAT *)src->DataOf(0),src->BytesPerPixel(0),src->BytesPerRow(0),
+				sx,sy);
+      } else if (isFloat(j) && BitsOf(j) == 64) {
+	ExtractSubPixels<DOUBLE>(width,dx + (DOUBLE *)DataOf(j),bpp,BytesPerRow(j),
+				 (DOUBLE *)src->DataOf(0),src->BytesPerPixel(0),src->BytesPerRow(0),
+				 sx,sy);
+      } else {
+	throw "unsupported data type";
+      }
+    }
+  }
+  //
+  Swap(*src);
+}
+///
+
+/// BayerConv::Convert422ToBayer
+// Convert from 422 three-components to Bayer.
+void BayerConv::Convert422ToBayer(UBYTE **&dest,class ImageLayout *src)
+{
+  UWORD i;
+  //
+  // Delete the (potential) old component.
+  delete[] m_pComponent;
+  m_pComponent = NULL;
+  ReleaseComponents(dest);
+  //
+  // Check the depth.
+  if (src->DepthOf() != 3)
+    throw "the source image does not consist of three components";
+  //
+  if (src->SubXOf(0) != 1 || src->SubYOf(0) != 1 ||
+      src->SubXOf(1) != 2 || src->SubYOf(1) != 1 ||
+      src->SubXOf(2) != 2 || src->SubYOf(2) != 1)
+    throw "the source image is not 4:2:2 sampled";
+  //
+  if (src->WidthOf() & 1)
+    throw "the source width must be even";
+  //
+  // All sub-images must have the right size.
+  for(i = 0;i < 3;i++) {
+    ULONG width = src->WidthOf();
+    // Red and blue must be subsampled.
+    if (i)
+      width >>= 1;
+    //
+    if (src->WidthOf(i)  != width ||
+	src->HeightOf(i) != src->HeightOf())
+      throw "source image components must have all the same size";
+    //
+    // The bitdepth and signed-ness and datatypes
+    // must also be all equal.
+    if (src->BitsOf(i) != src->BitsOf(0))
+      throw "the bit depth of the source components must be all identical";
+    if (src->isSigned(i) != src->isSigned(0))
+      throw "the signedness of all source components must be identical";
+    if (src->isFloat(i) != src->isFloat(0))
+      throw "the source components must be all float or all integer";
+  }
+  //
+  // Compute image dimensions of the new image.
+  //
+  // Compute the dimensions of the bayern sub-images.
+  m_ulWidth    = src->WidthOf();
+  m_ulHeight   = src->HeightOf() << 1;
+  m_usDepth    = 1;
+  CreateImageData(dest,src);
+  //
+  // Now perform the extraction.
+  for(i = 0;i < 4;i++) {
+    LONG sx = i & 1;
+    LONG sy = i >> 1;
+    ULONG bpp; // source bytes per pixel.
+    ULONG dx = 0;  // source offset into component.
+    ULONG width = m_ulWidth;
+    UWORD j;   // source component
+    if ((sx == m_lgx && sy == m_lgy) ||
+	(sx == m_lkx && sy == m_lky)) {
+      // Source is green
+      j   = 0;
+      bpp = src->BytesPerPixel(0) << 1;
+      dx  = sx;
+    } else if (sx == m_lrx && sy == m_lry) {
+      // Source is red
+      j   = 1;
+      bpp = src->BytesPerPixel(1);
+    } else if (sx == m_lbx && sy == m_lby) {
+      // Source is blue
+      j   = 2;
+      bpp = src->BytesPerPixel(2);
+    }
+    //
+    if (isSigned(0)) {
+      if (BitsOf(0) <= 8) {
+	InsertSubPixels<BYTE>(width,(BYTE *)DataOf(0),BytesPerPixel(0),BytesPerRow(0),
+			      dx + (BYTE *)src->DataOf(j),bpp,src->BytesPerRow(j),
+			      sx,sy);
+      } else if (!isFloat(0) && BitsOf(0) <= 16) {
+	InsertSubPixels<WORD>(width,(WORD *)DataOf(0),BytesPerPixel(0),BytesPerRow(0),
+			      dx + (WORD *)src->DataOf(j),bpp,src->BytesPerRow(j),
+			      sx,sy);
+      } else if (!isFloat(0) && BitsOf(0) <= 32) {
+	InsertSubPixels<LONG>(width,(LONG *)DataOf(0),BytesPerPixel(0),BytesPerRow(0),
+			      dx + (LONG *)src->DataOf(j),bpp,src->BytesPerRow(j),
+			      sx,sy);
+      } else if (isFloat(0) && BitsOf(0) <= 32) {
+	InsertSubPixels<FLOAT>(width,(FLOAT *)DataOf(0),BytesPerPixel(0),BytesPerRow(0),
+			       dx + (FLOAT *)src->DataOf(j),bpp,src->BytesPerRow(j),
+			       sx,sy);
+      } else if (isFloat(0) && BitsOf(0) == 64) {
+	InsertSubPixels<DOUBLE>(width,(DOUBLE *)DataOf(0),BytesPerPixel(0),BytesPerRow(0),
+				dx + (DOUBLE *)src->DataOf(j),bpp,src->BytesPerRow(j),
+				sx,sy);
+      } else {
+	throw "unsupported data type";
+      }
+    } else {
+      if (BitsOf(0) <= 8) {
+	InsertSubPixels<UBYTE>(width,(UBYTE *)DataOf(0),BytesPerPixel(0),BytesPerRow(0),
+			       dx + (UBYTE *)src->DataOf(j),bpp,src->BytesPerRow(j),
+			       sx,sy);
+      } else if (!isFloat(0) && BitsOf(0) <= 16) {
+	InsertSubPixels<UWORD>(width,(UWORD *)DataOf(0),BytesPerPixel(0),BytesPerRow(0),
+			       dx + (UWORD *)src->DataOf(j),bpp,src->BytesPerRow(j),
+			       sx,sy);
+      } else if (!isFloat(0) && BitsOf(0) <= 32) {
+	InsertSubPixels<ULONG>(width,(ULONG *)DataOf(0),BytesPerPixel(0),BytesPerRow(0),
+			       dx + (ULONG *)src->DataOf(j),bpp,src->BytesPerRow(j),
+			       sx,sy);
+      } else if (isFloat(0) && BitsOf(0) <= 32) {
+	InsertSubPixels<FLOAT>(width,(FLOAT *)DataOf(0),BytesPerPixel(0),BytesPerRow(0),
+			       dx + (FLOAT *)src->DataOf(j),bpp,src->BytesPerRow(j),
+			       sx,sy);
+      } else if (isFloat(0) && BitsOf(0) == 64) {
+	InsertSubPixels<DOUBLE>(width,(DOUBLE *)DataOf(0),BytesPerPixel(0),BytesPerRow(0),
+				dx + (DOUBLE *)src->DataOf(j),bpp,src->BytesPerRow(j),
 				sx,sy);
       } else {
 	throw "unsupported data type";
@@ -349,12 +587,22 @@ void BayerConv::ConvertToBayer(UBYTE **&dest,class ImageLayout *src)
 // Convert the source and the destination one by one.
 double BayerConv::Measure(class ImageLayout *src,class ImageLayout *dst,double in)
 {
-  if (m_bToBayer) {
-    ConvertToBayer(m_ppucSource,src);
-    ConvertToBayer(m_ppucDestination,dst);
+  if (m_b422) {
+    if (m_bToBayer) {
+      Convert422ToBayer(m_ppucSource,src);
+      Convert422ToBayer(m_ppucDestination,dst);
+    } else {
+      Convert422FromBayer(m_ppucSource,src);
+      Convert422FromBayer(m_ppucDestination,dst);
+    }
   } else {
-    ConvertFromBayer(m_ppucSource,src);
-    ConvertFromBayer(m_ppucDestination,dst);
+    if (m_bToBayer) {
+      ConvertToBayer(m_ppucSource,src);
+      ConvertToBayer(m_ppucDestination,dst);
+    } else {
+      ConvertFromBayer(m_ppucSource,src);
+      ConvertFromBayer(m_ppucDestination,dst);
+    }
   }
   
   return in;

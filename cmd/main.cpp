@@ -23,7 +23,7 @@ and conversion framework.
 /*
  * Main program
  * 
- * $Id: main.cpp,v 1.93 2018/09/12 11:24:59 thor Exp $
+ * $Id: main.cpp,v 1.94 2018/10/25 09:23:47 thor Exp $
  *
  * This class defines the main program and argument parsing.
  */
@@ -203,6 +203,12 @@ void Usage(const char *progname)
 	  "--lmstoxyz         : convert images from LMS to XYZ before comparing\n"
 	  "--tobayer          : convert a four-component image to a Bayer-pattern image\n"
 	  "--frombayer        : convert a Bayer patterned grey-scale image to four components\n"
+	  "--422tobayer agmnt : convert a 422 three-component image to a Bayer pattern image\n"
+	  "                     where the argument describes the sample organization. It can be either\n"
+	  "                     grbg,rggb,gbrg or bggr, and green becomes the luma component\n"
+	  "--bayerto422 agmnt : convert a Bayer pattern image to a 422 three component image with luma\n"
+	  "                     as green and Cb as red and Cr as blue component. The argument describes\n"
+	  "                     the bayer pattern arrangement as above.\n"
 	  "--debayer argmnt   : de-Bayer a bayer pattern image with bi-linear interpolation, org describes\n"
 	  "                     the sample organization and can be grbg,rggb,gbrg or bggr\n"
 	  "--debayerahd argmt : de-Bayer with the Adaptive Homogeneity-Directed Demosaic Algorithm\n"
@@ -683,9 +689,39 @@ class Meter *ParseBayer(int &argc,char **&argv)
   const char *arg = argv[1];
   
   if (!strcmp(arg,"--tobayer")) {
-    m = new BayerConv(true);
+    m = new BayerConv(true,false);
   } else if (!strcmp(arg,"--frombayer")) {
-    m = new BayerConv(false);
+    m = new BayerConv(false,false);
+  } else if (!strcmp(arg,"--422tobayer")) {
+    if (argc < 3)
+      throw "--422tobayer requires a string argument";
+    if (!strcmp(argv[2],"grbg"))
+      m = new BayerConv(true,true,BayerConv::GRBG);
+    else if (!strcmp(argv[2],"rggb"))
+      m = new BayerConv(true,true,BayerConv::RGGB);
+    else if (!strcmp(argv[2],"gbrg"))
+      m = new BayerConv(true,true,BayerConv::GBRG);
+    else if (!strcmp(argv[2],"bggr"))
+      m = new BayerConv(true,true,BayerConv::BGGR);
+    else
+      throw "unknown Bayer subpixel arrangement";
+    argc--;
+    argv++;
+  } else if (!strcmp(arg,"--bayerto422")) {
+     if (argc < 3)
+      throw "--bayerto422 requires a string argument";
+    if (!strcmp(argv[2],"grbg"))
+      m = new BayerConv(false,true,BayerConv::GRBG);
+    else if (!strcmp(argv[2],"rggb"))
+      m = new BayerConv(false,true,BayerConv::RGGB);
+    else if (!strcmp(argv[2],"gbrg"))
+      m = new BayerConv(false,true,BayerConv::GBRG);
+    else if (!strcmp(argv[2],"bggr"))
+      m = new BayerConv(false,true,BayerConv::BGGR);
+    else
+      throw "unknown Bayer subpixel arrangement";
+    argc--;
+    argv++;
   } else if (!strcmp(arg,"--debayer")) {
     if (argc < 3)
       throw "--debayer requires a string argument";
