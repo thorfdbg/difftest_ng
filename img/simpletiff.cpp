@@ -24,7 +24,7 @@ and conversion framework.
 /*
 ** An image class to load and save TIFF images (or some of them).
 **
-** $Id: simpletiff.cpp,v 1.32 2017/01/31 11:58:04 thor Exp $
+** $Id: simpletiff.cpp,v 1.33 2018/10/29 12:20:51 thor Exp $
 */
 
 /// Includes
@@ -870,7 +870,7 @@ void SimpleTiff::ReadStriped(class TiffParser &parser,int lzw,bool hdiff,
 	case TiffTag::Planarconfig::SEPARATE:
 	  if ((comp == 1 || comp == 2) && (sx > 1 || sy > 1)) {
 	    // Sizes must be divisible by the subsampling factors to be valid.
-	    if (width % sx != 0 || h % sx != 0 || y % sy != 0)
+	    if (width % sx != 0 || h % sy != 0 || y % sy != 0)
 	      throw "invalid TIFF stripe dimensions not divisible by subsampling factors";
 	    switch(lzw) {
 	    case TiffTag::Compression::LZW:
