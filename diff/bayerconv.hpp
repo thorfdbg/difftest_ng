@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: bayerconv.hpp,v 1.4 2018/10/25 09:23:53 thor Exp $
+** $Id: bayerconv.hpp,v 1.5 2018/11/21 13:57:32 thor Exp $
 **
 ** This class converts bayer pattern images into four-component images
 ** and back. It *does not* attempt to de-bayer the images.
@@ -85,6 +85,9 @@ private:
   // components. This is ugly, but just another representation.
   bool        m_b422;
   //
+  // If true, bayer components are always reshuffled into RGGB order.
+  bool        m_bReshuffle;
+  //
   // The sample arrangement for the 422 conversion.
   // The sample positions of the red subpixel.
   LONG        m_lrx,m_lry;
@@ -119,9 +122,10 @@ private:
 public:
   // This gets a single parameter indicating the conversion direction. True if the conversion
   // direction is from 4-component to bayer, false if conversion from bayer to 4-components.
-  BayerConv(bool tobayer,bool is422,SampleArrangement s = RGGB)
+  // If reshuffle is set, the components are always brought into the order RGGB.
+  BayerConv(bool tobayer,bool is422,bool reshuffle,SampleArrangement s = RGGB)
     : m_ppucSource(NULL),m_ppucDestination(NULL), m_usAllocated(0),
-      m_bToBayer(tobayer), m_b422(is422)
+      m_bToBayer(tobayer), m_b422(is422), m_bReshuffle(reshuffle)
   {
     switch(s) {
     case GRBG:

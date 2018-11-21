@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: ycbcr.cpp,v 1.11 2018/06/15 09:06:52 thor Exp $
+** $Id: ycbcr.cpp,v 1.12 2018/11/21 13:57:32 thor Exp $
 **
 ** This class converts between RGB and YCbCr signals
 */
@@ -41,9 +41,105 @@ YCbCr::~YCbCr(void)
 {
   int i;
   
-  for(i = 0;i < 3;i++) {
+  for(i = 0;i < 4;i++) {
     delete[] m_ppucSrcImage[i];
     delete[] m_ppucDstImage[i];
+  }
+}
+///
+
+/// YCbCr::ToDeltaGreen
+template<typename S,typename T>
+void YCbCr::ToDeltaGreen(const S *g1,const S *g2,S *a,T *d,
+			 LONG doffset,
+			 ULONG bppg1,ULONG bppg2,
+			 ULONG bprg1,ULONG bprg2,
+			 ULONG bppa,ULONG bppd,
+			 ULONG bpra,ULONG bprd,
+			 ULONG w,ULONG h)
+{
+  ULONG x,y;
+
+  for(y = 0;y < h;y++) {
+    const S *g1row = g1;
+    const S *g2row = g2;
+    S *arow        = a;
+    T *drow        = d;
+    for(x = 0;x < w;x++) {
+      LONG avg   = *g1row + *g2row;
+      LONG delta = LONG(*g1row) - LONG(*g2row);
+      //
+      *arow      = S(avg) >> 1;
+      *drow      = T(delta + doffset);
+      //
+      g1row  = (const S *)((const UBYTE *)(g1row)  + bppg1);
+      g2row  = (const S *)((const UBYTE *)(g2row)  + bppg2);
+      arow   = (S *)((UBYTE *)(arow) + bppa);
+      drow   = (T *)((UBYTE *)(drow) + bppd);
+    }
+    g1 = (const S *)((const UBYTE *)(g1) + bprg1);
+    g2 = (const S *)((const UBYTE *)(g2) + bprg2);
+    a  = (S *)((UBYTE *)(a) + bpra);
+    d  = (T *)((UBYTE *)(d) + bprd);
+  }
+}
+///
+
+/// YCbCr::FromDeltaGreen
+template<typename S,typename T>
+void YCbCr::FromDeltaGreen(const S *a,const T *d,S *g1,S *g2,
+			   LONG doffset,
+			   ULONG bppa,ULONG bppd,
+			   ULONG bpra,ULONG bprd,
+			   ULONG bppg1,ULONG bppg2,
+			   ULONG bprg1,ULONG bprg2,
+			   ULONG w,ULONG h)
+{
+  ULONG x,y;
+
+  for(y = 0;y < h;y++) {
+    const S *arow = a;
+    const T *drow = d;
+    S *g1row      = g1;
+    S *g2row      = g2;
+    for(x = 0;x < w;x++) {
+      LONG delta = *drow - doffset;
+      LONG k     = *arow - (delta >> 1);
+      LONG g     = delta + k;
+      *g1row     = S(g);
+      *g2row     = S(k);
+      g1row  = (S *)((UBYTE *)(g1row)  + bppg1);
+      g2row  = (S *)((UBYTE *)(g2row)  + bppg2);
+      arow   = (const S *)((const UBYTE *)(arow) + bppa);
+      drow   = (const T *)((const UBYTE *)(drow) + bppd);
+    }
+    g1 = (S *)((UBYTE *)(g1) + bprg1);
+    g2 = (S *)((UBYTE *)(g2) + bprg2);
+    a  = (const S *)((const UBYTE *)(a) + bpra);
+    d  = (const T *)((const UBYTE *)(d) + bprd);
+  }
+}
+///
+
+/// YCbCr::Copy
+template<typename S>
+void YCbCr::Copy(const S *src,S *dst,
+		 ULONG srcbpp,ULONG srcbpr,
+		 ULONG dstbpp,ULONG dstbpr,
+		 ULONG w,ULONG h)
+{
+  ULONG x,y;
+
+  for(y = 0;y < h;y++) {
+    const S *srow = src;
+    S *drow       = dst;
+    for(x = 0;x < w;x++) {
+      *drow = *srow;
+      srow  = (const S *)((const UBYTE *)(srow) + srcbpp);
+      drow  = (S *)((UBYTE *)(drow) + dstbpp);
+    }
+    src = (const S *)((const UBYTE *)(src) + srcbpr);
+    dst = (S *)((UBYTE *)(dst) + dstbpr);
   }
 }
 ///
@@ -723,6 +819,60 @@ void YCbCr::DispatchToRCT(const class ImageLayout *img,ULONG yoffset,ULONG coffs
 		 this->BytesPerRow(0)  ,this->BytesPerRow(1)  ,this->BytesPerRow(2),
 		 w,h);
     break;
+  case RCTD_Trafo:
+    ToDeltaGreen<S,T>((const S *)img->DataOf(1),(const S *)img->DataOf(2),
+		      (S *)this->DataOf(1),(T *)this->DataOf(3),
+		      coffset,
+		      img->BytesPerPixel(1),img->BytesPerPixel(2),
+		      img->BytesPerRow(1)  ,img->BytesPerRow(2),
+		      this->BytesPerPixel(1),this->BytesPerPixel(3),
+		      this->BytesPerRow(1)  ,this->BytesPerRow(3),
+		      w,h);
+    ToRCT<S,T>((const S *)img->DataOf(0),(const S *)this->DataOf(1),(const S *)img->DataOf(3),
+	       (S *)this->DataOf(0),(T *)this->DataOf(1),(T *)this->DataOf(2),
+	       yoffset,coffset,
+	       img->BytesPerPixel(0),this->BytesPerPixel(1),img->BytesPerPixel(3),
+	       img->BytesPerRow(0)  ,this->BytesPerRow(1)  ,img->BytesPerRow(3),
+	       this->BytesPerPixel(0),this->BytesPerPixel(1),this->BytesPerPixel(2),
+	       this->BytesPerRow(0)  ,this->BytesPerRow(1)  ,this->BytesPerRow(2),
+	       w,h);
+    break;
+  case YCgCoD_Trafo:
+    ToDeltaGreen<S,T>((const S *)img->DataOf(1),(const S *)img->DataOf(2),
+		      (S *)this->DataOf(1),(T *)this->DataOf(3),
+		      coffset,
+		      img->BytesPerPixel(1),img->BytesPerPixel(2),
+		      img->BytesPerRow(1)  ,img->BytesPerRow(2),
+		      this->BytesPerPixel(1),this->BytesPerPixel(3),
+		      this->BytesPerRow(1)  ,this->BytesPerRow(3),
+		      w,h);
+    ToYCgCo<S,T>((const S *)img->DataOf(0),(const S *)this->DataOf(1),(const S *)img->DataOf(3),
+		 (S *)this->DataOf(0),(T *)this->DataOf(1),(T *)this->DataOf(2),
+		 yoffset,coffset,
+		 img->BytesPerPixel(0),this->BytesPerPixel(1),img->BytesPerPixel(3),
+		 img->BytesPerRow(0)  ,this->BytesPerRow(1)  ,img->BytesPerRow(3),
+		 this->BytesPerPixel(0),this->BytesPerPixel(1),this->BytesPerPixel(2),
+		 this->BytesPerRow(0)  ,this->BytesPerRow(1)  ,this->BytesPerRow(2),
+		 w,h);
+    break;
+  case Delta_Trafo:
+    ToDeltaGreen<S,T>((const S *)img->DataOf(1),(const S *)img->DataOf(2),
+		      (S *)this->DataOf(1),(T *)this->DataOf(3),
+		      coffset,
+		      img->BytesPerPixel(1),img->BytesPerPixel(2),
+		      img->BytesPerRow(1)  ,img->BytesPerRow(2),
+		      this->BytesPerPixel(1),this->BytesPerPixel(3),
+		      this->BytesPerRow(1)  ,this->BytesPerRow(3),
+		      w,h);
+    Copy<S>((const S *)img->DataOf(0),(S *)this->DataOf(0),
+	    img->BytesPerPixel(0),img->BytesPerRow(0),
+	    this->BytesPerPixel(0),this->BytesPerRow(0),
+	    w,h);
+    Copy<S>((const S *)img->DataOf(3),(S *)this->DataOf(2),
+	    img->BytesPerPixel(3),img->BytesPerRow(3),
+	    this->BytesPerPixel(2),this->BytesPerRow(2),
+	    w,h);
+    break;
   default:
     throw "unknown conversion specified";
   }
@@ -731,7 +881,7 @@ void YCbCr::DispatchToRCT(const class ImageLayout *img,ULONG yoffset,ULONG coffs
 
 /// YCbCr::ToRCT
 // Convert an image with the RCT or the YCgCo transformation.
-void YCbCr::ToRCT(class ImageLayout *img,UBYTE *(&membuf)[3])
+void YCbCr::ToRCT(class ImageLayout *img,UBYTE *(&membuf)[4])
 {
   LONG yoffset  = 0; // always zero
   LONG coffset  = 0; // the chroma component offset.
@@ -741,6 +891,18 @@ void YCbCr::ToRCT(class ImageLayout *img,UBYTE *(&membuf)[3])
   bool  csign   = img->isSigned(0) || m_bMakeSigned;
   UBYTE bits    = img->BitsOf(0);
   UWORD comp;
+  UWORD mindepth;
+
+  switch(m_Conversion) {
+  case RCTD_Trafo:
+  case YCgCoD_Trafo:
+  case Delta_Trafo:
+    mindepth = 4;
+    break;
+  default:
+    mindepth = 3;
+    break;
+  }
   
   CreateComponents(*img);
   
@@ -752,7 +914,7 @@ void YCbCr::ToRCT(class ImageLayout *img,UBYTE *(&membuf)[3])
   // Everything else is copied over. The entry point tested that
   // at least three components are available.
   for(comp = 0;comp < img->DepthOf();comp++) {
-    if (comp < 3) {
+    if (comp < mindepth) {
       ULONG w     = img->WidthOf(comp);
       ULONG h     = img->HeightOf(comp);
       UBYTE bits  = img->BitsOf(comp); // input bits.
@@ -771,8 +933,13 @@ void YCbCr::ToRCT(class ImageLayout *img,UBYTE *(&membuf)[3])
 	throw "RCT and YCgCo require all the same signedness as input";
       //
       // If this is a chroma component, expand the bitdepth.
-      if (comp > 0)
-	obits++;
+      if (m_Conversion == Delta_Trafo) {
+	if (comp == mindepth - 1)
+	  obits++;
+      } else {
+	if (comp > 0)
+	  obits++;
+      }
       bpc = (obits + 7) >> 3;
       mem = new UBYTE[w * h * bpc];
       //
@@ -799,6 +966,11 @@ void YCbCr::ToRCT(class ImageLayout *img,UBYTE *(&membuf)[3])
     }
   }
 
+  // If this includes a fourth component, it is one of the
+  // transformations using delta. If so, preprocess
+  // to compute the delta-component first. Delta is formed
+  // between the two greens, i.e. source components 1 and 2.
+  // The result goes into target components 1 and 3.
   if (bits <= 8) {
     if (bits + 1 <= 8) {
       if (ysign) {
@@ -906,6 +1078,60 @@ void YCbCr::DispatchFromRCT(const class ImageLayout *img,ULONG yoffset,ULONG cof
 		   this->BytesPerRow(0)  ,this->BytesPerRow(1)  ,this->BytesPerRow(2),
 		   w,h);
     break;
+  case RCTD_Trafo:
+    FromRCT<S,T>((const S *)img->DataOf(0),(const T *)img->DataOf(1),(const T *)img->DataOf(2),
+		 (S *)this->DataOf(0),(S *)this->DataOf(1),(S *)this->DataOf(3),
+		 yoffset,coffset,
+		 img->BytesPerPixel(0),img->BytesPerPixel(1),img->BytesPerPixel(2),
+		 img->BytesPerRow(0)  ,img->BytesPerRow(1)  ,img->BytesPerRow(2),
+		 this->BytesPerPixel(0),this->BytesPerPixel(1),this->BytesPerPixel(3),
+		 this->BytesPerRow(0)  ,this->BytesPerRow(1)  ,this->BytesPerRow(3),
+		 w,h);
+    FromDeltaGreen<S,T>((const S *)this->DataOf(1),(const T *)img->DataOf(3),
+			(S *)this->DataOf(1),(S *)this->DataOf(2),
+			coffset,
+			this->BytesPerPixel(1),img->BytesPerPixel(3),
+			this->BytesPerRow(1),img->BytesPerRow(3),
+			this->BytesPerPixel(1),this->BytesPerPixel(2),
+			this->BytesPerRow(1),this->BytesPerRow(2),
+			w,h);
+    break;
+  case YCgCoD_Trafo:
+     FromYCgCo<S,T>((const S *)img->DataOf(0),(const T *)img->DataOf(1),(const T *)img->DataOf(2),
+		    (S *)this->DataOf(0),(S *)this->DataOf(1),(S *)this->DataOf(3),
+		    yoffset,coffset,
+		    img->BytesPerPixel(0),img->BytesPerPixel(1),img->BytesPerPixel(2),
+		    img->BytesPerRow(0)  ,img->BytesPerRow(1)  ,img->BytesPerRow(2),
+		    this->BytesPerPixel(0),this->BytesPerPixel(1),this->BytesPerPixel(3),
+		    this->BytesPerRow(0)  ,this->BytesPerRow(1)  ,this->BytesPerRow(3),
+		    w,h);
+     FromDeltaGreen<S,T>((const S *)this->DataOf(1),(const T *)img->DataOf(3),
+			 (S *)this->DataOf(1),(S *)this->DataOf(2),
+			 coffset,
+			 this->BytesPerPixel(1),img->BytesPerPixel(3),
+			 this->BytesPerRow(1),img->BytesPerRow(3),
+			 this->BytesPerPixel(1),this->BytesPerPixel(2),
+			 this->BytesPerRow(1),this->BytesPerRow(2),
+			 w,h);
+    break;
+  case Delta_Trafo:
+    FromDeltaGreen<S,T>((const S *)img->DataOf(1),(const T *)img->DataOf(3),
+			(S *)this->DataOf(1),(S *)this->DataOf(2),
+			coffset,
+			img->BytesPerPixel(1),img->BytesPerPixel(3),
+			img->BytesPerRow(1),img->BytesPerRow(3),
+			this->BytesPerPixel(1),this->BytesPerPixel(2),
+			this->BytesPerRow(1),this->BytesPerRow(2),
+			w,h);
+    Copy<S>((const S *)img->DataOf(0),(S *)this->DataOf(0),
+	    img->BytesPerPixel(0),img->BytesPerRow(0),
+	    this->BytesPerPixel(0),this->BytesPerRow(0),
+	    w,h);
+    Copy<S>((const S *)img->DataOf(2),(S *)this->DataOf(3),
+	    img->BytesPerPixel(2),img->BytesPerRow(2),
+	    this->BytesPerPixel(3),this->BytesPerRow(3),
+	    w,h);
+    break;
   default:
     throw "unknown conversion specified";
   }
@@ -947,7 +1173,7 @@ void YCbCr::DispatchFromYCbCr(const class ImageLayout *img,double yoffset,double
 
 /// YCbCr::FromRCT
 // Convert back from RCT or YCgCo to RGB
-void YCbCr::FromRCT(class ImageLayout *img,UBYTE *(&membuf)[3])
+void YCbCr::FromRCT(class ImageLayout *img,UBYTE *(&membuf)[4])
 {
   LONG yoffset  = 0; // always zero
   LONG coffset  = 0; // the chroma component offset.
@@ -958,7 +1184,21 @@ void YCbCr::FromRCT(class ImageLayout *img,UBYTE *(&membuf)[3])
   UBYTE ybits   = img->BitsOf(0);
   UBYTE cbits   = img->BitsOf(1);
   UWORD comp;
+  UWORD mindepth;
 
+  switch(m_Conversion) {
+  case Delta_Trafo:
+    cbits    = img->BitsOf(3);
+    csign    = img->isSigned(3);
+  case RCTD_Trafo:
+  case YCgCoD_Trafo:
+    mindepth = 4;
+    break;
+  default:
+    mindepth = 3;
+    break;
+  }
+  
   if (cbits != ybits + 1)
     throw "RCT and YCgCo input requires one additional bit in the chroma components";
 
@@ -976,7 +1216,7 @@ void YCbCr::FromRCT(class ImageLayout *img,UBYTE *(&membuf)[3])
   // at least three components are available. Note that the
   // chroma components must include one extra bit.
   for(comp = 0;comp < img->DepthOf();comp++) {
-    if (comp < 3) {
+    if (comp < mindepth) {
       ULONG w     = img->WidthOf(comp);
       ULONG h     = img->HeightOf(comp);
       UBYTE bpc;
@@ -987,10 +1227,12 @@ void YCbCr::FromRCT(class ImageLayout *img,UBYTE *(&membuf)[3])
 	throw "RCT and YCgCo color spaces are not supported for floating point data";
       //
       // Depth must be all the same.
-      if (comp > 0 && cbits != img->BitsOf(comp))
-	throw "RCT and YCgCo require all the same chroma bit depths as input";
-      if (comp > 0 && img->isSigned(comp) != csign)
-	throw "RCT and YCgCo require that all chroma components have the same signedness";
+      if (m_Conversion != Delta_Trafo) {
+	if (comp > 0 && cbits != img->BitsOf(comp))
+	  throw "RCT and YCgCo require all the same chroma bit depths as input";
+	if (comp > 0 && img->isSigned(comp) != csign)
+	  throw "RCT and YCgCo require that all chroma components have the same signedness";
+      }
       //
       bpc = (ybits + 7) >> 3;
       mem = new UBYTE[w * h * bpc];
@@ -1070,12 +1312,24 @@ void YCbCr::FromRCT(class ImageLayout *img,UBYTE *(&membuf)[3])
 double YCbCr::Measure(class ImageLayout *src,class ImageLayout *dst,double in)
 {
   int i;
+  UWORD mindepth;
+
+  switch(m_Conversion) {
+  case RCTD_Trafo:
+  case YCgCoD_Trafo:
+  case Delta_Trafo:
+    mindepth = 4;
+    break;
+  default:
+    mindepth = 3;
+    break;
+  }
   
-  if (src->DepthOf() < 3 || dst->DepthOf() < 3)
-    throw "color space conversions require at least three components";
+  if (src->DepthOf() < mindepth || dst->DepthOf() < mindepth)
+    throw "insufficient number of components for color space conversion";
 
   // Check the dimensions of the components. Must all have the same size.
-  for(i = 1;i < 3;i++) {
+  for(i = 1;i < mindepth;i++) {
     if (src->WidthOf(i) != src->WidthOf(0) || src->HeightOf(i) != src->HeightOf(0) ||
 	dst->WidthOf(i) != dst->WidthOf(0) || dst->HeightOf(i) != dst->HeightOf(0))
       throw "component dimensions differ, probably due to subsampling. Use --cup to upsample chroma first";
@@ -1093,6 +1347,9 @@ double YCbCr::Measure(class ImageLayout *src,class ImageLayout *dst,double in)
       ToYCbCr(dst);
     }
     break;
+  case RCTD_Trafo:
+  case YCgCoD_Trafo:
+  case Delta_Trafo:
   case RCT_Trafo:
   case YCgCo_Trafo:
     if (m_bInverse) {

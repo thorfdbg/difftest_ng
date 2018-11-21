@@ -23,7 +23,7 @@ and conversion framework.
 /*
  * Main program
  * 
- * $Id: main.cpp,v 1.94 2018/10/25 09:23:47 thor Exp $
+ * $Id: main.cpp,v 1.95 2018/11/21 13:57:28 thor Exp $
  *
  * This class defines the main program and argument parsing.
  */
@@ -191,10 +191,16 @@ void Usage(const char *progname)
 	  "--fromycbcr2020bl  : convert images from 2020 YCbCr to RGB before comparing, and remove the black level\n"
 	  "--torct            : convert an image with the RCT from JPEG 2000\n"
 	  "--tosignedrct      : convert an image with the RCT from JPEG 2000, leaving chroma signed\n"
+	  "--torctd           : convert an RGGB image to YCbCr+DeltaG with the RCT\n"
 	  "--fromrct          : convert an image back to RGB with the inverse RCT\n"
+	  "--fromrctd         : convert a YCbCr+DeltaG to RGGB with the inverse RCT\n"
+	  "--todeltag         : convert RGGB to RGB+DeltaG\n"
 	  "--toycgco          : convert an image with the YCgCo transformation\n"
 	  "--tosignedycgco    : convert an image to YCgCo leaving chroma signed\n"
+	  "--tocycbcod        : convert an RGGB image to YCgCo+DeltaG\n"
 	  "--fromycgco        : convert an image back to RGB with the inverse YCgCo transformation\n"
+	  "--fromycgcod       : convert a YCgCo+DeltaG to RGGB with the inverse RCT\n"
+	  "--fromdeltag       : convert RGB+DeltaG to RGGB\n"
 	  "--toxyz            : convert images from RGB to XYZ before comparing\n"
 	  "--fromxyz          : convert images from XYZ to RGB before comparing\n"
 	  "--tolms            : convert images from RGB to LMS before comparing\n"
@@ -203,15 +209,19 @@ void Usage(const char *progname)
 	  "--lmstoxyz         : convert images from LMS to XYZ before comparing\n"
 	  "--tobayer          : convert a four-component image to a Bayer-pattern image\n"
 	  "--frombayer        : convert a Bayer patterned grey-scale image to four components\n"
-	  "--422tobayer agmnt : convert a 422 three-component image to a Bayer pattern image\n"
+	  "--tobayersh   agmnt: convert a four-component image in component order RGGB\n"
+	  "                     to a Bayer patterned image of the given arragement\n"
+	  "--frombayersh agmnt: convert a Bayer patterned image in the given sample order\n"
+	  "                     into a four-component image in RGGB order\n"
+	  "--422tobayer  agmnt: convert a 422 three-component image to a Bayer pattern image\n"
 	  "                     where the argument describes the sample organization. It can be either\n"
 	  "                     grbg,rggb,gbrg or bggr, and green becomes the luma component\n"
-	  "--bayerto422 agmnt : convert a Bayer pattern image to a 422 three component image with luma\n"
+	  "--bayerto422  agmnt: convert a Bayer pattern image to a 422 three component image with luma\n"
 	  "                     as green and Cb as red and Cr as blue component. The argument describes\n"
 	  "                     the bayer pattern arrangement as above.\n"
-	  "--debayer argmnt   : de-Bayer a bayer pattern image with bi-linear interpolation, org describes\n"
+	  "--debayer     agmnt: de-Bayer a bayer pattern image with bi-linear interpolation, org describes\n"
 	  "                     the sample organization and can be grbg,rggb,gbrg or bggr\n"
-	  "--debayerahd argmt : de-Bayer with the Adaptive Homogeneity-Directed Demosaic Algorithm\n"
+	  "--debayerahd  argmt: de-Bayer with the Adaptive Homogeneity-Directed Demosaic Algorithm\n"
 	  "--fill r,g,b,...   : fill the source image with the given color\n"
 	  "--paste x y        : paste the distorted image at the given position into the source\n"
 	  "--raw              : encode output in raw if applicable\n"
@@ -627,18 +637,34 @@ class Meter *ParseColor(int &,char **&argv,struct ImgSpecs &specout)
   } else if (!strcmp(arg,"--tosignedrct")) {
     specout.YUVEncoded = ImgSpecs::Yes;
     m = new YCbCr(false,true,false,YCbCr::RCT_Trafo);
+  } else if (!strcmp(arg,"--torctd")) {
+    specout.YUVEncoded = ImgSpecs::Yes;
+    m = new YCbCr(false,false,false,YCbCr::RCTD_Trafo);
   } else if (!strcmp(arg,"--fromrct")) {
     specout.YUVEncoded = ImgSpecs::No;
     m = new YCbCr(true ,false,false,YCbCr::RCT_Trafo);
+  } else if (!strcmp(arg,"--fromrctd")) {
+    specout.YUVEncoded = ImgSpecs::No;
+    m = new YCbCr(true ,false,false,YCbCr::RCTD_Trafo);
   } else if (!strcmp(arg,"--toycgco")) {
     specout.YUVEncoded = ImgSpecs::Yes;
     m = new YCbCr(false,false,false,YCbCr::YCgCo_Trafo);
   } else if (!strcmp(arg,"--tosignedycgco")) {
     specout.YUVEncoded = ImgSpecs::Yes;
     m = new YCbCr(false,true,false,YCbCr::YCgCo_Trafo);
+  } else if (!strcmp(arg,"--toycgcod")) {
+    specout.YUVEncoded = ImgSpecs::Yes;
+    m = new YCbCr(false,false,false,YCbCr::YCgCoD_Trafo);
+  } else if (!strcmp(arg,"--todeltag")) {
+    m = new YCbCr(false,false,false,YCbCr::Delta_Trafo);
   } else if (!strcmp(arg,"--fromycgco")) {
     specout.YUVEncoded = ImgSpecs::No;
     m = new YCbCr(true ,false,false,YCbCr::YCgCo_Trafo);
+  } else if (!strcmp(arg,"--fromycgcod")) {
+    specout.YUVEncoded = ImgSpecs::No;
+    m = new YCbCr(true ,false,false,YCbCr::YCgCoD_Trafo);
+  } else if (!strcmp(arg,"--fromdeltag")) {
+    m = new YCbCr(true ,false,false,YCbCr::Delta_Trafo);
   } else if (!strcmp(arg,"--toycbcr709")) {
     specout.YUVEncoded = ImgSpecs::Yes;
     m = new YCbCr(false,false,false,YCbCr::YCbCr709_Trafo);
@@ -689,20 +715,50 @@ class Meter *ParseBayer(int &argc,char **&argv)
   const char *arg = argv[1];
   
   if (!strcmp(arg,"--tobayer")) {
-    m = new BayerConv(true,false);
+    m = new BayerConv(true,false,false);
   } else if (!strcmp(arg,"--frombayer")) {
-    m = new BayerConv(false,false);
+    m = new BayerConv(false,false,false);
+  } else if (!strcmp(arg,"--tobayersh")) {
+    if (argc < 3)
+      throw "--tobayershuffle requires a string argument";
+    if (!strcmp(argv[2],"grbg"))
+      m = new BayerConv(true,false,true,BayerConv::GRBG);
+    else if (!strcmp(argv[2],"rggb"))
+      m = new BayerConv(true,false,true,BayerConv::RGGB);
+    else if (!strcmp(argv[2],"gbrg"))
+      m = new BayerConv(true,false,true,BayerConv::GBRG);
+    else if (!strcmp(argv[2],"bggr"))
+      m = new BayerConv(true,false,true,BayerConv::BGGR);
+    else
+      throw "unknown Bayer subpixel arrangement";
+    argc--;
+    argv++;
+  } else if (!strcmp(arg,"--frombayersh")) {
+    if (argc < 3)
+      throw "--fromayershuffle requires a string argument";
+    if (!strcmp(argv[2],"grbg"))
+      m = new BayerConv(false,false,true,BayerConv::GRBG);
+    else if (!strcmp(argv[2],"rggb"))
+      m = new BayerConv(false,false,true,BayerConv::RGGB);
+    else if (!strcmp(argv[2],"gbrg"))
+      m = new BayerConv(false,false,true,BayerConv::GBRG);
+    else if (!strcmp(argv[2],"bggr"))
+      m = new BayerConv(false,false,true,BayerConv::BGGR);
+    else
+      throw "unknown Bayer subpixel arrangement";
+    argc--;
+    argv++;
   } else if (!strcmp(arg,"--422tobayer")) {
     if (argc < 3)
       throw "--422tobayer requires a string argument";
     if (!strcmp(argv[2],"grbg"))
-      m = new BayerConv(true,true,BayerConv::GRBG);
+      m = new BayerConv(true,true,false,BayerConv::GRBG);
     else if (!strcmp(argv[2],"rggb"))
-      m = new BayerConv(true,true,BayerConv::RGGB);
+      m = new BayerConv(true,true,false,BayerConv::RGGB);
     else if (!strcmp(argv[2],"gbrg"))
-      m = new BayerConv(true,true,BayerConv::GBRG);
+      m = new BayerConv(true,true,false,BayerConv::GBRG);
     else if (!strcmp(argv[2],"bggr"))
-      m = new BayerConv(true,true,BayerConv::BGGR);
+      m = new BayerConv(true,true,false,BayerConv::BGGR);
     else
       throw "unknown Bayer subpixel arrangement";
     argc--;

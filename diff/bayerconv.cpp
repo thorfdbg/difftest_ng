@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: bayerconv.cpp,v 1.4 2018/10/25 09:23:53 thor Exp $
+** $Id: bayerconv.cpp,v 1.5 2018/11/21 13:57:32 thor Exp $
 **
 ** This class converts bayer pattern images into four-component images
 ** and back. It *does not* attempt to de-bayer the images.
@@ -188,8 +188,30 @@ void BayerConv::ConvertFromBayer(UBYTE **&dest,class ImageLayout *src)
   //
   // Now perform the extraction.
   for(i = 0;i < m_usDepth;i++) {
-    ULONG sx = i & 1;
-    ULONG sy = i >> 1;
+    ULONG sx,sy;
+    if (m_bReshuffle) {
+      switch(i) {
+      case 0:
+	sx = m_lrx;
+	sy = m_lry;
+	break;
+      case 1:
+	sx = m_lgx;
+	sy = m_lgy;
+	break;
+      case 2:
+	sx = m_lkx;
+	sy = m_lky;
+	break;
+      case 3:
+	sx = m_lbx;
+	sy = m_lby;
+	break;
+      }
+    } else {
+      sx = i & 1;
+      sy = i >> 1;
+    }
     //
     if (isSigned(i)) {
       if (BitsOf(i) <= 8) {
@@ -286,8 +308,30 @@ void BayerConv::ConvertToBayer(UBYTE **&dest,class ImageLayout *src)
   //
   // Now perform the extraction.
   for(i = 0;i < 4;i++) {
-    ULONG sx = i & 1;
-    ULONG sy = i >> 1;
+    ULONG sx,sy;
+    if (m_bReshuffle) {
+      switch(i) {
+      case 0:
+	sx = m_lrx;
+	sy = m_lry;
+	break;
+      case 1:
+	sx = m_lgx;
+	sy = m_lgy;
+	break;
+      case 2:
+	sx = m_lkx;
+	sy = m_lky;
+	break;
+      case 3:
+	sx = m_lbx;
+	sy = m_lby;
+	break;
+      }
+    } else {
+      sx = i & 1;
+      sy = i >> 1;
+    }
     //
     if (isSigned(0)) {
       if (BitsOf(0) <= 8) {

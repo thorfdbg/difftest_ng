@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: ycbcr.hpp,v 1.9 2018/06/15 09:06:52 thor Exp $
+** $Id: ycbcr.hpp,v 1.10 2018/11/21 13:57:32 thor Exp $
 **
 ** This class converts between RGB and YCbCr signals
 */
@@ -58,8 +58,8 @@ class YCbCr : public Meter, private ImageLayout {
   //
   // The component memory itself. In case of the integer transformations,
   // the range is expanded, hence a new image has to be created.
-  UBYTE *m_ppucSrcImage[3];
-  UBYTE *m_ppucDstImage[3];
+  UBYTE *m_ppucSrcImage[4];
+  UBYTE *m_ppucDstImage[4];
   //
 public:
   //
@@ -70,9 +70,18 @@ public:
     YCgCo_Trafo,
     YCbCr709_Trafo,  // This is the BT.709 conversion
     YCbCr2020_Trafo, // This is the transformation for BT.2020
+    RCTD_Trafo,      // Convert 4-component image with RGGB components into RCT plus delta-green
+    YCgCoD_Trafo,    // Convert 4-component image with RGGB components into YCgCo plus delta-green
+    Delta_Trafo,     // Convert 4-component image into R(avgG)B,delta-green
   }    m_Conversion;
   //
 private:
+  //
+  template<typename S>
+  static void Copy(const S *src,S *dst,
+		   ULONG srcbpp,ULONG srcbpr,
+		   ULONG dstbpp,ULONG dstbpr,
+		   ULONG w,ULONG h);
   //
   // Forwards conversion
   template<typename S,typename T>
@@ -122,6 +131,15 @@ private:
 		      ULONG bpry,ULONG bprcg,ULONG bprco,
 		      ULONG w, ULONG h);
   //
+  template<typename S,typename T>
+  static void ToDeltaGreen(const S *g1,const S *g2,S *a,T *d,
+			   LONG doffset,
+			   ULONG bppg1,ULONG bppg2,
+			   ULONG bprg1,ULONG bprg2,
+  			   ULONG bppa,ULONG bppd,
+			   ULONG bpra,ULONG bprd,
+			   ULONG w, ULONG h);
+  //
   // Backwards conversion.
   template<typename S,typename T>
   static void FromYCbCr(S *y,T *cb,T *cr,
@@ -165,6 +183,15 @@ private:
 			ULONG bprr,ULONG bprg, ULONG bprb,
 			ULONG w, ULONG h);
   //
+  template<typename S,typename T>
+  static void FromDeltaGreen(const S *a,const T *d,S *g1,S *g2,
+			     LONG doffset,
+			     ULONG bppa,ULONG bppd,
+			     ULONG bpra,ULONG bprd,
+			     ULONG bppg1,ULONG bppg2,
+			     ULONG bprg1,ULONG bprg2,
+			     ULONG w, ULONG h);
+  //
   // Convert a single image to YCbCr.
   void ToYCbCr(class ImageLayout *img);
   //
@@ -193,10 +220,10 @@ private:
   // They are both range-expanding.
   //
   // Convert an image from RCT or YCgCo, creating a new image
-  void ToRCT(class ImageLayout *img,UBYTE *(&membuf)[3]);
+  void ToRCT(class ImageLayout *img,UBYTE *(&membuf)[4]);
   //
   // Convert an image from RCT or YCgCo, creating a new image
-  void FromRCT(class ImageLayout *img,UBYTE *(&membuf)[3]);
+  void FromRCT(class ImageLayout *img,UBYTE *(&membuf)[4]);
   //
 public:
   //
