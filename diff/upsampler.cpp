@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: upsampler.cpp,v 1.9 2018/09/04 11:44:48 thor Exp $
+** $Id: upsampler.cpp,v 1.10 2018/11/22 12:37:05 thor Exp $
 **
 ** This class downscales in the spatial domain
 */
@@ -43,6 +43,8 @@ void Upsampler::BilinearFilter(const S *org,ULONG obytesperpixel,ULONG obytesper
 			       int sx,int sy)
 {
   ULONG x,y;
+  ULONG sw  = w / sx;
+  ULONG sh  = h / sy;
   double fx = (sx & 1)?0.0:0.5;
   double fy = (sy & 1)?0.0:0.5;
   int    cx = sx >> 1;
@@ -62,9 +64,9 @@ void Upsampler::BilinearFilter(const S *org,ULONG obytesperpixel,ULONG obytesper
       double wx = (x - double(xo * sx) - cx + fx) / double(sx);
       double wy = (y - double(yo * sy) - cy + fy) / double(sy); // weight for the right pixel
       LONG xl   = (xo >= 0)?(xo):(0);
-      LONG xr   = (xo + 1 < LONG(w))?(xo + 1):(xo);
+      LONG xr   = (xo + 1 < LONG(sw))?(xo + 1):(xo);
       LONG yt   = (yo >= 0)?(yo):(0);
-      LONG yb   = (yo + 1 < LONG(h))?(yo + 1):(yo);
+      LONG yb   = (yo + 1 < LONG(sh))?(yo + 1):(yo);
       assert(wx >= 0.0 && wx < 1.0);
       assert(wy >= 0.0 && wy < 1.0);
       srclt  = (const S *)(((const UBYTE *)org) + xl * obytesperpixel + yt * obytesperrow);

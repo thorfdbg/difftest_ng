@@ -23,7 +23,7 @@ and conversion framework.
 /*
  * Main program
  * 
- * $Id: main.cpp,v 1.95 2018/11/21 13:57:28 thor Exp $
+ * $Id: main.cpp,v 1.96 2018/11/22 12:37:01 thor Exp $
  *
  * This class defines the main program and argument parsing.
  */
@@ -192,8 +192,11 @@ void Usage(const char *progname)
 	  "--torct            : convert an image with the RCT from JPEG 2000\n"
 	  "--tosignedrct      : convert an image with the RCT from JPEG 2000, leaving chroma signed\n"
 	  "--torctd           : convert an RGGB image to YCbCr+DeltaG with the RCT\n"
+	  "--to422rct         : convert a 422 image with green in component 0 to YCbCr\n"
+	  "--to422signedrct   : convert a 422 image with green in component 0, leaving chroma signed\n"
 	  "--fromrct          : convert an image back to RGB with the inverse RCT\n"
 	  "--fromrctd         : convert a YCbCr+DeltaG to RGGB with the inverse RCT\n"
+	  "--from422rct       : convert from YCbCr to RGB with green in channel 0\n"
 	  "--todeltag         : convert RGGB to RGB+DeltaG\n"
 	  "--toycgco          : convert an image with the YCgCo transformation\n"
 	  "--tosignedycgco    : convert an image to YCgCo leaving chroma signed\n"
@@ -640,12 +643,21 @@ class Meter *ParseColor(int &,char **&argv,struct ImgSpecs &specout)
   } else if (!strcmp(arg,"--torctd")) {
     specout.YUVEncoded = ImgSpecs::Yes;
     m = new YCbCr(false,false,false,YCbCr::RCTD_Trafo);
+  } else if (!strcmp(arg,"--to422rct")) {
+    specout.YUVEncoded = ImgSpecs::Yes;
+    m = new YCbCr(false,false,false,YCbCr::RCT422_Trafo);
+  } else if (!strcmp(arg,"--tosigned422rct")) {
+    specout.YUVEncoded = ImgSpecs::Yes;
+    m = new YCbCr(false,true,false,YCbCr::RCT422_Trafo);
   } else if (!strcmp(arg,"--fromrct")) {
     specout.YUVEncoded = ImgSpecs::No;
     m = new YCbCr(true ,false,false,YCbCr::RCT_Trafo);
   } else if (!strcmp(arg,"--fromrctd")) {
     specout.YUVEncoded = ImgSpecs::No;
     m = new YCbCr(true ,false,false,YCbCr::RCTD_Trafo);
+  } else if (!strcmp(arg,"--from422rct")) {
+    specout.YUVEncoded = ImgSpecs::No;
+    m = new YCbCr(true ,false,false,YCbCr::RCT422_Trafo);
   } else if (!strcmp(arg,"--toycgco")) {
     specout.YUVEncoded = ImgSpecs::Yes;
     m = new YCbCr(false,false,false,YCbCr::YCgCo_Trafo);

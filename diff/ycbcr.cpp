@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: ycbcr.cpp,v 1.12 2018/11/21 13:57:32 thor Exp $
+** $Id: ycbcr.cpp,v 1.13 2018/11/22 12:37:05 thor Exp $
 **
 ** This class converts between RGB and YCbCr signals
 */
@@ -443,6 +443,59 @@ void YCbCr::ToRCT(const S *r,const S *g,const S *b,S *y,T *cb,T *cr,
 }
 ///
 
+/// YCbCr::To422RCT
+template<typename S,typename T>
+void YCbCr::To422RCT(const S *r,const S *g,const S *b,S *y,T *cb,T *cr,
+		     LONG yoffset,LONG coffset,
+		     ULONG bppr,ULONG bppg, ULONG bppb,
+		     ULONG bprr,ULONG bprg, ULONG bprb,
+		     ULONG bppy,ULONG bppcb,ULONG bppcr,
+		     ULONG bpry,ULONG bprcb,ULONG bprcr,
+		     ULONG w, ULONG h)
+{
+  ULONG xi,yi;
+
+  for(yi = 0;yi < h;yi++) {
+    const S *rrow  = r;
+    const S *grow  = g;
+    const S *brow  = b;
+    S *yrow  = y;
+    T *cbrow = cb;
+    T *crrow = cr;
+    for(xi = 0;xi < w;xi += 2) {
+      LONG r  = *rrow;
+      LONG g1 = *grow;
+      LONG b  = *brow;
+      LONG y1 = ((r + (g1 << 1) + b) >> 1) + yoffset;
+      LONG cb =  (b - g1) + coffset;
+      LONG cr =  (r - g1) + coffset;
+      grow    = (const S *)((const UBYTE *)(grow)  + bppr);
+      LONG g2 = *grow;
+      LONG y2 = ((r + (g2 << 1) + b) >> 1) + yoffset;
+      //
+      *yrow  = S(y1);
+      yrow   = (S *)((UBYTE *)(yrow)  + bppy);
+      *yrow  = S(y2);
+      *cbrow = T(cb);
+      *crrow = T(cr);
+      //
+      rrow   = (const S *)((const UBYTE *)(rrow)  + bppr);
+      grow   = (const S *)((const UBYTE *)(grow)  + bppg);
+      brow   = (const S *)((const UBYTE *)(brow)  + bppb);
+      yrow   = (S *)((UBYTE *)(yrow)  + bppy);
+      cbrow  = (T *)((UBYTE *)(cbrow) + bppcb);
+      crrow  = (T *)((UBYTE *)(crrow) + bppcr);
+    }
+    r  = (const S *)((const UBYTE *)(r)  + bprr);
+    g  = (const S *)((const UBYTE *)(g)  + bprg);
+    b  = (const S *)((const UBYTE *)(b)  + bprb);
+    y  = (S *)((UBYTE *)(y)  + bpry);
+    cb = (T *)((UBYTE *)(cb) + bprcb);
+    cr = (T *)((UBYTE *)(cr) + bprcr);
+  }
+}
+///
+
 /// YCbCr::FromRCT
 template<typename S,typename T>
 void YCbCr::FromRCT(const S *yp,const T *cb,const T *cr,S *r,S *g,S *b,
@@ -473,6 +526,59 @@ void YCbCr::FromRCT(const S *yp,const T *cb,const T *cr,S *r,S *g,S *b,
       *rrow = S(r);
       *grow = S(g);
       *brow = S(b);
+      //
+      yrow   = (const S *)((const UBYTE *)(yrow ) + bppy);
+      cbrow  = (const T *)((const UBYTE *)(cbrow) + bppcb);
+      crrow  = (const T *)((const UBYTE *)(crrow) + bppcr);
+      rrow   = (S *)((UBYTE *)(rrow ) + bppr);
+      grow   = (S *)((UBYTE *)(grow)  + bppg);
+      brow   = (S *)((UBYTE *)(brow)  + bppb);
+    }
+    yp  = (const S *)((const UBYTE *)(yp) + bpry);
+    cb  = (const T *)((const UBYTE *)(cb) + bprcb);
+    cr  = (const T *)((const UBYTE *)(cr) + bprcr);
+    r   = (S *)((UBYTE *)(r)  + bprr);
+    g   = (S *)((UBYTE *)(g)  + bprg);
+    b   = (S *)((UBYTE *)(b)  + bprb);
+  }
+}
+///
+
+/// YCbCr::From422RCT
+template<typename S,typename T>
+void YCbCr::From422RCT(const S *yp,const T *cb,const T *cr,S *r,S *g,S *b,
+		       LONG yoffset,LONG coffset,
+		       ULONG bppy,ULONG bppcb,ULONG bppcr,
+		       ULONG bpry,ULONG bprcb,ULONG bprcr,
+		       ULONG bppr,ULONG bppg, ULONG bppb,
+		       ULONG bprr,ULONG bprg, ULONG bprb,
+		       ULONG w, ULONG h)
+{
+  ULONG xi,yi;
+
+  for(yi = 0;yi < h;yi++) {
+    const S *yrow  = yp;
+    const T *cbrow = cb;
+    const T *crrow = cr;
+    S *rrow  = r;
+    S *grow  = g;
+    S *brow  = b;
+    for(xi = 0;xi < w;xi += 2) {
+      LONG y1 = *yrow  - yoffset;
+      LONG cb = *cbrow - coffset;
+      LONG cr = *crrow - coffset;
+      LONG g1 = (y1 - ((cb + cr) >> 1)) >> 1;
+      LONG r  = cr + g1;
+      LONG b  = cb + g1;
+      yrow    = (const S *)((const UBYTE *)(yrow ) + bppy);
+      LONG y2 = *yrow  - yoffset;
+      LONG g2 = y2 - ((r + b) >> 1);
+      //
+      *rrow  = S(r);
+      *grow  = S(g1);
+      grow   = (S *)((UBYTE *)(grow)  + bppg);
+      *grow  = S(g2);
+      *brow  = S(b);
       //
       yrow   = (const S *)((const UBYTE *)(yrow ) + bppy);
       cbrow  = (const T *)((const UBYTE *)(cbrow) + bppcb);
@@ -1308,6 +1414,307 @@ void YCbCr::FromRCT(class ImageLayout *img,UBYTE *(&membuf)[4])
 }
 ///
 
+/// YCbCr::To422RCT
+// Convert a 422 sampled image with the 422 RCT to YCbCr.
+void YCbCr::To422RCT(class ImageLayout *img,UBYTE *(&membuf)[4])
+{
+  LONG yoffset  = 0; // always zero
+  LONG coffset  = 0; // the chroma component offset.
+  ULONG w       = img->WidthOf(0);
+  ULONG h       = img->HeightOf(0);
+  bool  ysign   = img->isSigned(0);
+  bool  csign   = img->isSigned(0) || m_bMakeSigned;
+  UBYTE bits    = img->BitsOf(0);
+  UWORD comp;
+  int i;
+
+  if (w & 1)
+    throw "The 422RCT transformation does not support odd image widths";
+
+  for(i = 1;i < 3;i++) {
+    if (img->WidthOf(i) != (w >> 1) || img->HeightOf(i) != h)
+      throw "Chroma components must be subsampled in horizontal direction for the 422 RCT";
+  }
+  
+  CreateComponents(*img);
+  
+  if (!m_bMakeSigned) {
+    coffset = 0 + ((ysign)?(0):(LONG(1) << (img->BitsOf(0))));
+  }
+  //
+  // Now build the components. Floating point is not supported.
+  // Everything else is copied over. The entry point tested that
+  // at least three components are available.
+  for(comp = 0;comp < img->DepthOf();comp++) {
+    if (comp < 3) {
+      ULONG w     = img->WidthOf(comp);
+      ULONG h     = img->HeightOf(comp);
+      UBYTE bits  = img->BitsOf(comp); // input bits.
+      UBYTE obits = bits;
+      UBYTE bpc;
+      UBYTE *mem;
+      //
+      // If this is float, then we are not supported.
+      if (img->isFloat(comp))
+	throw "The 422RCT transformation does not support floating point data";
+      //
+      // Depth must be all the same.
+      if (bits != img->BitsOf(0))
+	throw "The 422RCT requires all input bith depths to be identical";
+      if (img->isSigned(comp) != img->isSigned(0))
+	throw "The 422RCT requires all input components to have the same signedness";
+      //
+      // Expand the bitdepths of all components. Otherwise, this transformation
+      // would not be reversible.
+      obits++;
+      bpc = (obits + 7) >> 3;
+      mem = new UBYTE[w * h * bpc];
+      //
+      // Store the pointer to be able to release it later.
+      membuf[comp]                         = mem;
+      m_pComponent[comp].m_ucBits          = obits;
+      m_pComponent[comp].m_bSigned         = (comp > 0)?(csign):(ysign);
+      m_pComponent[comp].m_bFloat          = false;
+      m_pComponent[comp].m_ulWidth         = w;
+      m_pComponent[comp].m_ulHeight        = h;
+      m_pComponent[comp].m_ulBytesPerPixel = bpc;
+      m_pComponent[comp].m_ulBytesPerRow   = bpc * w;
+      m_pComponent[comp].m_pPtr            = mem;
+    } else {
+      // Otherwise, just copy the data over.
+      m_pComponent[comp].m_ucBits          = img->BitsOf(comp);
+      m_pComponent[comp].m_bSigned         = img->isSigned(comp);
+      m_pComponent[comp].m_bFloat          = img->isFloat(comp);
+      m_pComponent[comp].m_ulWidth         = img->WidthOf(comp);
+      m_pComponent[comp].m_ulHeight        = img->HeightOf(comp);
+      m_pComponent[comp].m_ulBytesPerPixel = img->BytesPerPixel(comp);
+      m_pComponent[comp].m_ulBytesPerRow   = img->BytesPerRow(comp);
+      m_pComponent[comp].m_pPtr            = img->DataOf(comp);
+    }
+  }
+
+  if (bits <= 8) {
+    if (bits + 1 <= 8) {
+      if (ysign) {
+	DispatchTo422RCT<BYTE,BYTE>(img,yoffset,coffset,w,h);
+      } else if (m_bMakeSigned) {
+	DispatchTo422RCT<UBYTE,BYTE>(img,yoffset,coffset,w,h);
+      } else {
+	DispatchTo422RCT<UBYTE,UBYTE>(img,yoffset,coffset,w,h);
+      }
+    } else {
+      if (ysign) {
+	DispatchTo422RCT<BYTE,WORD>(img,yoffset,coffset,w,h);
+      } else if (m_bMakeSigned) {
+	DispatchTo422RCT<UBYTE,WORD>(img,yoffset,coffset,w,h);
+      } else {
+	DispatchTo422RCT<UBYTE,UWORD>(img,yoffset,coffset,w,h);
+      }
+    }
+  } else if (bits <= 16) {
+    if (bits + 1 <= 16) {
+      if (ysign) {
+	DispatchTo422RCT<WORD,WORD>(img,yoffset,coffset,w,h);
+      } else if (m_bMakeSigned) {
+	DispatchTo422RCT<UWORD,WORD>(img,yoffset,coffset,w,h);
+      } else {
+	DispatchTo422RCT<UWORD,UWORD>(img,yoffset,coffset,w,h);
+      }
+    } else {
+      if (ysign) {
+	DispatchTo422RCT<WORD,LONG>(img,yoffset,coffset,w,h);
+      } else if (m_bMakeSigned) {
+	DispatchTo422RCT<UWORD,LONG>(img,yoffset,coffset,w,h);
+      } else {
+	DispatchTo422RCT<UWORD,ULONG>(img,yoffset,coffset,w,h);
+      }
+    }
+  } else if (bits + 1 <= 32) {
+    if (ysign) {
+      DispatchTo422RCT<LONG,LONG>(img,yoffset,coffset,w,h);
+    } else if (m_bMakeSigned) {
+      DispatchTo422RCT<ULONG,LONG>(img,yoffset,coffset,w,h);
+    } else {
+      DispatchTo422RCT<ULONG,ULONG>(img,yoffset,coffset,w,h);
+    }
+  } else throw "unsupported source format";
+}
+///
+
+/// YCbCr::From422RCT
+// Convert a YCbCr 422 sampled image with the 422 RCT to RGB.
+void YCbCr::From422RCT(class ImageLayout *img,UBYTE *(&membuf)[4])
+{
+  LONG yoffset  = 0; // always zero
+  LONG coffset  = 0; // the chroma component offset.
+  ULONG w       = img->WidthOf(0);
+  ULONG h       = img->HeightOf(0);
+  bool  ysign   = img->isSigned(0);
+  bool  csign   = img->isSigned(1);
+  UBYTE ybits   = img->BitsOf(0);
+  UBYTE cbits   = img->BitsOf(1);
+  UWORD comp;
+  int i;
+  
+  if (cbits != ybits)
+    throw "The 422RCT requires identical bitdepths for all components";
+
+  if (ysign && !csign)
+    throw "The 422RCT does not allow signed luma with unsigned chroma";
+
+  if (w & 1)
+    throw "The 422RCT transformation does not support odd image widths";
+
+  for(i = 1;i < 3;i++) {
+    if (img->WidthOf(i) != (w >> 1) || img->HeightOf(i) != h)
+      throw "Chroma components must be subsampled in horizontal direction for the 422 RCT";
+  }
+  
+  CreateComponents(*img);
+
+  // Add an inverse chroma shift in case chroma is unsigned.
+  if (!csign)
+    coffset = (1L << ybits) >> 1;
+  
+  // Now build the components. Floating point is not supported.
+  // Everything else is copied over. The entry point tested that
+  // at least three components are available. Note that the
+  // chroma components must include one extra bit.
+  for(comp = 0;comp < img->DepthOf();comp++) {
+    if (comp < 3) {
+      ULONG w     = img->WidthOf(comp);
+      ULONG h     = img->HeightOf(comp);
+      UBYTE bpc;
+      UBYTE *mem;
+      //
+      // If this is float, then we are not supported.
+      if (img->isFloat(comp))
+	throw "The 422RCT transformation does not support floating point data";
+      //
+      // Depth must be all the same.
+      if (cbits != img->BitsOf(comp))
+	throw "The 422RCT requires the same bith depths for all components";
+      if (comp > 0 && img->isSigned(comp) != csign)
+	throw "The 422RCT requires that all chroma components have the same signedness";
+      //
+      bpc = (ybits - 1 + 7) >> 3;
+      mem = new UBYTE[w * h * bpc];
+      //
+      // Store the pointer to be able to release it later.
+      membuf[comp]                         = mem;
+      m_pComponent[comp].m_ucBits          = ybits - 1;
+      m_pComponent[comp].m_bSigned         = ysign; // signed-ness comes from the luma component.
+      m_pComponent[comp].m_bFloat          = false;
+      m_pComponent[comp].m_ulWidth         = w;
+      m_pComponent[comp].m_ulHeight        = h;
+      m_pComponent[comp].m_ulBytesPerPixel = bpc;
+      m_pComponent[comp].m_ulBytesPerRow   = bpc * w;
+      m_pComponent[comp].m_pPtr            = mem;
+    } else {
+      // Otherwise, just copy the data over.
+      m_pComponent[comp].m_ucBits          = img->BitsOf(comp);
+      m_pComponent[comp].m_bSigned         = img->isSigned(comp);
+      m_pComponent[comp].m_bFloat          = img->isFloat(comp);
+      m_pComponent[comp].m_ulWidth         = img->WidthOf(comp);
+      m_pComponent[comp].m_ulHeight        = img->HeightOf(comp);
+      m_pComponent[comp].m_ulBytesPerPixel = img->BytesPerPixel(comp);
+      m_pComponent[comp].m_ulBytesPerRow   = img->BytesPerRow(comp);
+      m_pComponent[comp].m_pPtr            = img->DataOf(comp);
+    }
+  }
+
+  if (ybits <= 8) {
+    if (cbits <= 8) {
+      if (ysign) {
+	DispatchFrom422RCT<BYTE,BYTE>(img,yoffset,coffset,w,h);
+      } else if (csign) {
+	DispatchFrom422RCT<UBYTE,BYTE>(img,yoffset,coffset,w,h);
+      } else {
+	DispatchFrom422RCT<UBYTE,UBYTE>(img,yoffset,coffset,w,h);
+      }
+    } else {
+      if (ysign) {
+	DispatchFrom422RCT<BYTE,WORD>(img,yoffset,coffset,w,h);
+      } else if (csign) {
+	DispatchFrom422RCT<UBYTE,WORD>(img,yoffset,coffset,w,h);
+      } else {
+	DispatchFrom422RCT<UBYTE,UWORD>(img,yoffset,coffset,w,h);
+      }
+    }
+  } else if (ybits <= 16) {
+    if (cbits <= 16) {
+      if (ysign) {
+	DispatchFrom422RCT<WORD,WORD>(img,yoffset,coffset,w,h);
+      } else if (csign) {
+	DispatchFrom422RCT<UWORD,WORD>(img,yoffset,coffset,w,h);
+      } else {
+	DispatchFrom422RCT<UWORD,UWORD>(img,yoffset,coffset,w,h);
+      }
+    } else {
+      if (ysign) {
+	DispatchFrom422RCT<WORD,LONG>(img,yoffset,coffset,w,h);
+      } else if (csign) {
+	DispatchFrom422RCT<UWORD,LONG>(img,yoffset,coffset,w,h);
+      } else {
+	DispatchFrom422RCT<UWORD,ULONG>(img,yoffset,coffset,w,h);
+      }
+    }
+  } else if (ybits <= 32) {
+    if (ysign) {
+      DispatchFrom422RCT<LONG,LONG>(img,yoffset,coffset,w,h);
+    } else if (csign) {
+      DispatchFrom422RCT<ULONG,LONG>(img,yoffset,coffset,w,h);
+    } else {
+      DispatchFrom422RCT<ULONG,ULONG>(img,yoffset,coffset,w,h);
+    }
+  } else throw "unsupported source format";
+}
+///
+
+/// YCbCr::DispatchTo422RCT
+// The dispatcher for the 422RCT (a weirdo)
+template<typename S,typename T>
+void YCbCr::DispatchTo422RCT(const class ImageLayout *img,ULONG yoffset,ULONG coffset,ULONG w,ULONG h)
+{
+  switch(m_Conversion) {
+  case RCT422_Trafo:
+    To422RCT<S,T>((const S *)img->DataOf(1),(const S *)img->DataOf(0),(const S *)img->DataOf(2),
+		  (S *)this->DataOf(0),(T *)this->DataOf(1),(T *)this->DataOf(2),
+		  yoffset,coffset,
+		  img->BytesPerPixel(1),img->BytesPerPixel(0),img->BytesPerPixel(2),
+		  img->BytesPerRow(1)  ,img->BytesPerRow(0)  ,img->BytesPerRow(2),
+		  this->BytesPerPixel(0),this->BytesPerPixel(1),this->BytesPerPixel(2),
+		  this->BytesPerRow(0)  ,this->BytesPerRow(1)  ,this->BytesPerRow(2),
+		  w,h);
+    break;
+  default:
+    throw "unknown conversion specified";
+  }
+}
+///
+
+/// YCbCr::DispatchFrom422RCT
+// The dispatcher for the reverse transformation direction.
+template<typename S,typename T>
+void YCbCr::DispatchFrom422RCT(const class ImageLayout *img,ULONG yoffset,ULONG coffset,ULONG w,ULONG h)
+{
+  switch(m_Conversion) {
+  case RCT422_Trafo:
+    From422RCT<S,T>((const S *)img->DataOf(0),(const T *)img->DataOf(1),(const T *)img->DataOf(2),
+		    (S *)this->DataOf(1),(S *)this->DataOf(0),(S *)this->DataOf(2),
+		    yoffset,coffset,
+		    img->BytesPerPixel(0),img->BytesPerPixel(1),img->BytesPerPixel(2),
+		    img->BytesPerRow(0)  ,img->BytesPerRow(1)  ,img->BytesPerRow(2),
+		    this->BytesPerPixel(1),this->BytesPerPixel(0),this->BytesPerPixel(2),
+		    this->BytesPerRow(1)  ,this->BytesPerRow(0)  ,this->BytesPerRow(2),
+		    w,h);
+    break;
+  default:
+    throw "unknown conversion specified";
+  }
+}
+///
+
 /// YCbCr::Measure
 double YCbCr::Measure(class ImageLayout *src,class ImageLayout *dst,double in)
 {
@@ -1328,11 +1735,14 @@ double YCbCr::Measure(class ImageLayout *src,class ImageLayout *dst,double in)
   if (src->DepthOf() < mindepth || dst->DepthOf() < mindepth)
     throw "insufficient number of components for color space conversion";
 
-  // Check the dimensions of the components. Must all have the same size.
-  for(i = 1;i < mindepth;i++) {
-    if (src->WidthOf(i) != src->WidthOf(0) || src->HeightOf(i) != src->HeightOf(0) ||
-	dst->WidthOf(i) != dst->WidthOf(0) || dst->HeightOf(i) != dst->HeightOf(0))
-      throw "component dimensions differ, probably due to subsampling. Use --cup to upsample chroma first";
+  // Check the dimensions of the components. Must all have the same size for all
+  // transformations but the 422 trafo, there we test separately.
+  if (m_Conversion != RCT422_Trafo) {
+    for(i = 0;i < mindepth;i++) {
+      if (src->WidthOf(i) != src->WidthOf(0) || src->HeightOf(i) != src->HeightOf(0) ||
+	  dst->WidthOf(i) != dst->WidthOf(0) || dst->HeightOf(i) != dst->HeightOf(0))
+	throw "component dimensions differ, probably due to subsampling. Use --cup to upsample chroma first";
+    }
   }
   
   switch(m_Conversion) {
@@ -1361,6 +1771,19 @@ double YCbCr::Measure(class ImageLayout *src,class ImageLayout *dst,double in)
       ToRCT(src,m_ppucSrcImage);
       Swap(*src);
       ToRCT(dst,m_ppucDstImage);
+      Swap(*dst);
+    }
+    break;
+  case RCT422_Trafo:
+    if (m_bInverse) {
+      From422RCT(src,m_ppucSrcImage);
+      Swap(*src);
+      From422RCT(dst,m_ppucDstImage);
+      Swap(*dst);
+    } else {
+      To422RCT(src,m_ppucSrcImage);
+      Swap(*src);
+      To422RCT(dst,m_ppucDstImage);
       Swap(*dst);
     }
     break;

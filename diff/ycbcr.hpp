@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: ycbcr.hpp,v 1.10 2018/11/21 13:57:32 thor Exp $
+** $Id: ycbcr.hpp,v 1.11 2018/11/22 12:37:05 thor Exp $
 **
 ** This class converts between RGB and YCbCr signals
 */
@@ -73,6 +73,7 @@ public:
     RCTD_Trafo,      // Convert 4-component image with RGGB components into RCT plus delta-green
     YCgCoD_Trafo,    // Convert 4-component image with RGGB components into YCgCo plus delta-green
     Delta_Trafo,     // Convert 4-component image into R(avgG)B,delta-green
+    RCT422_Trafo     // A transformation that looks almost like RCT, but operates in 422 space.
   }    m_Conversion;
   //
 private:
@@ -119,7 +120,17 @@ private:
 		    ULONG bprr,ULONG bprg, ULONG bprb,
 		    ULONG bppy,ULONG bppcb,ULONG bppcr,
 		    ULONG bpry,ULONG bprcb,ULONG bprcr,
-		    ULONG w, ULONG h);  
+		    ULONG w, ULONG h);
+  //
+  // Forward conversion for the 422 RCT
+  template<typename S,typename T>
+  static void To422RCT(const S *r,const S *g,const S *b,S *y,T *cb,T *cr,
+		       LONG yoffset,LONG coffset,
+		       ULONG bppr,ULONG bppg, ULONG bppb,
+		       ULONG bprr,ULONG bprg, ULONG bprb,
+		       ULONG bppy,ULONG bppcb,ULONG bppcr,
+		       ULONG bpry,ULONG bprcb,ULONG bprcr,
+		       ULONG w, ULONG h);   
   //
   // Forward conversion for YCgCo
   template<typename S,typename T>
@@ -175,6 +186,15 @@ private:
 		      ULONG w, ULONG h);
   //
   template<typename S,typename T>
+  static void From422RCT(const S *y,const T *cb,const T *cr,S *r,S *g,S *b,
+			 LONG yoffset,LONG coffset,
+			 ULONG bppy,ULONG bppcb,ULONG bppcr,
+			 ULONG bpry,ULONG bprcb,ULONG bprcr,
+			 ULONG bppr,ULONG bppg, ULONG bppb,
+			 ULONG bprr,ULONG bprg, ULONG bprb,
+			 ULONG w, ULONG h);
+  //
+  template<typename S,typename T>
   static void FromYCgCo(const S *y,const T *cb,const T *cr,S *r,S *g,S *b,
 			LONG yoffset,LONG coffset,
 			ULONG bppy,ULONG bppcg,ULONG bppco,
@@ -207,6 +227,14 @@ private:
   template<typename S,typename T>
   void DispatchFromRCT(const class ImageLayout *img,ULONG yoffset,ULONG coffset,ULONG w,ULONG h);
   //
+  // The dispatcher for the 422RCT (a weirdo)
+  template<typename S,typename T>
+  void DispatchTo422RCT(const class ImageLayout *img,ULONG yoffset,ULONG coffset,ULONG w,ULONG h);
+  //
+  // The dispatcher for the reverse transformation direction.
+  template<typename S,typename T>
+  void DispatchFrom422RCT(const class ImageLayout *img,ULONG yoffset,ULONG coffset,ULONG w,ULONG h);
+  //
   template<typename S,typename T>
   void DispatchToYCbCr(const class ImageLayout *img,double offset,double coffset,
 		       double ymin,double ymax,double cmin,double cmax,ULONG w,ULONG h);
@@ -224,6 +252,12 @@ private:
   //
   // Convert an image from RCT or YCgCo, creating a new image
   void FromRCT(class ImageLayout *img,UBYTE *(&membuf)[4]);
+  //
+  // Convert a 422 sampled image with the 422 RCT to YCbCr.
+  void To422RCT(class ImageLayout *img,UBYTE *(&membuf)[4]);
+  //
+  // Convert a YCbCr 422 sampled image with the 422 RCT to RGB.
+  void From422RCT(class ImageLayout *img,UBYTE *(&membuf)[4]);
   //
 public:
   //
