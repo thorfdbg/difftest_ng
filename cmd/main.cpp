@@ -23,7 +23,7 @@ and conversion framework.
 /*
  * Main program
  * 
- * $Id: main.cpp,v 1.96 2018/11/22 12:37:01 thor Exp $
+ * $Id: main.cpp,v 1.97 2018/11/30 09:17:48 thor Exp $
  *
  * This class defines the main program and argument parsing.
  */
@@ -779,13 +779,13 @@ class Meter *ParseBayer(int &argc,char **&argv)
      if (argc < 3)
       throw "--bayerto422 requires a string argument";
     if (!strcmp(argv[2],"grbg"))
-      m = new BayerConv(false,true,BayerConv::GRBG);
+      m = new BayerConv(false,true,false,BayerConv::GRBG);
     else if (!strcmp(argv[2],"rggb"))
-      m = new BayerConv(false,true,BayerConv::RGGB);
+      m = new BayerConv(false,true,false,BayerConv::RGGB);
     else if (!strcmp(argv[2],"gbrg"))
-      m = new BayerConv(false,true,BayerConv::GBRG);
+      m = new BayerConv(false,true,false,BayerConv::GBRG);
     else if (!strcmp(argv[2],"bggr"))
-      m = new BayerConv(false,true,BayerConv::BGGR);
+      m = new BayerConv(false,true,false,BayerConv::BGGR);
     else
       throw "unknown Bayer subpixel arrangement";
     argc--;
