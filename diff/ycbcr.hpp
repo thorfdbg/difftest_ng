@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: ycbcr.hpp,v 1.11 2018/11/22 12:37:05 thor Exp $
+** $Id: ycbcr.hpp,v 1.12 2018/12/05 09:21:53 thor Exp $
 **
 ** This class converts between RGB and YCbCr signals
 */
@@ -183,7 +183,8 @@ private:
 		      ULONG bpry,ULONG bprcb,ULONG bprcr,
 		      ULONG bppr,ULONG bppg, ULONG bppb,
 		      ULONG bprr,ULONG bprg, ULONG bprb,
-		      ULONG w, ULONG h);
+		      ULONG w, ULONG h,
+		      LONG min,LONG max);
   //
   template<typename S,typename T>
   static void From422RCT(const S *y,const T *cb,const T *cr,S *r,S *g,S *b,
@@ -192,7 +193,8 @@ private:
 			 ULONG bpry,ULONG bprcb,ULONG bprcr,
 			 ULONG bppr,ULONG bppg, ULONG bppb,
 			 ULONG bprr,ULONG bprg, ULONG bprb,
-			 ULONG w, ULONG h);
+			 ULONG w, ULONG h,
+			 LONG min,LONG max);
   //
   template<typename S,typename T>
   static void FromYCgCo(const S *y,const T *cb,const T *cr,S *r,S *g,S *b,
@@ -201,7 +203,7 @@ private:
 			ULONG bpry,ULONG bprcg,ULONG bprco,
 			ULONG bppr,ULONG bppg, ULONG bppb,
 			ULONG bprr,ULONG bprg, ULONG bprb,
-			ULONG w, ULONG h);
+			ULONG w, ULONG h,LONG min,LONG max);
   //
   template<typename S,typename T>
   static void FromDeltaGreen(const S *a,const T *d,S *g1,S *g2,
@@ -225,7 +227,8 @@ private:
   //
   // The dispatcher for the reverse transformation direction.
   template<typename S,typename T>
-  void DispatchFromRCT(const class ImageLayout *img,ULONG yoffset,ULONG coffset,ULONG w,ULONG h);
+  void DispatchFromRCT(const class ImageLayout *img,ULONG yoffset,ULONG coffset,ULONG w,ULONG h,
+		       LONG min,LONG max);
   //
   // The dispatcher for the 422RCT (a weirdo)
   template<typename S,typename T>
@@ -233,7 +236,8 @@ private:
   //
   // The dispatcher for the reverse transformation direction.
   template<typename S,typename T>
-  void DispatchFrom422RCT(const class ImageLayout *img,ULONG yoffset,ULONG coffset,ULONG w,ULONG h);
+  void DispatchFrom422RCT(const class ImageLayout *img,ULONG yoffset,ULONG coffset,ULONG w,ULONG h,
+			  LONG min,LONG max);
   //
   template<typename S,typename T>
   void DispatchToYCbCr(const class ImageLayout *img,double offset,double coffset,

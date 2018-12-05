@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: ycbcr.cpp,v 1.13 2018/11/22 12:37:05 thor Exp $
+** $Id: ycbcr.cpp,v 1.14 2018/12/05 09:21:53 thor Exp $
 **
 ** This class converts between RGB and YCbCr signals
 */
@@ -504,7 +504,8 @@ void YCbCr::FromRCT(const S *yp,const T *cb,const T *cr,S *r,S *g,S *b,
 		    ULONG bpry,ULONG bprcb,ULONG bprcr,
 		    ULONG bppr,ULONG bppg, ULONG bppb,
 		    ULONG bprr,ULONG bprg, ULONG bprb,
-		    ULONG w, ULONG h)
+		    ULONG w, ULONG h,
+		    LONG min,LONG max)
 {
   ULONG xi,yi;
 
@@ -522,6 +523,13 @@ void YCbCr::FromRCT(const S *yp,const T *cb,const T *cr,S *r,S *g,S *b,
       LONG g  = y - ((cb + cr) >> 2);
       LONG r  = cr + g;
       LONG b  = cb + g;
+      // Clamp to range
+      if (r < min) r = min;
+      if (r > max) r = max;
+      if (g < min) g = min;
+      if (g > max) g = max;
+      if (b < min) b = min;
+      if (b > max) b = max;
       //
       *rrow = S(r);
       *grow = S(g);
@@ -552,7 +560,8 @@ void YCbCr::From422RCT(const S *yp,const T *cb,const T *cr,S *r,S *g,S *b,
 		       ULONG bpry,ULONG bprcb,ULONG bprcr,
 		       ULONG bppr,ULONG bppg, ULONG bppb,
 		       ULONG bprr,ULONG bprg, ULONG bprb,
-		       ULONG w, ULONG h)
+		       ULONG w, ULONG h,
+		       LONG min,LONG max)
 {
   ULONG xi,yi;
 
@@ -573,6 +582,16 @@ void YCbCr::From422RCT(const S *yp,const T *cb,const T *cr,S *r,S *g,S *b,
       yrow    = (const S *)((const UBYTE *)(yrow ) + bppy);
       LONG y2 = *yrow  - yoffset;
       LONG g2 = y2 - ((r + b) >> 1);
+      //
+      // Clamp to range
+      if (r  < min) r  = min;
+      if (r  > max) r  = max;
+      if (g1 < min) g1 = min;
+      if (g1 > max) g1 = max;
+      if (g2 < min) g2 = min;
+      if (g2 > max) g2 = max;
+      if (b  < min) b  = min;
+      if (b  > max) b  = max;
       //
       *rrow  = S(r);
       *grow  = S(g1);
@@ -654,7 +673,8 @@ void YCbCr::FromYCgCo(const S *yp,const T *cg,const T *co,S *r,S *g,S *b,
 		      ULONG bpry,ULONG bprcg,ULONG bprco,
 		      ULONG bppr,ULONG bppg, ULONG bppb,
 		      ULONG bprr,ULONG bprg, ULONG bprb,
-		      ULONG w, ULONG h)
+		      ULONG w, ULONG h,
+		      LONG min,LONG max)
 {
   ULONG x,y;
 
@@ -673,6 +693,13 @@ void YCbCr::FromYCgCo(const S *yp,const T *cg,const T *co,S *r,S *g,S *b,
       LONG g  = cg + t;
       LONG b  = t - (co >> 1);
       LONG r  = b + co;
+      // Clamp to range
+      if (r < min) r = min;
+      if (r > max) r = max;
+      if (g < min) g = min;
+      if (g > max) g = max;
+      if (b < min) b = min;
+      if (b > max) b = max;
       //
       *rrow  = S(r);
       *grow  = S(g);
@@ -1161,7 +1188,8 @@ void YCbCr::DispatchToYCbCr(const class ImageLayout *img,double yoffset,double c
 /// YCbCr::DispatchFromRCT
 // This is a stub-function to simplify the dispatching of the conversion from RTC/YCgCo to RGB
 template<typename S,typename T>
-void YCbCr::DispatchFromRCT(const class ImageLayout *img,ULONG yoffset,ULONG coffset,ULONG w,ULONG h)
+void YCbCr::DispatchFromRCT(const class ImageLayout *img,ULONG yoffset,ULONG coffset,ULONG w,ULONG h,
+			    LONG min,LONG max)
 {
   switch(m_Conversion) {
   case RCT_Trafo:
@@ -1172,7 +1200,7 @@ void YCbCr::DispatchFromRCT(const class ImageLayout *img,ULONG yoffset,ULONG cof
 		 img->BytesPerRow(0)  ,img->BytesPerRow(1)  ,img->BytesPerRow(2),
 		 this->BytesPerPixel(0),this->BytesPerPixel(1),this->BytesPerPixel(2),
 		 this->BytesPerRow(0)  ,this->BytesPerRow(1)  ,this->BytesPerRow(2),
-		 w,h);
+		 w,h,min,max);
     break;
   case YCgCo_Trafo:
     FromYCgCo<S,T>((const S *)img->DataOf(0),(const T *)img->DataOf(1),(const T *)img->DataOf(2),
@@ -1182,7 +1210,7 @@ void YCbCr::DispatchFromRCT(const class ImageLayout *img,ULONG yoffset,ULONG cof
 		   img->BytesPerRow(0)  ,img->BytesPerRow(1)  ,img->BytesPerRow(2),
 		   this->BytesPerPixel(0),this->BytesPerPixel(1),this->BytesPerPixel(2),
 		   this->BytesPerRow(0)  ,this->BytesPerRow(1)  ,this->BytesPerRow(2),
-		   w,h);
+		   w,h,min,max);
     break;
   case RCTD_Trafo:
     FromRCT<S,T>((const S *)img->DataOf(0),(const T *)img->DataOf(1),(const T *)img->DataOf(2),
@@ -1192,7 +1220,7 @@ void YCbCr::DispatchFromRCT(const class ImageLayout *img,ULONG yoffset,ULONG cof
 		 img->BytesPerRow(0)  ,img->BytesPerRow(1)  ,img->BytesPerRow(2),
 		 this->BytesPerPixel(0),this->BytesPerPixel(1),this->BytesPerPixel(3),
 		 this->BytesPerRow(0)  ,this->BytesPerRow(1)  ,this->BytesPerRow(3),
-		 w,h);
+		 w,h,min,max);
     FromDeltaGreen<S,T>((const S *)this->DataOf(1),(const T *)img->DataOf(3),
 			(S *)this->DataOf(1),(S *)this->DataOf(2),
 			coffset,
@@ -1210,7 +1238,7 @@ void YCbCr::DispatchFromRCT(const class ImageLayout *img,ULONG yoffset,ULONG cof
 		    img->BytesPerRow(0)  ,img->BytesPerRow(1)  ,img->BytesPerRow(2),
 		    this->BytesPerPixel(0),this->BytesPerPixel(1),this->BytesPerPixel(3),
 		    this->BytesPerRow(0)  ,this->BytesPerRow(1)  ,this->BytesPerRow(3),
-		    w,h);
+		    w,h,min,max);
      FromDeltaGreen<S,T>((const S *)this->DataOf(1),(const T *)img->DataOf(3),
 			 (S *)this->DataOf(1),(S *)this->DataOf(2),
 			 coffset,
@@ -1289,6 +1317,7 @@ void YCbCr::FromRCT(class ImageLayout *img,UBYTE *(&membuf)[4])
   bool  csign   = img->isSigned(1);
   UBYTE ybits   = img->BitsOf(0);
   UBYTE cbits   = img->BitsOf(1);
+  LONG min,max;
   UWORD comp;
   UWORD mindepth;
 
@@ -1316,6 +1345,16 @@ void YCbCr::FromRCT(class ImageLayout *img,UBYTE *(&membuf)[4])
   // Add an inverse chroma shift in case chroma is unsigned.
   if (!csign)
     coffset = 1L << ybits;
+  //
+  // The signed-ness depends on the signedness of the y-coordinate,
+  // and so does the clamping.
+  if (ysign) {
+    min = -(1L << (ybits - 1));
+    max = -(min + 1);
+  } else {
+    min = 0;
+    max = (1L << ybits) - 1;
+  }
   
   // Now build the components. Floating point is not supported.
   // Everything else is copied over. The entry point tested that
@@ -1369,46 +1408,46 @@ void YCbCr::FromRCT(class ImageLayout *img,UBYTE *(&membuf)[4])
   if (ybits <= 8) {
     if (cbits <= 8) {
       if (ysign) {
-	DispatchFromRCT<BYTE,BYTE>(img,yoffset,coffset,w,h);
+	DispatchFromRCT<BYTE,BYTE>(img,yoffset,coffset,w,h,min,max);
       } else if (csign) {
-	DispatchFromRCT<UBYTE,BYTE>(img,yoffset,coffset,w,h);
+	DispatchFromRCT<UBYTE,BYTE>(img,yoffset,coffset,w,h,min,max);
       } else {
-	DispatchFromRCT<UBYTE,UBYTE>(img,yoffset,coffset,w,h);
+	DispatchFromRCT<UBYTE,UBYTE>(img,yoffset,coffset,w,h,min,max);
       }
     } else {
       if (ysign) {
-	DispatchFromRCT<BYTE,WORD>(img,yoffset,coffset,w,h);
+	DispatchFromRCT<BYTE,WORD>(img,yoffset,coffset,w,h,min,max);
       } else if (csign) {
-	DispatchFromRCT<UBYTE,WORD>(img,yoffset,coffset,w,h);
+	DispatchFromRCT<UBYTE,WORD>(img,yoffset,coffset,w,h,min,max);
       } else {
-	DispatchFromRCT<UBYTE,UWORD>(img,yoffset,coffset,w,h);
+	DispatchFromRCT<UBYTE,UWORD>(img,yoffset,coffset,w,h,min,max);
       }
     }
   } else if (ybits <= 16) {
     if (cbits <= 16) {
       if (ysign) {
-	DispatchFromRCT<WORD,WORD>(img,yoffset,coffset,w,h);
+	DispatchFromRCT<WORD,WORD>(img,yoffset,coffset,w,h,min,max);
       } else if (csign) {
-	DispatchFromRCT<UWORD,WORD>(img,yoffset,coffset,w,h);
+	DispatchFromRCT<UWORD,WORD>(img,yoffset,coffset,w,h,min,max);
       } else {
-	DispatchFromRCT<UWORD,UWORD>(img,yoffset,coffset,w,h);
+	DispatchFromRCT<UWORD,UWORD>(img,yoffset,coffset,w,h,min,max);
       }
     } else {
       if (ysign) {
-	DispatchFromRCT<WORD,LONG>(img,yoffset,coffset,w,h);
+	DispatchFromRCT<WORD,LONG>(img,yoffset,coffset,w,h,min,max);
       } else if (csign) {
-	DispatchFromRCT<UWORD,LONG>(img,yoffset,coffset,w,h);
+	DispatchFromRCT<UWORD,LONG>(img,yoffset,coffset,w,h,min,max);
       } else {
-	DispatchFromRCT<UWORD,ULONG>(img,yoffset,coffset,w,h);
+	DispatchFromRCT<UWORD,ULONG>(img,yoffset,coffset,w,h,min,max);
       }
     }
   } else if (ybits <= 32) {
     if (ysign) {
-      DispatchFromRCT<LONG,LONG>(img,yoffset,coffset,w,h);
+      DispatchFromRCT<LONG,LONG>(img,yoffset,coffset,w,h,min,max);
     } else if (csign) {
-      DispatchFromRCT<ULONG,LONG>(img,yoffset,coffset,w,h);
+      DispatchFromRCT<ULONG,LONG>(img,yoffset,coffset,w,h,min,max);
     } else {
-      DispatchFromRCT<ULONG,ULONG>(img,yoffset,coffset,w,h);
+      DispatchFromRCT<ULONG,ULONG>(img,yoffset,coffset,w,h,min,max);
     }
   } else throw "unsupported source format";
 }
@@ -1553,6 +1592,7 @@ void YCbCr::From422RCT(class ImageLayout *img,UBYTE *(&membuf)[4])
   bool  csign   = img->isSigned(1);
   UBYTE ybits   = img->BitsOf(0);
   UBYTE cbits   = img->BitsOf(1);
+  LONG min,max;
   UWORD comp;
   int i;
   
@@ -1575,6 +1615,17 @@ void YCbCr::From422RCT(class ImageLayout *img,UBYTE *(&membuf)[4])
   // Add an inverse chroma shift in case chroma is unsigned.
   if (!csign)
     coffset = (1L << ybits) >> 1;
+
+  //
+  // The signed-ness depends on the signedness of the y-coordinate,
+  // and so does the clamping.
+  if (ysign) {
+    min = -(1L << (ybits - 2));
+    max = -(min + 1);
+  } else {
+    min = 0;
+    max = (1L << (ybits - 1)) - 1;
+  }
   
   // Now build the components. Floating point is not supported.
   // Everything else is copied over. The entry point tested that
@@ -1626,46 +1677,46 @@ void YCbCr::From422RCT(class ImageLayout *img,UBYTE *(&membuf)[4])
   if (ybits <= 8) {
     if (cbits <= 8) {
       if (ysign) {
-	DispatchFrom422RCT<BYTE,BYTE>(img,yoffset,coffset,w,h);
+	DispatchFrom422RCT<BYTE,BYTE>(img,yoffset,coffset,w,h,min,max);
       } else if (csign) {
-	DispatchFrom422RCT<UBYTE,BYTE>(img,yoffset,coffset,w,h);
+	DispatchFrom422RCT<UBYTE,BYTE>(img,yoffset,coffset,w,h,min,max);
       } else {
-	DispatchFrom422RCT<UBYTE,UBYTE>(img,yoffset,coffset,w,h);
+	DispatchFrom422RCT<UBYTE,UBYTE>(img,yoffset,coffset,w,h,min,max);
       }
     } else {
       if (ysign) {
-	DispatchFrom422RCT<BYTE,WORD>(img,yoffset,coffset,w,h);
+	DispatchFrom422RCT<BYTE,WORD>(img,yoffset,coffset,w,h,min,max);
       } else if (csign) {
-	DispatchFrom422RCT<UBYTE,WORD>(img,yoffset,coffset,w,h);
+	DispatchFrom422RCT<UBYTE,WORD>(img,yoffset,coffset,w,h,min,max);
       } else {
-	DispatchFrom422RCT<UBYTE,UWORD>(img,yoffset,coffset,w,h);
+	DispatchFrom422RCT<UBYTE,UWORD>(img,yoffset,coffset,w,h,min,max);
       }
     }
   } else if (ybits <= 16) {
     if (cbits <= 16) {
       if (ysign) {
-	DispatchFrom422RCT<WORD,WORD>(img,yoffset,coffset,w,h);
+	DispatchFrom422RCT<WORD,WORD>(img,yoffset,coffset,w,h,min,max);
       } else if (csign) {
-	DispatchFrom422RCT<UWORD,WORD>(img,yoffset,coffset,w,h);
+	DispatchFrom422RCT<UWORD,WORD>(img,yoffset,coffset,w,h,min,max);
       } else {
-	DispatchFrom422RCT<UWORD,UWORD>(img,yoffset,coffset,w,h);
+	DispatchFrom422RCT<UWORD,UWORD>(img,yoffset,coffset,w,h,min,max);
       }
     } else {
       if (ysign) {
-	DispatchFrom422RCT<WORD,LONG>(img,yoffset,coffset,w,h);
+	DispatchFrom422RCT<WORD,LONG>(img,yoffset,coffset,w,h,min,max);
       } else if (csign) {
-	DispatchFrom422RCT<UWORD,LONG>(img,yoffset,coffset,w,h);
+	DispatchFrom422RCT<UWORD,LONG>(img,yoffset,coffset,w,h,min,max);
       } else {
-	DispatchFrom422RCT<UWORD,ULONG>(img,yoffset,coffset,w,h);
+	DispatchFrom422RCT<UWORD,ULONG>(img,yoffset,coffset,w,h,min,max);
       }
     }
   } else if (ybits <= 32) {
     if (ysign) {
-      DispatchFrom422RCT<LONG,LONG>(img,yoffset,coffset,w,h);
+      DispatchFrom422RCT<LONG,LONG>(img,yoffset,coffset,w,h,min,max);
     } else if (csign) {
-      DispatchFrom422RCT<ULONG,LONG>(img,yoffset,coffset,w,h);
+      DispatchFrom422RCT<ULONG,LONG>(img,yoffset,coffset,w,h,min,max);
     } else {
-      DispatchFrom422RCT<ULONG,ULONG>(img,yoffset,coffset,w,h);
+      DispatchFrom422RCT<ULONG,ULONG>(img,yoffset,coffset,w,h,min,max);
     }
   } else throw "unsupported source format";
 }
@@ -1696,7 +1747,8 @@ void YCbCr::DispatchTo422RCT(const class ImageLayout *img,ULONG yoffset,ULONG co
 /// YCbCr::DispatchFrom422RCT
 // The dispatcher for the reverse transformation direction.
 template<typename S,typename T>
-void YCbCr::DispatchFrom422RCT(const class ImageLayout *img,ULONG yoffset,ULONG coffset,ULONG w,ULONG h)
+void YCbCr::DispatchFrom422RCT(const class ImageLayout *img,ULONG yoffset,ULONG coffset,ULONG w,ULONG h,
+			       LONG min,LONG max)
 {
   switch(m_Conversion) {
   case RCT422_Trafo:
@@ -1707,7 +1759,7 @@ void YCbCr::DispatchFrom422RCT(const class ImageLayout *img,ULONG yoffset,ULONG 
 		    img->BytesPerRow(0)  ,img->BytesPerRow(1)  ,img->BytesPerRow(2),
 		    this->BytesPerPixel(1),this->BytesPerPixel(0),this->BytesPerPixel(2),
 		    this->BytesPerRow(1)  ,this->BytesPerRow(0)  ,this->BytesPerRow(2),
-		    w,h);
+		    w,h,min,max);
     break;
   default:
     throw "unknown conversion specified";
