@@ -25,7 +25,7 @@ and conversion framework.
  * This is the image file format that is defined by JPEG2000 part 4
  * for encoding the test streams.
  *
- * $Id: simplepgx.cpp,v 1.20 2018/11/05 09:39:09 thor Exp $
+ * $Id: simplepgx.cpp,v 1.21 2019/02/20 07:00:26 thor Exp $
  */
 
 /// Includes
@@ -36,6 +36,14 @@ and conversion framework.
 #include "tools/halffloat.hpp"
 #include "img/imgspecs.hpp"
 #include "img/simplepgx.hpp"
+///
+
+/// Path separator
+#ifdef _WINDLL // wrong-way path separator on windows...
+# define PATH_SEP '\\'
+#else
+# define PATH_SEP '/'
+#endif
 ///
 
 /// SimplePgx::SimplePgx
@@ -143,8 +151,8 @@ void SimplePgx::LoadImage(const char *basename,struct ImgSpecs &specs)
       // In case the buffer does not contain any relative component, assume that
       // the name is relative to the base name and construct the path name
       // accordingly.
-      if (!strchr(buffer,'/')) {
-	const char *last = strrchr(basename,'/');
+      if (!strchr(buffer,PATH_SEP)) {
+	const char *last = strrchr(basename,PATH_SEP);
 	if (last) {
 	  memmove(&buffer[last - basename + 1],buffer,strlen(buffer));
 	  memcpy(buffer,basename,last - basename + 1);
@@ -169,11 +177,15 @@ void SimplePgx::LoadImage(const char *basename,struct ImgSpecs &specs)
   while(name) {
     char *data,*last,*dptr;
     FILE *header;
-	size_t len;
+    size_t len;
     int depth;
     // Copy the name over, and replace the .raw with .h.
     strncpy(buffer,name->m_pName,256);
     if (!embedded) {
+      char *cr = strchr(buffer,'\r');
+      // Windows binary reader needs to get rid of the \r
+      if (cr)
+	*cr = '\0';
       len = strlen(buffer);
       if (len > 4) {
 	if (!strcmp(buffer + len - 4,".raw"))
@@ -181,6 +193,8 @@ void SimplePgx::LoadImage(const char *basename,struct ImgSpecs &specs)
       }
       strcat(buffer,".h");
     }
+    // Note that this is the header which is opened for ascii
+    // transport.
     header = fopen(buffer,"r");
 
     if (header == NULL) {

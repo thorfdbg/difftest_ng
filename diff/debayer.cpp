@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: debayer.cpp,v 1.4 2018/09/12 11:25:08 thor Exp $
+** $Id: debayer.cpp,v 1.5 2019/02/20 07:00:10 thor Exp $
 **
 ** This class runs a debayer filter on the image converting it from grey scale
 ** to RGB. This is mostly experimental.
@@ -118,6 +118,11 @@ void Debayer::ADHKernel(const T *src,
   LONG bx = this->m_lbx;
   LONG by = this->m_lby;
 
+  /*
+  ** dcraw includes an additional affine scaling step here: it subtracts
+  ** the black level (e.g. 512 for the FHG images) and scales the components
+  ** by a component dependent value, (e.g. {12.009511,4.15093756,5.36335036} for the FHG images})
+  */
   for(y = 0;y < h;y += 2) {
     for(x = 0;x < w;x += 2) {
       // Step 1: Fill in the green pixels we have in the horizontal and vertical kernel.
@@ -235,6 +240,13 @@ void Debayer::ADHKernel(const T *src,
       // 0.018107   0.118130   0.949690
       // In addition, we assume here a D65 white point. Also, scaling was not correct
       // in dcraw for the CIELab conversion.
+      //
+      // dcraw uses a camera depending conversion matrix, namely for the FHG images
+      // 0.688983917  0.290616691  0.0203993637
+      // 0.24259387   1.01152134   -0.254115313
+      // 0.0101935146 -0.172740877 1.16254735
+      // (this makes little sense as xyz coordinates are always positive)
+      // and then adds an offset of (0.5,0.5,0.5)
       {
 	FLOAT xh = ciepow((0.386275 * horr[x + w * y] + 0.334884 * horg[x + w * y] + 0.168971 * horb[x + w * y])/(0.95047 * max));
 	FLOAT yh = ciepow((0.199173 * horr[x + w * y] + 0.703457 * horg[x + w * y] + 0.066264 * horb[x + w * y])/max);
@@ -242,7 +254,7 @@ void Debayer::ADHKernel(const T *src,
 	FLOAT xv = ciepow((0.386275 * verr[x + w * y] + 0.334884 * verg[x + w * y] + 0.168971 * verb[x + w * y])/(0.95047 * max));
 	FLOAT yv = ciepow((0.199173 * verr[x + w * y] + 0.703457 * verg[x + w * y] + 0.066264 * verb[x + w * y])/max);
 	FLOAT zv = ciepow((0.018107 * verr[x + w * y] + 0.118130 * verg[x + w * y] + 0.949690 * verb[x + w * y])/(1.08883 * max));
-	// Convert from xyz to CIElab
+	// Convert from xyz to CIElab. dcraw includes an additional scaling factor of 64 here.
 	horl[x + w * y]  = 116 * yh - 16; // L horizontal
 	verl[x + w * y]  = 116 * yv - 16; // L vertical
 	horca[x + w * y] = 500 * (xh - yh);
@@ -295,6 +307,10 @@ void Debayer::ADHKernel(const T *src,
 	}
       }
       FLOAT r,g,b;
+      /*
+      ** the dcraw version averages over a 3x3 neighbourhood, this algorithm
+      ** only checks a single value
+      */
       if (homhor > homver) {
 	r = horr[x + y * w];
 	g = horg[x + y * w];
