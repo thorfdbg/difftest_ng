@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: mapping.hpp,v 1.10 2017/02/13 09:42:05 thor Exp $
+** $Id: mapping.hpp,v 1.11 2019/07/25 13:36:24 thor Exp $
 **
 ** This class works like the scaler, but more elaborate as it allows a couple
 ** of less trivial conversions: gamma mapping, log mapping and half-log mapping.
@@ -51,7 +51,8 @@ public:
     HalfLog, // perform a half-logarithmic map
     Log,     // perform a logarithmic map with clamp value.
     PU2,     // Rafal's percetually uniform map.
-    PQ       // backwards PQ aka SMTPE-2084, compute PQ values from luminances
+    PQ,      // backwards PQ aka SMTPE-2084, compute PQ values from luminances
+    GammaToe // gamma with toe region as in sRGB with adjustable exponent and toe region
   };
   //
 private:
@@ -72,6 +73,9 @@ private:
   //
   // The value of gamma.
   double         m_dGamma;
+  //
+  // For the toe-region input: The slope of the toe region.
+  double         m_dToeSlope;
   //
   // The desired output bitdepth. Only if ToInt is given,
   // zero if no scaling is considered.
@@ -100,6 +104,21 @@ private:
   void InvGamma(const S *src  ,ULONG obytesperpixel,ULONG obytesperrow,
 		T *dst        ,ULONG dbytesperpixel,ULONG dbytesperrow,
 		ULONG w, ULONG h, double scale, double outscale, double gamma);
+  //
+  // Convert to int using a gamma mapping.
+  template<typename S,typename T>
+  void ToToeGamma(const S *org ,ULONG obytesperpixel,ULONG obytesperrow,
+		  T *dst       ,ULONG dbytesperpixel,ULONG dbytesperrow,
+		  ULONG w, ULONG h, double scale, double offset, double slope,
+		  double threshold, double gamma,double min, double max);
+
+  //
+  // apply the inverse map.
+  template<typename S,typename T>
+  void InvToeGamma(const S *src  ,ULONG obytesperpixel,ULONG obytesperrow,
+		   T *dst        ,ULONG dbytesperpixel,ULONG dbytesperrow,
+		   ULONG w, ULONG h, double scale, double offset, double slope,
+		   double threshold, double gamma, double min, double max);
   //
   // Compute the limF value as the 95% percentile of the luminance for
   // greyscale.
@@ -157,9 +176,9 @@ public:
   //
   // Scale the difference image. Takes a file name.
   Mapping(const char *filename,MappingType type,double gamma,bool inverse,UBYTE targetdepth,
-	  bool filter,const struct ImgSpecs &specs)
+	  bool filter,const struct ImgSpecs &specs,double slope = 0.0)
     : m_pTargetFile(filename), m_ppucImage(NULL), m_pDest(NULL), m_PU_Lut(NULL),
-      m_Type(type), m_dGamma(gamma), m_ucTargetDepth(targetdepth), 
+      m_Type(type), m_dGamma(gamma), m_dToeSlope(slope), m_ucTargetDepth(targetdepth), 
       m_bInverse(inverse), m_bFilter(filter), m_TargetSpecs(specs)
   {
   }

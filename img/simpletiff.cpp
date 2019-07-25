@@ -24,7 +24,7 @@ and conversion framework.
 /*
 ** An image class to load and save TIFF images (or some of them).
 **
-** $Id: simpletiff.cpp,v 1.33 2018/10/29 12:20:51 thor Exp $
+** $Id: simpletiff.cpp,v 1.34 2019/03/01 10:16:02 thor Exp $
 */
 
 /// Includes
@@ -1091,12 +1091,9 @@ void SimpleTiff::LoadImage(const char *basename,struct ImgSpecs &specs)
     struct ComponentLayout *cl = m_pComponent + comp;
     m_ppComponents[comp] = c = new struct TiffComponent;
     UBYTE bitsperpixel   = (photo  == TiffTag::Photometric::PALETTE)?(8):(bps[comp]);
-    ULONG bytesperpixel  = (bitsperpixel + 7) >> 3; // is one, also for palette index.
     bool  flt            = (photo  == TiffTag::Photometric::PALETTE)?(false):
       (fmt[comp] == TiffTag::Sampleformat::IEEEFP);
-    // Special cludge: half-float is converted to float.
-    if (flt && bitsperpixel == 16)
-      bytesperpixel = 4;
+    ULONG bytesperpixel  = ImageLayout::SuggestBPP(bitsperpixel,flt);
     //
     if (comp == 0 || comp > 2) {
       c->m_ulWidth       = w;

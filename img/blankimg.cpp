@@ -70,9 +70,7 @@ void BlankImg::Blank(void)
   assert(m_pucImage == NULL);
 
   for(d = 0;d < DepthOf();d++) {
-    size_t ms = (BitsOf(d) + 7) >> 3;
-    if (isFloat(d) && BitsOf(d) == 16)
-      ms = 4; // half float is represented as float.
+    size_t ms = ImageLayout::SuggestBPP(BitsOf(d),isFloat(d));
     if (ms > ntry)
       ntry = ms;
   }
@@ -105,9 +103,7 @@ void BlankImg::BlankSeparate(void)
   assert(m_pucImage == NULL);
 
   for(d = 0;d < DepthOf();d++) {
-    size_t ms = (BitsOf(d) + 7) >> 3;
-    if (isFloat(d) && BitsOf(d) == 16)
-      ms = 4; // half float is represented as float.
+    size_t ms = ImageLayout::SuggestBPP(BitsOf(d),isFloat(d));
     size += ms * WidthOf(d) * HeightOf(d);
   }
 
@@ -115,9 +111,7 @@ void BlankImg::BlankSeparate(void)
   memset(m_pucImage,0,size * sizeof(UBYTE));
 
   for(d = 0;d < DepthOf();d++) {
-    size_t ms = (BitsOf(d) + 7) >> 3;
-    if (isFloat(d) && BitsOf(d) == 16)
-      ms = 4; // half float is represented as float.
+    size_t ms = ImageLayout::SuggestBPP(BitsOf(d),isFloat(d));
     m_pComponent[d].m_ulBytesPerPixel = ms;
     m_pComponent[d].m_ulBytesPerRow   = ms * WidthOf(d);
     m_pComponent[d].m_pPtr            = mem;

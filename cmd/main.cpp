@@ -23,7 +23,7 @@ and conversion framework.
 /*
  * Main program
  * 
- * $Id: main.cpp,v 1.97 2018/11/30 09:17:48 thor Exp $
+ * $Id: main.cpp,v 1.105 2019/07/25 13:36:19 thor Exp $
  *
  * This class defines the main program and argument parsing.
  */
@@ -39,6 +39,7 @@ and conversion framework.
 #include "diff/psnr.hpp"
 #include "diff/pre.hpp"
 #include "diff/diffimg.hpp"
+#include "diff/suppress.hpp"
 #include "diff/fftimg.hpp"
 #include "diff/restrict.hpp"
 #include "diff/restore.hpp"
@@ -52,6 +53,7 @@ and conversion framework.
 #include "diff/convertimg.hpp"
 #include "diff/invert.hpp"
 #include "diff/flip.hpp"
+#include "diff/flipextend.hpp"
 #include "diff/shift.hpp"
 #include "diff/scale.hpp"
 #include "diff/crop.hpp"
@@ -70,6 +72,8 @@ and conversion framework.
 #include "diff/paste.hpp"
 #include "diff/bayerconv.hpp"
 #include "diff/debayer.hpp"
+#include "diff/bayercolor.hpp"
+#include "diff/whitebalance.hpp"
 #include "img/imglayout.hpp"
 #include "img/imgspecs.hpp"
 #include <new>
@@ -86,6 +90,7 @@ void Usage(const char *progname)
 	  "--maxsnr           : measure the snr with equal weights over all components, normalize to maximum signal\n"
 	  "--snr              : measure the snr with equal weights over all components, normalize to source energy\n"
 	  "--mse              : measure the mean square error with equal weights over all components\n"
+	  "--rmse             : measure the root mean square error with equal weights over all components\n"
 	  "--minpsnr          : measure the minimum psnr over all components\n"
 	  "--ycbcrpsnr        : measure the psnr with weights derived from the YCbCr transformation\n"
 	  "--yuvpsnr          : measure the psnr with weights derived from the YUV transformation\n"
@@ -114,6 +119,7 @@ void Usage(const char *progname)
 	  "--diff target      : save the difference image (-i is an alternative form of this option)\n"
 	  "--rawdiff target   : similar to --diff, except that it doesn't scale the difference to maximum range\n"
 	  "--sdiff scale trgt : generate a differential signal with an explicitly given scale\n"
+	  "--suppress thres   : suppress all pixels in the target that are less than a threshold away from the source\n"
 	  "--mask roi         : mask the source image by the mask image before applying the comparison\n"
 	  "--notmask roi      : mask the source image by the inverse of the mask\n"
 	  "--convert target   : save the original image unaltered, but possibly in a new format\n"
@@ -127,6 +133,7 @@ void Usage(const char *progname)
 	  "--ncomb x y r dst  : similar to --comb, but the output is normalized to the full range\n"
 #endif
 	  "--hist target      : generate a histogram plot. If \"target\" is -, write to stdout\n"
+	  "--thres threshold  : compute the ratio of pixels whose difference is > than threshold\n"
 	  "--colorhist size   : generate reduced histogram separately for each component using the given bucket size\n"
 #ifdef USE_GSL
 	  "--maxfreqr         : locate the absolute value of the most exposed frequency in the error image\n"
@@ -141,12 +148,22 @@ void Usage(const char *progname)
 	  "--tosgn bpp dst    : save a signed integer version with bpp bits per pixel of the source image\n"
 	  "--asuns bpp        : convert the two input images to unsigned bpp before further procesing\n"
 	  "--assgn bpp        : convert the two input images to signed bpp before further processing\n"
-	  "--gamma bpp gamma dst : perform a gamma correction on a floating point image to create integer output\n"
-	  "--invgamma gamma dst  : perform an inverse gamma correction creating a floating point image from integer\n"
+	  "--gamma bpp gamma dst         : perform a gamma correction on a floating point image to create\n"
+	  "                                integer output\n"
+	  "--invgamma gamma dst          : perform an inverse gamma correction creating a floating point image\n"
+	  "                                from integer\n"
+	  "--toegamma slope gamma dst    : perform a gamma transformation on the same data type with a given slope in\n"
+	  "                                its toe region\n"
+	  "--invtoegamma slope gamma dst : perform an inverse gamma transformation on the same data with parameters\n"
+	  "                                as above\n"
 	  "--halflog dst      : represent a floating point image in IEEE half float format saved as 16 bit integers\n"
 	  "--halfexp dst      : read a 16-bit integer image using IEEE half float and save as floating point\n"
 	  "--togamma bpp gamma: convert both images to gamma before applying the measurement (apply as a filter)\n"
 	  "--fromgamma gamma  : convert both images from a gamma before applying the measurement\n"
+	  "--totoegamma slope gamma      : perform a forwards gamma transformation (linear to gamma) with given\n"
+	  "                                slope in the toe region\n"
+	  "--fromtoegamma slope gamma    : perform an inverse gamma transformation (gamma to linear) with given\n"
+	  "                                slope in the toe region\n"
 	  "--tohalflog        : convert to 16-bit integer before comparing (apply as filter)\n"
 	  "--fromhalflog      : convert from 16-bit integer to float before comparing (apply as filter)\n"
 	  "--tolog clamp      : convert to logarithmic domain with clamp value before comparing\n"
@@ -156,6 +173,8 @@ void Usage(const char *progname)
 	  "--invert           : invert the source image before comparing\n"
 	  "--flipx            : flip the source horizontally before comparing\n"
 	  "--flipy            : flip the source vertically before comparing\n"
+	  "--flipxextend      : create a twice as wide image by flipping it over the right edge\n"
+	  "--flipyextend      : create a twice as high image by flippingit over the bottom edge\n"
 	  "--shift dx dy      : shift the image by the given amount right/bottom (or right/up if < 0)\n"
 	  "--pad bpp dst      : pad (right-aligned) a component into a larger bit-depths\n"
 	  "--asprec bpp       : set the bit-depth to bpp, padding input and output into the target bitdepth\n"
@@ -191,11 +210,21 @@ void Usage(const char *progname)
 	  "--fromycbcr2020bl  : convert images from 2020 YCbCr to RGB before comparing, and remove the black level\n"
 	  "--torct            : convert an image with the RCT from JPEG 2000\n"
 	  "--tosignedrct      : convert an image with the RCT from JPEG 2000, leaving chroma signed\n"
-	  "--torctd           : convert an RGGB image to YCbCr+DeltaG with the RCT\n"
+	  "--torctd           : convert a 4 component RGGB image to YCbCr+DeltaG with the RCT\n"
+	  "--torctd1 agmnt    : convert a Bayer pattern with given arrangement with the above RCTD\n"
+	  "--torctx agmnt     : convert a Bayer pattern with given arrangement to RCT with\n"
+	  "                     an improved longer averaging filter for green\n"
+	  "--toydgcgcox agmnt : convert a Bayer pattern with given arrangement with an extended version\n"
+	  "                     of the YDgCgCo transformation\n"
 	  "--to422rct         : convert a 422 image with green in component 0 to YCbCr\n"
 	  "--to422signedrct   : convert a 422 image with green in component 0, leaving chroma signed\n"
 	  "--fromrct          : convert an image back to RGB with the inverse RCT\n"
-	  "--fromrctd         : convert a YCbCr+DeltaG to RGGB with the inverse RCT\n"
+	  "--fromrctd         : convert a YCbCr+DeltaG to a four-component RGGB with the inverse RCTD\n"
+	  "--fromrctd1 agmnt  : convert a YCbCr+DeltaG to a 1-component RGGB Bayer pattern\n"
+	  "--fromrctx agmnt   : convert an RCTX-converted image to a Bayer pattern image with the\n"
+	  "                     given sample arrangment\n"
+	  "--fromydgcgcox agmt: convert a YDgCgCoX-converted image to a Bayer pattern image with the\n"
+	  "                     given sample arrangement\n"
 	  "--from422rct       : convert from YCbCr to RGB with green in channel 0\n"
 	  "--todeltag         : convert RGGB to RGB+DeltaG\n"
 	  "--toycgco          : convert an image with the YCgCo transformation\n"
@@ -210,6 +239,7 @@ void Usage(const char *progname)
 	  "--fromlms          : convert images from LMS to RGB before comparing\n"
 	  "--xyztolms         : convert images from XYZ to LMS before comparing\n"
 	  "--lmstoxyz         : convert images from LMS to XYZ before comparing\n"
+	  "--scale a,b,c...   : scale components by the indicated factors before comparing\n"
 	  "--tobayer          : convert a four-component image to a Bayer-pattern image\n"
 	  "--frombayer        : convert a Bayer patterned grey-scale image to four components\n"
 	  "--tobayersh   agmnt: convert a four-component image in component order RGGB\n"
@@ -454,6 +484,8 @@ class Meter *ParseMetrics(int &,char **&argv)
     return new class PSNR(PSNR::Mean,false,true,true);
   } else if (!strcmp(arg,"--mse")) {
     return new class PSNR(PSNR::Mean,true);
+  } else if (!strcmp(arg,"--rmse")) {
+    return new class PSNR(PSNR::RootMean,true);
   } else if (!strcmp(arg,"--minpsnr")) {
     return new class PSNR(PSNR::Min);
   } else if (!strcmp(arg,"--ycbcrpsnr")) {
@@ -820,8 +852,98 @@ class Meter *ParseBayer(int &argc,char **&argv)
       throw "unknown Bayer subpixel arrangement";
     argc--;
     argv++;
+  } else if (!strcmp(arg,"--torctd1")) {
+    if (argc < 3)
+      throw "--torctd1 requires a string argument";
+    if (!strcmp(argv[2],"grbg"))
+      m = new BayerColor(false,BayerColor::RCTD,BayerColor::GRBG);
+    else if (!strcmp(argv[2],"rggb"))
+      m = new BayerColor(false,BayerColor::RCTD,BayerColor::RGGB);
+    else if (!strcmp(argv[2],"gbrg"))
+      m = new BayerColor(false,BayerColor::RCTD,BayerColor::GBRG);
+    else if (!strcmp(argv[2],"bggr"))
+      m = new BayerColor(false,BayerColor::RCTD,BayerColor::BGGR);
+    else
+      throw "unknown Bayer subpixel arrangement";
+    argc--;
+    argv++;
+  } else if (!strcmp(arg,"--fromrctd1")) {
+    if (argc < 3)
+      throw "--fromrctd1 requires a string argument";
+    if (!strcmp(argv[2],"grbg"))
+      m = new BayerColor(true,BayerColor::RCTD,BayerColor::GRBG);
+    else if (!strcmp(argv[2],"rggb"))
+      m = new BayerColor(true,BayerColor::RCTD,BayerColor::RGGB);
+    else if (!strcmp(argv[2],"gbrg"))
+      m = new BayerColor(true,BayerColor::RCTD,BayerColor::GBRG);
+    else if (!strcmp(argv[2],"bggr"))
+      m = new BayerColor(true,BayerColor::RCTD,BayerColor::BGGR);
+    else
+      throw "unknown Bayer subpixel arrangement";
+    argc--;
+    argv++;
+  } else if (!strcmp(arg,"--torctx")) {
+    if (argc < 3)
+      throw "--torctx requires a string argument";
+    if (!strcmp(argv[2],"grbg"))
+      m = new BayerColor(false,BayerColor::RCTX,BayerColor::GRBG);
+    else if (!strcmp(argv[2],"rggb"))
+      m = new BayerColor(false,BayerColor::RCTX,BayerColor::RGGB);
+    else if (!strcmp(argv[2],"gbrg"))
+      m = new BayerColor(false,BayerColor::RCTX,BayerColor::GBRG);
+    else if (!strcmp(argv[2],"bggr"))
+      m = new BayerColor(false,BayerColor::RCTX,BayerColor::BGGR);
+    else
+      throw "unknown Bayer subpixel arrangement";
+    argc--;
+    argv++;
+  } else if (!strcmp(arg,"--fromrctx")) {
+    if (argc < 3)
+      throw "--fromrctx requires a string argument";
+    if (!strcmp(argv[2],"grbg"))
+      m = new BayerColor(true,BayerColor::RCTX,BayerColor::GRBG);
+    else if (!strcmp(argv[2],"rggb"))
+      m = new BayerColor(true,BayerColor::RCTX,BayerColor::RGGB);
+    else if (!strcmp(argv[2],"gbrg"))
+      m = new BayerColor(true,BayerColor::RCTX,BayerColor::GBRG);
+    else if (!strcmp(argv[2],"bggr"))
+      m = new BayerColor(true,BayerColor::RCTX,BayerColor::BGGR);
+    else
+      throw "unknown Bayer subpixel arrangement";
+    argc--;
+    argv++;
+  } else if (!strcmp(arg,"--toydgcgcox")) {
+    if (argc < 3)
+      throw "--toydgcgcox requires a string argument";
+    if (!strcmp(argv[2],"grbg"))
+      m = new BayerColor(false,BayerColor::YDgCoCgX,BayerColor::GRBG);
+    else if (!strcmp(argv[2],"rggb"))
+      m = new BayerColor(false,BayerColor::YDgCoCgX,BayerColor::RGGB);
+    else if (!strcmp(argv[2],"gbrg"))
+      m = new BayerColor(false,BayerColor::YDgCoCgX,BayerColor::GBRG);
+    else if (!strcmp(argv[2],"bggr"))
+      m = new BayerColor(false,BayerColor::YDgCoCgX,BayerColor::BGGR);
+    else
+      throw "unknown Bayer subpixel arrangement";
+    argc--;
+    argv++;
+  } else if (!strcmp(arg,"--fromydgcgcox")) {
+    if (argc < 3)
+      throw "--fromydgcgcox requires a string argument";
+    if (!strcmp(argv[2],"grbg"))
+      m = new BayerColor(true,BayerColor::YDgCoCgX,BayerColor::GRBG);
+    else if (!strcmp(argv[2],"rggb"))
+      m = new BayerColor(true,BayerColor::YDgCoCgX,BayerColor::RGGB);
+    else if (!strcmp(argv[2],"gbrg"))
+      m = new BayerColor(true,BayerColor::YDgCoCgX,BayerColor::GBRG);
+    else if (!strcmp(argv[2],"bggr"))
+      m = new BayerColor(true,BayerColor::YDgCoCgX,BayerColor::BGGR);
+    else
+      throw "unknown Bayer subpixel arrangement";
+    argc--;
+    argv++;
   }
-
+  
   return m;
 }
 ///
@@ -916,6 +1038,15 @@ class Meter *ParseTransferFunctions(int &argc,char **&argv,struct ImgSpecs &spec
     m     = new class Mapping(argv[4],Mapping::Gamma,gamma,false,bpp,false,specout);
     argc -= 3;
     argv += 3;
+  } else if (!strcmp(arg,"--toegamma")) {
+    double gamma,toeslope;
+    if (argc < 5)
+      throw "--toegamma requires three arguments, a toe region slope, a gamma value and a file name";
+    toeslope = ParseDouble(argv[2]);
+    gamma    = ParseDouble(argv[3]);
+    m        = new class Mapping(argv[4],Mapping::GammaToe,gamma,false,0,false,specout,toeslope);
+    argc    -= 3;
+    argv    += 3;
   } else if (!strcmp(arg,"--invgamma")) {
     double gamma;
     if (argc < 4)
@@ -924,6 +1055,15 @@ class Meter *ParseTransferFunctions(int &argc,char **&argv,struct ImgSpecs &spec
     m     = new class Mapping(argv[3],Mapping::Gamma,gamma,true,0,false,specout);
     argc -= 2;
     argv += 2;
+  } else if (!strcmp(arg,"--invtoegamma")) {
+    double gamma,toeslope;
+    if (argc < 5)
+      throw "--invtoegamma requires three arguments, a toe region slope, a gamma value and a file name";
+    toeslope = ParseDouble(argv[2]);
+    gamma    = ParseDouble(argv[3]);
+    m        = new class Mapping(argv[4],Mapping::GammaToe,gamma,true,0,false,specout,toeslope);
+    argc    -= 3;
+    argv    += 3;
   } else if (!strcmp(arg,"--halflog")) {
     if (argc < 3)
       throw "--halflog requires a file name argument";
@@ -946,6 +1086,16 @@ class Meter *ParseTransferFunctions(int &argc,char **&argv,struct ImgSpecs &spec
     m     = new class Mapping(NULL,Mapping::Gamma,gamma,false,bpp,true,specout);
     argc -= 2;
     argv += 2;
+  } else if (!strcmp(arg,"--totoegamma")) {
+    double toeslope;
+    double gamma;
+    if (argc < 4)
+      throw "--totoegamma requires two arguments, a toe region slope and a gamma value";
+    toeslope = ParseDouble(argv[2]);
+    gamma    = ParseDouble(argv[3]);
+    m        = new class Mapping(NULL,Mapping::GammaToe,gamma,false,0,true,specout,toeslope);
+    argc    -= 2;
+    argv    += 2;
   } else if (!strcmp(arg,"--fromgamma")) {
     double gamma;
     if (argc < 3)
@@ -954,6 +1104,16 @@ class Meter *ParseTransferFunctions(int &argc,char **&argv,struct ImgSpecs &spec
     m     = new class Mapping(NULL,Mapping::Gamma,gamma,true,0,true,specout);
     argc -= 1;
     argv += 1;
+  } else if (!strcmp(arg,"--fromtoegamma")) {
+    double toeslope;
+    double gamma;
+    if (argc < 3)
+      throw "--fromtoegamma requires two arguments, a toe region slope and a gamma value";
+    toeslope = ParseDouble(argv[2]);
+    gamma    = ParseDouble(argv[3]);
+    m        = new class Mapping(NULL,Mapping::GammaToe,gamma,true,0,true,specout,toeslope);
+    argc    -= 2;
+    argv    += 2;
   } else if (!strcmp(arg,"--tohalflog")) {
     m     = new class Mapping(NULL,Mapping::HalfLog,1.0,false,16,true,specout);
   } else if (!strcmp(arg,"--fromhalflog")) {
@@ -980,6 +1140,12 @@ class Meter *ParseTransferFunctions(int &argc,char **&argv,struct ImgSpecs &spec
     argv += 1;
   } else if (!strcmp(arg,"--frompq")) {
     m   = new class Mapping(NULL,Mapping::PQ,1.0,true, 0, true,specout);
+  } else if (!strcmp(arg,"--scale")) {
+    if (argc < 3)
+      throw "--scale requires a comma-separated list of scaling factors";
+    m     = new class WhiteBalance(argv[2]);
+    argc -= 1;
+    argv += 1;
   }
 
   return m;
@@ -1126,6 +1292,10 @@ class Meter *ParseGeometric(int &argc,char **&argv,const struct ImgSpecs &spec1,
     m   = new class Flip(Flip::FlipX);
   } else if (!strcmp(arg,"--flipy")) {
     m   = new class Flip(Flip::FlipY);
+  } else if (!strcmp(arg,"--flipxextend")) {
+    m   = new class FlipExtend(FlipExtend::FlipX);
+  } else if (!strcmp(arg,"--flipyextend")) {
+    m   = new class FlipExtend(FlipExtend::FlipY);
   } else if (!strcmp(arg,"--shift")) {
     long dx,dy;
     if (argc < 4)
@@ -1295,6 +1465,16 @@ int main(int argc,char **argv)
 	  m = new class DiffImg(argv[3],specout,false,ParseDouble(argv[2]));
 	  argc -= 2;
 	  argv += 2;
+	} else if (!strcmp(arg,"--suppress")) {
+	  double t;
+	  if (argc < 3)
+	    throw "--suppress requires a threshold as argument";
+	  t = ParseDouble(argv[2]);
+	  if (t < 0.0)
+	    throw "--suppress requires a non-negative argument";
+	  m = new class Suppress(t);
+	  argc--;
+	  argv++;
 	} else if (!strcmp(arg,"--mask") || !strcmp(arg,"-R")) {
 	  if (argc < 3)
 	    throw "--mask requires the mask file name as argument";
@@ -1327,6 +1507,16 @@ int main(int argc,char **argv)
 	  if (argc < 3)
 	    throw "--hist requires a file name as argument";
 	  m = new class Histogram(argv[2]);
+	  argc--;
+	  argv++;
+	} else if (!strcmp(arg,"--thres")) {
+	  long t;
+	  if (argc < 3)
+	    throw "--thres requires a threshold as argument";
+	  t = ParseLong(argv[2]);
+	  if (t < 0)
+	    throw "--thres requires a non-negative threshold";
+	  m = new class Histogram(t);
 	  argc--;
 	  argv++;
 	} else if (!strcmp(arg,"--colorhist")) {

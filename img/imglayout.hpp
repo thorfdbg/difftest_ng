@@ -23,7 +23,7 @@ and conversion framework.
 /*
  * Image layout
  * 
- * $Id: imglayout.hpp,v 1.20 2017/01/31 11:58:04 thor Exp $
+ * $Id: imglayout.hpp,v 1.21 2019/03/01 10:16:01 thor Exp $
  *
  * This class defines the image layout, width, height and the
  * image depth of the individual components. It is supplied by
@@ -119,6 +119,11 @@ protected:
   // Create components from a template, using the same layout as the
   // original.
   void CreateComponents(const class ImageLayout &img);
+  //
+  // Compute a suitable bits per pixel value from a bitdepth. Note that
+  // this is not the bpp value for this specific implementation, but
+  // a helper function that returns a usable size for a given bitdepth
+  static UBYTE SuggestBPP(UBYTE bits,bool isfloat);
   //
 public:
   // This can be called by subclasses to indicate an
@@ -291,6 +296,7 @@ public:
   // Check whether the two images are compatible in dimension and depth
   // to allow a comparison. Throw if not.
   void TestIfCompatible(const class ImageLayout *dst) const;
+
 };
 ///
 

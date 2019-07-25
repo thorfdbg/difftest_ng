@@ -21,65 +21,58 @@ and conversion framework.
 
 *************************************************************************/
 
+
 /*
 **
-** $Id: histogram.hpp,v 1.6 2019/07/24 10:45:05 thor Exp $
+** $Id: suppress.hpp,v 1.1 2019/07/24 10:45:06 thor Exp $
 **
-** This class saves the histogram to a file or writes it to
-** stdout.
+** This class suppresses (resets to the source) those pixels in
+** the destination that are less than a threshold away from the
+** source.
 */
 
-#ifndef DIFF_HISTOGRAM_HPP
-#define DIFF_HISTOGRAM_HPP
+#ifndef DIFF_SUPPRESS_HPP
+#define DIFF_SUPRESS_HPP
 
 /// Includes
 #include "diff/meter.hpp"
+#include "img/imglayout.hpp"
 ///
 
-/// class Histogram
-// This class saves the histogram to a file or writes it to
-// stdout.
-class Histogram : public Meter {
+/// Forwards
+struct ImgSpecs;
+///
+
+/// class Suppress
+// This class suppresses (resets to the source) those pixels in
+// the destination that are less than a threshold away from the
+// source.
+class Suppress : public Meter {
   //
-  // The file name under which the difference image shall be saved.
-  const char *m_pcTargetFile;
+  // The suppression threshold.
+  DOUBLE                 m_dThres;
   //
-  // The threshold for measuring pixel ratios.
-  LONG        m_lThres;
-  //
-  // The histogram array.
-  ULONG      *m_pulHist;
-  //
-  // Measure the difference histogram, place results into the given array
-  // after adding the given offset to the difference.
   template<typename T>
-  static void Measure(T *org       ,ULONG obytesperpixel,ULONG obytesperrow,
-		      T *dst       ,ULONG dbytesperpixel,ULONG dbytesperrow,
-		      ULONG w      ,ULONG h,ULONG *hist  ,LONG offset);
+  static void Threshold(const T *org ,ULONG obytesperpixel,ULONG obytesperrow,
+			T *dst       ,ULONG dbytesperpixel,ULONG dbytesperrow,
+			T thres,ULONG w,ULONG h);
   //
 public:
   //
-  // Construct the histogram. Takes a file name.
-  Histogram(const char *filename)
-    : m_pcTargetFile(filename), m_lThres(-1), m_pulHist(NULL)
+  // Construct the difference image. Takes a file name.
+  Suppress(DOUBLE thres)
+    : m_dThres(thres)
   {
   }
   //
-  // Construct the histogram for measuring pixel difference ratios.
-  Histogram(LONG thres)
-    : m_pcTargetFile(NULL), m_lThres(thres), m_pulHist(NULL)
+  virtual ~Suppress(void)
   {
   }
-  //
-  virtual ~Histogram(void);
   //
   virtual double Measure(class ImageLayout *src,class ImageLayout *dst,double in);
   //
   virtual const char *NameOf(void) const
   {
-    if (!m_pcTargetFile)
-      return "PxAboveThres";
-    
     return NULL;
   }
 };

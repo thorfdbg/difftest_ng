@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: diffimg.cpp,v 1.18 2017/04/13 13:03:54 thor Exp $
+** $Id: diffimg.cpp,v 1.19 2019/03/01 10:15:56 thor Exp $
 **
 ** This class saves the difference image as a normalized 8bpp image
 ** with the same number of components as the original.
@@ -126,7 +126,7 @@ double DiffImg::Measure(class ImageLayout *src,class ImageLayout *dst,double in)
     double shift = 0.0;
     ULONG  w     = src->WidthOf(comp);
     ULONG  h     = src->HeightOf(comp);
-    UBYTE  bytes = (m_bScale)?1:((src->isFloat(comp))?((src->BitsOf(comp) > 32)?8:4):((src->BitsOf(comp) + 7) >> 3));
+    UBYTE  bytes = (m_bScale)?1:ImageLayout::SuggestBPP(src->BitsOf(comp),src->isFloat(comp));
     UBYTE *mem   = new UBYTE[w * h * bytes];
     //
     // Shift is the required shift to generate unsigned data from a

@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: fftfilt.cpp,v 1.14 2017/01/31 11:58:04 thor Exp $
+** $Id: fftfilt.cpp,v 1.15 2019/03/01 10:15:56 thor Exp $
 **
 ** This class filters the image with an FFT and selects only frequences around a horizontal and
 ** vertical base frequency and a given radius.
@@ -211,10 +211,8 @@ double FFTFilt::Measure(class ImageLayout *src,class ImageLayout *dst,double in)
     UBYTE *mem;
     ULONG xr    = m_ulRadius;
     ULONG yr    = m_ulRadius;
-    UBYTE sbpp  = ((src->BitsOf(comp) + 7) >> 3);
+    UBYTE sbpp  = ImgLayout::SuggestBPP(src->BitsOf(comp),src->isFloat(comp));
     ULONG x,y;
-    if (src->isFloat(comp) && sbpp <= 4)
-      sbpp = 4; // cludge for half-float
     //
     m_ppucImage[comp]                    = mem = new UBYTE[w * h * sbpp];
     m_pComponent[comp].m_ucBits          = src->BitsOf(comp);

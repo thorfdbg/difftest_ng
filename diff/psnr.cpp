@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: psnr.cpp,v 1.21 2017/01/31 11:58:04 thor Exp $
+** $Id: psnr.cpp,v 1.22 2019/03/05 10:11:18 thor Exp $
 **
 ** This class measures the PSNR between two images, averaged over all samples
 ** and thus all components.
@@ -77,7 +77,7 @@ double PSNR::Measure(class ImageLayout *src,class ImageLayout *dst,double)
   UWORD comp,d  = src->DepthOf();
   int type      = m_Type;
 
-  if (d != 3 && type != Min && type != Mean) {
+  if (d != 3 && type != Min && type != Mean && type != RootMean) {
     fprintf(stderr,"the selected PSNR measurement is only available for three component images, reverting to minpsnr\n");
     type = Min;
   }
@@ -149,6 +149,7 @@ double PSNR::Measure(class ImageLayout *src,class ImageLayout *dst,double)
     //
     switch(type) {
     case Mean:
+    case RootMean:
       error  += mse / src->DepthOf();
       energy += erg / src->DepthOf();
       break;
@@ -218,6 +219,8 @@ double PSNR::Measure(class ImageLayout *src,class ImageLayout *dst,double)
   }
   
   if (m_bLinear) {
+    if (type == RootMean)
+      return sqrt(error);
     return error;
   } else {
     return -10.0 * log(error) / log(10.0);

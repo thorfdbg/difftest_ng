@@ -23,63 +23,55 @@ and conversion framework.
 
 /*
 **
-** $Id: histogram.hpp,v 1.6 2019/07/24 10:45:05 thor Exp $
+** $Id: whitebalance.hpp,v 1.1 2019/07/25 06:52:10 thor Exp $
 **
-** This class saves the histogram to a file or writes it to
-** stdout.
+** This class scales the components of images with component dependent
+** scale factors.
 */
 
-#ifndef DIFF_HISTOGRAM_HPP
-#define DIFF_HISTOGRAM_HPP
+#ifndef DIFF_WHITEBALANCE_HPP
+#define DIFF_WHITEBALANCE_HPP
 
 /// Includes
 #include "diff/meter.hpp"
+#include "img/imglayout.hpp"
 ///
 
-/// class Histogram
-// This class saves the histogram to a file or writes it to
-// stdout.
-class Histogram : public Meter {
+/// Forwards
+struct ImgSpecs;
+///
+
+/// class WhiteBalance
+// This class scales the components of images with component dependent
+// scale factors.
+class WhiteBalance : public Meter {
   //
-  // The file name under which the difference image shall be saved.
-  const char *m_pcTargetFile;
+  // The number of components for which we recorded scaling data.
+  UWORD        m_usComponents;
   //
-  // The threshold for measuring pixel ratios.
-  LONG        m_lThres;
+  // The array of scaling factors
+  DOUBLE      *m_pdFactors;
   //
-  // The histogram array.
-  ULONG      *m_pulHist;
-  //
-  // Measure the difference histogram, place results into the given array
-  // after adding the given offset to the difference.
+  // This never changes the data type.
   template<typename T>
-  static void Measure(T *org       ,ULONG obytesperpixel,ULONG obytesperrow,
-		      T *dst       ,ULONG dbytesperpixel,ULONG dbytesperrow,
-		      ULONG w      ,ULONG h,ULONG *hist  ,LONG offset);
+  void Convert(T *dst ,ULONG bytesperpixel,ULONG bytesperrow,
+	       ULONG w, ULONG h,double scale ,double min,double max);
+  //
+  //
+  // Apply a scaling from the source to the image stored here.
+  void ApplyScaling(class ImageLayout *src);
   //
 public:
   //
-  // Construct the histogram. Takes a file name.
-  Histogram(const char *filename)
-    : m_pcTargetFile(filename), m_lThres(-1), m_pulHist(NULL)
-  {
-  }
+  // Apply a component dependent white balance to the image.
+  WhiteBalance(const char *factors);
   //
-  // Construct the histogram for measuring pixel difference ratios.
-  Histogram(LONG thres)
-    : m_pcTargetFile(NULL), m_lThres(thres), m_pulHist(NULL)
-  {
-  }
-  //
-  virtual ~Histogram(void);
+  virtual ~WhiteBalance(void);
   //
   virtual double Measure(class ImageLayout *src,class ImageLayout *dst,double in);
   //
   virtual const char *NameOf(void) const
   {
-    if (!m_pcTargetFile)
-      return "PxAboveThres";
-    
     return NULL;
   }
 };
@@ -87,4 +79,3 @@ public:
 
 ///
 #endif
-

@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: ycbcr.hpp,v 1.12 2018/12/05 09:21:53 thor Exp $
+** $Id: ycbcr.hpp,v 1.13 2019/02/28 13:27:20 thor Exp $
 **
 ** This class converts between RGB and YCbCr signals
 */
@@ -74,9 +74,10 @@ public:
     YCgCoD_Trafo,    // Convert 4-component image with RGGB components into YCgCo plus delta-green
     Delta_Trafo,     // Convert 4-component image into R(avgG)B,delta-green
     RCT422_Trafo     // A transformation that looks almost like RCT, but operates in 422 space.
-  }    m_Conversion;
+  };
   //
 private:
+  Conversion m_Conversion;
   //
   template<typename S>
   static void Copy(const S *src,S *dst,

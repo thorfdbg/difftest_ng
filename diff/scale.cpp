@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: scale.cpp,v 1.17 2017/01/31 11:58:04 thor Exp $
+** $Id: scale.cpp,v 1.18 2019/03/01 10:15:56 thor Exp $
 **
 ** This class scales images, converts them from and to float
 */
@@ -145,12 +145,8 @@ void Scale::ApplyScaling(class ImageLayout *src)
     }
     //
     // Now install the parameters.
-    if (bps == 16 && tofloat) {
-      dbpp = 32; // stored as FLOAT, not half float
-    } else {
-      dbpp = ((bps + 7) >> 3);
-    }
-    mem = new UBYTE[w * h * dbpp];
+    dbpp = ImageLayout::SuggestBPP(bps,tofloat);
+    mem  = new UBYTE[w * h * dbpp];
     m_ppucImage[comp]                    = mem;
     m_pComponent[comp].m_ucBits          = bps;
     m_pComponent[comp].m_bSigned         = tosigned;

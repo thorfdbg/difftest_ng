@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: downsampler.cpp,v 1.8 2018/09/04 11:44:48 thor Exp $
+** $Id: downsampler.cpp,v 1.9 2019/03/01 10:15:56 thor Exp $
 **
 ** This class downscales in the spatial domain
 */
@@ -160,9 +160,7 @@ void Downsampler::Downsample(UBYTE **&data,class ImageLayout *src)
   m_usAllocated = m_usDepth;
   //
   for(i = 0;i < m_usDepth;i++) {
-    UBYTE bps = (m_pComponent[i].m_ucBits + 7) >> 3;
-    if (m_pComponent[i].m_bFloat && m_pComponent[i].m_ucBits == 16)
-      bps = sizeof(FLOAT); // stored as float
+    UBYTE bps = ImageLayout::SuggestBPP(m_pComponent[i].m_ucBits,m_pComponent[i].m_bFloat);
     //
     data[i]                           = new UBYTE[m_pComponent[i].m_ulWidth * m_pComponent[i].m_ulHeight * bps];
     m_pComponent[i].m_ulBytesPerPixel = bps;

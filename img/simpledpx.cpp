@@ -23,7 +23,7 @@ and conversion framework.
 /*
  * This class saves and loads images in the dpx format.
  *
- * $Id: simpledpx.cpp,v 1.17 2017/01/31 11:58:04 thor Exp $
+ * $Id: simpledpx.cpp,v 1.18 2019/03/01 10:16:01 thor Exp $
  */
 
 /// Includes
@@ -437,7 +437,7 @@ void SimpleDPX::ParseHeader(FILE *file,struct ImgSpecs &specs)
     struct ScanElement  *sl = el->m_pScanPattern;
     while(sl) {
       struct ComponentLayout *cll; 
-      UBYTE bytesperpixel      = (el->m_ucBitDepth + 7) >> 3;
+      UBYTE bytesperpixel      = ImageLayout::SuggestBPP(el->m_ucBitDepth,false);
       UBYTE subx               = el->m_ucSubX;
       UBYTE suby               = el->m_ucSubY;
       UWORD k                  = sl->m_usTargetChannel;

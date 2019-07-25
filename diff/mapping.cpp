@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: mapping.cpp,v 1.13 2017/02/13 09:42:05 thor Exp $
+** $Id: mapping.cpp,v 1.15 2019/07/25 13:36:24 thor Exp $
 **
 ** This class works like the scaler, but more elaborate as it allows a couple
 ** of less trivial conversions: gamma mapping, log mapping and half-log mapping.
@@ -92,6 +92,91 @@ void Mapping::InvGamma(const S *src  ,ULONG obytesperpixel,ULONG obytesperrow,
     }
     src = (const S *)((const UBYTE *)(src) + obytesperrow);
     dst = (T       *)((UBYTE *)(dst)       + dbytesperrow);
+  }
+}
+///
+
+/// Mapping::ToToeGamma
+// Convert to int using a gamma mapping.
+template<typename S,typename T>
+void Mapping::ToToeGamma(const S *org ,ULONG obytesperpixel,ULONG obytesperrow,
+			 T *dst       ,ULONG dbytesperpixel,ULONG dbytesperrow,
+			 ULONG w, ULONG h, double scale, double offset, double slope,
+			 double threshold, double gamma, double min, double max)
+{
+  ULONG x,y;
+  double invgamma = 1.0 / gamma;
+  double thres    = threshold / (max * slope);
+  double s        = scale * max;
+  double o        = offset * max;
+  double imax     = 1.0 / max;
+  
+  for(y = 0;y < h;y++) {
+    const S *orgrow = org;
+    T *dstrow       = dst;
+    for(x = 0;x < w;x++) {
+      double v    = *orgrow;
+      if (v < 0.0 || isnan(v)) {
+	v = 0.0;
+      } else if (isinf(v)) {
+	v = max;
+      } else if (v < thres) {
+	v = v * slope;
+      } else {
+	v = s * pow(v * imax,invgamma) - o;
+      }
+      if (v < min)
+	v = min;
+      if (v > max)
+	v = max;
+      *dstrow = T(v);
+      orgrow  = (const S *)((const UBYTE *)(orgrow) + obytesperpixel);
+      dstrow  = (T *)((UBYTE *)(dstrow) + dbytesperpixel);
+    }
+    org = (const S *)((const UBYTE *)(org) + obytesperrow);
+    dst = (T *)((UBYTE *)(dst) + dbytesperrow);
+  }
+}
+///
+
+/// Mapping::InvToeGamma
+// apply the inverse map.
+template<typename S,typename T>
+void Mapping::InvToeGamma(const S *org  ,ULONG obytesperpixel,ULONG obytesperrow,
+			  T *dst        ,ULONG dbytesperpixel,ULONG dbytesperrow,
+			  ULONG w, ULONG h, double scale, double offset, double slope,
+			  double threshold, double gamma,double min,double max)
+{
+  ULONG x,y;
+  double thres = threshold * max;
+  double s     = 1.0 / (scale * max);
+  double o     = offset * max;
+  double isl   = 1.0 / slope;
+
+  for(y = 0;y < h;y++) {
+    const S *orgrow = org;
+    T *dstrow       = dst;
+    for(x = 0;x < w;x++) {
+      double v    = *orgrow;
+      if (v < 0.0 || isnan(v)) {
+	v = 0.0;
+      } else if (isinf(v)) {
+	v = max;
+      } else if (v < thres) {
+	v = v * isl;
+      } else {
+	v = max * pow((v + o) * s, gamma);
+      }
+      if (v < min)
+	v = min;
+      if (v > max)
+	v = max;
+      *dstrow = T(v);
+      orgrow  = (const S *)((const UBYTE *)(orgrow) + obytesperpixel);
+      dstrow  = (T *)((UBYTE *)(dstrow) + dbytesperpixel);
+    }
+    org = (const S *)((const UBYTE *)(org) + obytesperrow);
+    dst = (T *)((UBYTE *)(dst) + dbytesperrow);
   }
 }
 ///
@@ -542,6 +627,9 @@ void Mapping::ApplyMap(class ImageLayout *src,class ImageLayout *dst)
 { 
   UWORD comp;
   double limf = 1.0;
+  double gam,ts;
+  double offset;
+  double thres;
   //
   // Need to compute the 95% percentile?
   if (m_Type == Gamma && m_bInverse == false) {
@@ -574,6 +662,36 @@ void Mapping::ApplyMap(class ImageLayout *src,class ImageLayout *dst)
   if (m_Type == PU2)
     CreatePUMap();
   //
+  // Compute or approximate the threshold and offset/scale for the gamma plus toe region
+  if (m_Type == GammaToe) {
+    double left,right;
+    gam = 1.0 / m_dGamma;
+    ts  = m_dToeSlope;
+    if (ts <= 0.0)
+      throw "the toe slope of the gamma mapping must be positive";
+    // Make a bisection to find a solution to the threshold problem.
+    if (m_dToeSlope >= 1.0) {
+      left  = 0.0;
+      right = 1.0;
+    } else {
+      left  = 1.0;
+      right = 0.0;
+    }
+    if ((ts - 1.0) * (gam - 1.0) <= 0) {
+      for (int i=0; i < 48; i++) {
+	// Bisect in the mid-point.
+	thres = 0.5 * (left + right);
+	if ((pow(thres / ts,-gam) - 1.0) / gam - 1.0/thres > -1.0) {
+	  right = thres;
+	} else {
+	  left  = thres;
+	}
+      }
+      offset = thres * (m_dGamma - 1.0);
+    } else throw "invalid toe slope value specified";
+  }
+  // 
+  //
   for(comp = 0;comp < src->DepthOf();comp++) {
     ULONG  w    = src->WidthOf(comp);
     ULONG  h    = src->HeightOf(comp);
@@ -587,9 +705,9 @@ void Mapping::ApplyMap(class ImageLayout *src,class ImageLayout *dst)
 	throw "this conversion tool works on unsigned integers only";
       //
       // make sure the target is float.
-      assert(dst->isFloat(comp));
+      assert(m_Type == GammaToe || dst->isFloat(comp));
       assert(!dst->isSigned(comp));
-      assert(dst->BitsOf(comp) == 32);
+      assert(m_Type == GammaToe || dst->BitsOf(comp) == 32);
       assert(dst->WidthOf(comp) == w);
       assert(dst->HeightOf(comp) == h);
     } else {
@@ -598,6 +716,9 @@ void Mapping::ApplyMap(class ImageLayout *src,class ImageLayout *dst)
 	  throw "this conversion tool expects floating point or unsigned input";
 	if (!src->isFloat(comp))
 	  lim = ((1UL << (src->BitsOf(comp))) - 1);
+      } else if (m_Type == GammaToe) {
+	if (src->isFloat(comp) || src->isSigned(comp))
+	  throw "this conversion tool expects unsigned integer input";
       } else {
 	if (!src->isFloat(comp))
 	  throw "this conversion tool expects floating point input";
@@ -613,12 +734,43 @@ void Mapping::ApplyMap(class ImageLayout *src,class ImageLayout *dst)
       } else {
 	assert(!dst->isFloat(comp));
 	assert(!dst->isSigned(comp));
-	assert(dst->BitsOf(comp) == m_ucTargetDepth);
+	assert(m_Type == GammaToe || dst->BitsOf(comp) == m_ucTargetDepth);
       }
     } 
     //
     //
     switch(m_Type) {
+    case GammaToe:
+      if (m_bInverse) {
+	if (src->BitsOf(comp) <= 8) {
+	  InvToeGamma<UBYTE,UBYTE>((const UBYTE *)src->DataOf(comp),src->BytesPerPixel(comp),src->BytesPerRow(comp),
+				   (UBYTE *)dst->DataOf(comp),dst->BytesPerPixel(comp),dst->BytesPerRow(comp),
+				   w,h,1.0 + offset,offset,ts,thres,m_dGamma,0.0,(1UL << src->BitsOf(comp)) - 1);
+	} else if (src->BitsOf(comp) <= 8) {
+	  InvToeGamma<UWORD,UWORD>((const UWORD *)src->DataOf(comp),src->BytesPerPixel(comp),src->BytesPerRow(comp),
+				   (UWORD *)dst->DataOf(comp),dst->BytesPerPixel(comp),dst->BytesPerRow(comp),
+				   w,h,1.0 + offset,offset,ts,thres,m_dGamma,0.0,(1UL << src->BitsOf(comp)) - 1);
+	} else if (src->BitsOf(comp) <= 16) {
+	  InvToeGamma<ULONG,ULONG>((const ULONG *)src->DataOf(comp),src->BytesPerPixel(comp),src->BytesPerRow(comp),
+				   (ULONG *)dst->DataOf(comp),dst->BytesPerPixel(comp),dst->BytesPerRow(comp),
+				   w,h,1.0 + offset,offset,ts,thres,m_dGamma,0.0,(1UL << src->BitsOf(comp)) - 1);
+	} else throw "unsupported source bit depth, must be between 1 and 32 bits per pixel";
+      } else {
+	if (src->BitsOf(comp) <= 8) {
+	  ToToeGamma<UBYTE,UBYTE>((const UBYTE *)src->DataOf(comp),src->BytesPerPixel(comp),src->BytesPerRow(comp),
+				   (UBYTE *)dst->DataOf(comp),dst->BytesPerPixel(comp),dst->BytesPerRow(comp),
+				   w,h,1.0 + offset,offset,ts,thres,m_dGamma,0.0,(1UL << src->BitsOf(comp)) - 1);
+	} else if (src->BitsOf(comp) <= 8) {
+	  ToToeGamma<UWORD,UWORD>((const UWORD *)src->DataOf(comp),src->BytesPerPixel(comp),src->BytesPerRow(comp),
+				   (UWORD *)dst->DataOf(comp),dst->BytesPerPixel(comp),dst->BytesPerRow(comp),
+				   w,h,1.0 + offset,offset,ts,thres,m_dGamma,0.0,(1UL << src->BitsOf(comp)) - 1);
+	} else if (src->BitsOf(comp) <= 16) {
+	  ToToeGamma<ULONG,ULONG>((const ULONG *)src->DataOf(comp),src->BytesPerPixel(comp),src->BytesPerRow(comp),
+				  (ULONG *)dst->DataOf(comp),dst->BytesPerPixel(comp),dst->BytesPerRow(comp),
+				  w,h,1.0 + offset,offset,ts,thres,m_dGamma,0.0,(1UL << src->BitsOf(comp)) - 1);
+	} else throw "unsupported source bit depth, must be between 1 and 32 bits per pixel";
+      }
+      break;
     case Gamma:
       if (m_bInverse) {
 	if (src->BitsOf(comp) <= 8) {
@@ -780,19 +932,37 @@ void Mapping::CreateTargetBuffer(class ImageLayout *src)
       if (src->isSigned(comp))
 	throw "this conversion tool works on unsigned integers only";
       //
-      FLOAT *mem = new FLOAT[w * h];
-      m_ppucImage[comp] = (UBYTE *)mem;
-      //
-      m_pComponent[comp].m_ucBits          = 32;
-      m_pComponent[comp].m_bSigned         = false;
-      m_pComponent[comp].m_bFloat          = true;
-      m_pComponent[comp].m_ulWidth         = w;
-      m_pComponent[comp].m_ulHeight        = h;
-      m_pComponent[comp].m_ulBytesPerPixel = sizeof(FLOAT);
-      m_pComponent[comp].m_ulBytesPerRow   = w * sizeof(FLOAT);
-      m_pComponent[comp].m_pPtr            = mem;
+      if (m_Type == GammaToe) {
+	UBYTE bps  = ImageLayout::SuggestBPP(src->BitsOf(comp),false);
+	UBYTE *mem = new UBYTE[w * h * bps];
+	m_ppucImage[comp] = mem;
+	//
+	m_pComponent[comp].m_ucBits          = src->BitsOf(comp);
+	m_pComponent[comp].m_bSigned         = false;
+	m_pComponent[comp].m_bFloat          = false;
+	m_pComponent[comp].m_ulWidth         = w;
+	m_pComponent[comp].m_ulHeight        = h;
+	m_pComponent[comp].m_ulBytesPerPixel = bps;
+	m_pComponent[comp].m_ulBytesPerRow   = w * bps;
+	m_pComponent[comp].m_pPtr            = mem;
+      } else {
+	FLOAT *mem = new FLOAT[w * h];
+	m_ppucImage[comp] = (UBYTE *)mem;
+	//
+	m_pComponent[comp].m_ucBits          = 32;
+	m_pComponent[comp].m_bSigned         = false;
+	m_pComponent[comp].m_bFloat          = true;
+	m_pComponent[comp].m_ulWidth         = w;
+	m_pComponent[comp].m_ulHeight        = h;
+	m_pComponent[comp].m_ulBytesPerPixel = sizeof(FLOAT);
+	m_pComponent[comp].m_ulBytesPerRow   = w * sizeof(FLOAT);
+	m_pComponent[comp].m_pPtr            = mem;
+      }
     } else {
-      if (m_Type == Gamma) {
+      if (m_Type == GammaToe) {
+	if (src->isFloat(comp) || src->isSigned(comp))
+	  throw "this conversion tool expects unsigned integer input";
+      } else if (m_Type == Gamma) {
 	if (!src->isFloat(comp) && src->isSigned(comp))
 	  throw "this conversion tool expects unsigned or floating point input";
       } else {
@@ -815,11 +985,11 @@ void Mapping::CreateTargetBuffer(class ImageLayout *src)
 	m_pComponent[comp].m_ulBytesPerRow   = w * sizeof(FLOAT);
 	m_pComponent[comp].m_pPtr            = mem;
       } else {
-	UBYTE bps  = (m_ucTargetDepth + 7) >> 3;
+	UBYTE bps  = ImageLayout::SuggestBPP((m_Type == GammaToe)?src->BitsOf(comp):m_ucTargetDepth,false);
 	UBYTE *mem = new UBYTE[w * h * bps];
 	m_ppucImage[comp] = mem;
 	//
-	m_pComponent[comp].m_ucBits          = m_ucTargetDepth;
+	m_pComponent[comp].m_ucBits          = (m_Type == GammaToe)?src->BitsOf(comp):m_ucTargetDepth;
 	m_pComponent[comp].m_bSigned         = false;
 	m_pComponent[comp].m_bFloat          = false;
 	m_pComponent[comp].m_ulWidth         = w;
@@ -843,7 +1013,7 @@ double Mapping::Measure(class ImageLayout *src,class ImageLayout *dst,double in)
     ApplyMap(src,this);
     //
     assert(m_pDest == NULL);
-    m_pDest = new class Mapping(NULL,m_Type,m_dGamma,m_bInverse,m_ucTargetDepth,true,m_TargetSpecs);
+    m_pDest = new class Mapping(NULL,m_Type,m_dGamma,m_bInverse,m_ucTargetDepth,true,m_TargetSpecs,m_dToeSlope);
     //
     m_pDest->CreateTargetBuffer(dst);
     m_pDest->ApplyMap(dst,m_pDest);

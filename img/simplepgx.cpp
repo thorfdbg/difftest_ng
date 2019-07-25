@@ -25,7 +25,7 @@ and conversion framework.
  * This is the image file format that is defined by JPEG2000 part 4
  * for encoding the test streams.
  *
- * $Id: simplepgx.cpp,v 1.21 2019/02/20 07:00:26 thor Exp $
+ * $Id: simplepgx.cpp,v 1.22 2019/03/01 10:16:01 thor Exp $
  */
 
 /// Includes
@@ -289,11 +289,8 @@ void SimplePgx::LoadImage(const char *basename,struct ImgSpecs &specs)
   layout = m_pComponent;
   while(name) {
     ULONG size = name->m_ulWidth * name->m_ulHeight;
-    UBYTE bypp = (name->m_ucDepth + 7) >> 3;
+    UBYTE bypp = ImageLayout::SuggestBPP(name->m_ucDepth,name->m_bFloat);
     FILE *raw;
-    // Special hack for half-float: Store as float.
-    if (name->m_ucDepth == 16 && name->m_bFloat)
-      bypp = 4;
     //
     layout->m_ucBits          = name->m_ucDepth;
     layout->m_bSigned         = name->m_bSigned;

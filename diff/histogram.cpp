@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: histogram.cpp,v 1.10 2017/01/31 11:58:04 thor Exp $
+** $Id: histogram.cpp,v 1.11 2019/07/24 10:45:05 thor Exp $
 **
 ** This class saves the histogram to a file or writes it to
 ** stdout.
@@ -77,11 +77,9 @@ double Histogram::Measure(class ImageLayout *src,class ImageLayout *dst,double i
   ULONG offset = 0;
   ULONG i;
   UWORD comp;
-  FILE *out    = NULL;
 
   src->TestIfCompatible(dst);
   
-  assert(m_pcTargetFile);
   assert(m_pulHist == NULL);
 
   for(comp = 0;comp < src->DepthOf();comp++) {
@@ -132,37 +130,60 @@ double Histogram::Measure(class ImageLayout *src,class ImageLayout *dst,double i
     }
   }
 
-  if (m_pcTargetFile && strcmp(m_pcTargetFile,"-")) {
-    out = fopen(m_pcTargetFile,"w");
-    if (out == NULL) {
-      ImageLayout::PostError("unable to open the histogram output file %s: %s\n",m_pcTargetFile,strerror(errno));
-      return in; // code should never go here.
-    }
-  }
+  /*
+  ** If there is no target file name, a difference pixel ratio is expected to
+  ** be measured.
+  */
 
-  if (out) {
+  if (!m_pcTargetFile) {
+    UQUAD total = 0;
+    UQUAD above = 0;
+    
+    for(comp = 0;comp < src->DepthOf();comp++) {
+      total += UQUAD(src->WidthOf()) * UQUAD(src->HeightOf());
+    }
     for(i = 0;i < size;i++) {
-      if (m_pulHist[i]) {
-	fprintf(out,"%d\t%u\n",i - offset,m_pulHist[i]);
+      if (i > offset + m_lThres || i < offset - m_lThres)
+	above += m_pulHist[i];
+    }
+
+    in = double(above) / total;
+    
+  } else {
+    FILE *out = NULL;
+    
+    if (strcmp(m_pcTargetFile,"-")) {
+      out = fopen(m_pcTargetFile,"w");
+      if (out == NULL) {
+	ImageLayout::PostError("unable to open the histogram output file %s: %s\n",m_pcTargetFile,strerror(errno));
+	return in; // code should never go here.
       }
     }
-  } else {
-    int cnt = 0;
-    for(i = 0;i < size;i++) {
-      if (m_pulHist[i]) {
-	printf("%+4d:\t%8u\t",i - offset,m_pulHist[i]);
-	if (++cnt > 3) {
-	  printf("\n");
-	  cnt = 0;
+    
+    if (out) {
+      for(i = 0;i < size;i++) {
+	if (m_pulHist[i]) {
+	  fprintf(out,"%d\t%u\n",i - offset,m_pulHist[i]);
 	}
       }
+    } else {
+      int cnt = 0;
+      for(i = 0;i < size;i++) {
+	if (m_pulHist[i]) {
+	  printf("%+4d:\t%8u\t",i - offset,m_pulHist[i]);
+	  if (++cnt > 3) {
+	    printf("\n");
+	    cnt = 0;
+	  }
+	}
+      }
+      if (cnt != 0)
+	printf("\n");
     }
-    if (cnt != 0)
-      printf("\n");
+    
+    if (out)
+      fclose(out);
   }
-
-  if (out)
-    fclose(out);
 
   return in;
 }

@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: debayer.cpp,v 1.5 2019/02/20 07:00:10 thor Exp $
+** $Id: debayer.cpp,v 1.6 2019/03/01 10:15:56 thor Exp $
 **
 ** This class runs a debayer filter on the image converting it from grey scale
 ** to RGB. This is mostly experimental.
@@ -533,9 +533,7 @@ void Debayer::CreateImageData(UBYTE **&data,class ImageLayout *src)
   //
   // Fill up the component data pointers.
   for(i = 0;i < m_usDepth;i++) {
-    UBYTE bps = (m_pComponent[i].m_ucBits + 7) >> 3;
-    if (m_pComponent[i].m_bFloat && m_pComponent[i].m_ucBits == 16)
-      bps = sizeof(FLOAT); // stored as float
+    UBYTE bps = ImageLayout::SuggestBPP(m_pComponent[i].m_ucBits,m_pComponent[i].m_bFloat);
     //
     data[i]                           = new UBYTE[m_pComponent[i].m_ulWidth * m_pComponent[i].m_ulHeight * bps];
     m_pComponent[i].m_ulBytesPerPixel = bps;

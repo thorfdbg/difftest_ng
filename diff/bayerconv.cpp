@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: bayerconv.cpp,v 1.5 2018/11/21 13:57:32 thor Exp $
+** $Id: bayerconv.cpp,v 1.7 2019/03/01 10:15:56 thor Exp $
 **
 ** This class converts bayer pattern images into four-component images
 ** and back. It *does not* attempt to de-bayer the images.
@@ -139,6 +139,7 @@ void BayerConv::CreateImageData(UBYTE **&data,class ImageLayout *src)
     m_pComponent[i].m_ulHeight = m_ulHeight;
     m_pComponent[i].m_ucBits   = src->BitsOf(0);
     m_pComponent[i].m_bSigned  = src->isSigned(0);
+    m_pComponent[i].m_bFloat   = src->isFloat(0);
     m_pComponent[i].m_ucSubX   = src->SubXOf(0);
     m_pComponent[i].m_ucSubY   = src->SubYOf(0);
   }
@@ -150,9 +151,7 @@ void BayerConv::CreateImageData(UBYTE **&data,class ImageLayout *src)
   //
   // Fill up the component data pointers.
   for(i = 0;i < m_usDepth;i++) {
-    UBYTE bps = (m_pComponent[i].m_ucBits + 7) >> 3;
-    if (m_pComponent[i].m_bFloat && m_pComponent[i].m_ucBits == 16)
-      bps = sizeof(FLOAT); // stored as float
+    UBYTE bps = ImageLayout::SuggestBPP(m_pComponent[i].m_ucBits,m_pComponent[i].m_bFloat);
     //
     data[i]                           = new UBYTE[m_pComponent[i].m_ulWidth * m_pComponent[i].m_ulHeight * bps];
     m_pComponent[i].m_ulBytesPerPixel = bps;

@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: ycbcr.cpp,v 1.14 2018/12/05 09:21:53 thor Exp $
+** $Id: ycbcr.cpp,v 1.15 2019/03/01 10:15:56 thor Exp $
 **
 ** This class converts between RGB and YCbCr signals
 */
@@ -1073,7 +1073,7 @@ void YCbCr::ToRCT(class ImageLayout *img,UBYTE *(&membuf)[4])
 	if (comp > 0)
 	  obits++;
       }
-      bpc = (obits + 7) >> 3;
+      bpc = ImageLayout::SuggestBPP(obits,false);
       mem = new UBYTE[w * h * bpc];
       //
       // Store the pointer to be able to release it later.
@@ -1379,7 +1379,7 @@ void YCbCr::FromRCT(class ImageLayout *img,UBYTE *(&membuf)[4])
 	  throw "RCT and YCgCo require that all chroma components have the same signedness";
       }
       //
-      bpc = (ybits + 7) >> 3;
+      bpc = ImageLayout::SuggestBPP(ybits,false);
       mem = new UBYTE[w * h * bpc];
       //
       // Store the pointer to be able to release it later.
@@ -1506,7 +1506,7 @@ void YCbCr::To422RCT(class ImageLayout *img,UBYTE *(&membuf)[4])
       // Expand the bitdepths of all components. Otherwise, this transformation
       // would not be reversible.
       obits++;
-      bpc = (obits + 7) >> 3;
+      bpc = ImageLayout::SuggestBPP(obits,false);
       mem = new UBYTE[w * h * bpc];
       //
       // Store the pointer to be able to release it later.
@@ -1648,7 +1648,7 @@ void YCbCr::From422RCT(class ImageLayout *img,UBYTE *(&membuf)[4])
       if (comp > 0 && img->isSigned(comp) != csign)
 	throw "The 422RCT requires that all chroma components have the same signedness";
       //
-      bpc = (ybits - 1 + 7) >> 3;
+      bpc = ImageLayout::SuggestBPP(ybits - 1,false);
       mem = new UBYTE[w * h * bpc];
       //
       // Store the pointer to be able to release it later.

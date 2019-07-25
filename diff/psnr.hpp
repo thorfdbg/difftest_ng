@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: psnr.hpp,v 1.13 2017/01/31 11:58:04 thor Exp $
+** $Id: psnr.hpp,v 1.14 2019/03/05 10:11:18 thor Exp $
 **
 ** This class measures the PSNR between two images, averaged over all samples
 ** and thus all components.
@@ -68,7 +68,8 @@ public:
     Min,
     YCbCr,
     YUV,
-    SamplingWeighted
+    SamplingWeighted,
+    RootMean
   };
   //
   PSNR(Type t,bool linear = false,bool snr = false,bool fromenergy = false)
@@ -79,8 +80,11 @@ public:
   //
   virtual const char *NameOf(void) const
   {
-    if (m_bLinear)
+    if (m_bLinear) {
+      if (m_Type == RootMean)
+	return "RMSE";
       return "MSE";
+    }
     if (m_bSNR)
       return "SNR";
     return "PSNR";
