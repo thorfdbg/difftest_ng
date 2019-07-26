@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: bayercolor.hpp,v 1.5 2019/03/06 14:38:31 thor Exp $
+** $Id: bayercolor.hpp,v 1.6 2019/07/26 05:52:30 thor Exp $
 **
 ** This class implements various color transformations on CFA data,
 ** specific to CFA only. They generally depend on the Bayer layout,
@@ -40,7 +40,7 @@ and conversion framework.
 ///
 
 /// Forwards
-class ImgSpecs;
+struct ImgSpecs;
 ///
 
 /// class BayerColor

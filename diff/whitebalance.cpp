@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: whitebalance.cpp,v 1.1 2019/07/25 06:52:10 thor Exp $
+** $Id: whitebalance.cpp,v 1.2 2019/07/26 05:46:35 thor Exp $
 **
 ** This class scales the components of images with component dependent
 ** scale factors.
@@ -61,8 +61,34 @@ void WhiteBalance::Convert(T *dst ,ULONG bytesperpixel,ULONG bytesperrow,
 }
 ///
 
+/// WhiteBalance::ShiftConv
+template<typename T>
+void WhiteBalance::ShiftConv(T *dst ,ULONG bytesperpixel,ULONG bytesperrow,
+			     ULONG w, ULONG h,double offset,double min,double max)
+{
+  ULONG x,y;
+
+  for(y = 0;y < h;y++) {
+    T *dstrow       = dst;
+    for(x = 0;x < w;x++) {
+      double v    = *dstrow + offset;
+      if (v < min) {
+	*dstrow   = min;
+      } else if (v > max) {
+	*dstrow   = max;
+      } else {
+	*dstrow   = v;
+      }
+      dstrow      = (T *)((UBYTE *)(dstrow) + bytesperpixel);
+    }
+    dst = (T *)((UBYTE *)(dst) + bytesperrow);
+  }
+}
+///
+
 /// WhiteBalance::WhiteBalance
-WhiteBalance::WhiteBalance(const char *factors)
+WhiteBalance::WhiteBalance(Operation type,const char *factors)
+  : m_Type(type)
 {
   const char *in = factors;
   char *end;
@@ -70,16 +96,24 @@ WhiteBalance::WhiteBalance(const char *factors)
 
   do {
     double v = strtod(in,&end);
-    if (*end != '\0' && *end != ',')
-      throw "the --scale argument must consist of comma-separated floating point numbers";
-    if (v <= 0.0)
-      throw "the --scale arguments must be positive integers";
+    switch(m_Type) {
+    case Scale:
+      if (*end != '\0' && *end != ',')
+	throw "the --scale argument must consist of comma-separated floating point numbers";
+      if (v <= 0.0)
+	throw "the --scale arguments must be positive integers";
+      break;
+    case Shift:
+      if (*end != '\0' && *end != ',')
+	throw "the --offset argument must consist of comma-separated floating point numbers";
+      break;
+    }
     in = end + 1;
     cnt++;
   } while(*end);
 
   if (cnt > 0xffff)
-    throw "too many scale factors";
+    throw "too many parameters";
 
   in = factors;
   i  = 0;
@@ -112,7 +146,18 @@ void WhiteBalance::ApplyScaling(class ImageLayout *src)
     ULONG  h    = src->HeightOf(comp);
     UBYTE bps   = src->BitsOf(comp);
     double min,max;
-    double scale   = (comp < m_usComponents)?m_pdFactors[comp]:1.0;
+    double scale;
+    //
+    if (comp < m_usComponents) {
+      scale = m_pdFactors[comp]; // Or offsets...
+    } else switch(m_Type) {
+      case Scale:
+	scale = 1.0;
+	break;
+      case Shift:
+	scale = 0.0;
+	break;
+      }
     //
     if (src->isFloat(comp)) {
       min = -HUGE_VAL;
@@ -127,38 +172,77 @@ void WhiteBalance::ApplyScaling(class ImageLayout *src)
       }
     }
     //
-    if (src->BitsOf(comp) <= 8) {
-      if (src->isSigned(comp)) {
-	Convert<BYTE>((BYTE *)src->DataOf(comp),src->BytesPerPixel(comp),src->BytesPerRow(comp),
-		      w,h,scale,min,max);
-      } else {
-	Convert<UBYTE>((UBYTE *)src->DataOf(comp),src->BytesPerPixel(comp),src->BytesPerRow(comp),
+    switch(m_Type) {
+    case Scale:
+      if (src->BitsOf(comp) <= 8) {
+	if (src->isSigned(comp)) {
+	  Convert<BYTE>((BYTE *)src->DataOf(comp),src->BytesPerPixel(comp),src->BytesPerRow(comp),
+			w,h,scale,min,max);
+	} else {
+	  Convert<UBYTE>((UBYTE *)src->DataOf(comp),src->BytesPerPixel(comp),src->BytesPerRow(comp),
+			 w,h,scale,min,max);
+	}
+      } else if (src->BitsOf(comp) <= 16 && !src->isFloat(comp)) {
+	if (src->isSigned(comp)) {
+	  Convert<WORD>((WORD *)src->DataOf(comp),src->BytesPerPixel(comp),src->BytesPerRow(comp),
+			w,h,scale,min,max);
+	} else {
+	  Convert<UWORD>((UWORD *)src->DataOf(comp),src->BytesPerPixel(comp),src->BytesPerRow(comp),
+			 w,h,scale,min,max);
+	}
+      } else if (src->BitsOf(comp) <= 32 && !src->isFloat(comp)) {
+	if (src->isSigned(comp)) {
+	  Convert<LONG>((LONG *)src->DataOf(comp),src->BytesPerPixel(comp),src->BytesPerRow(comp),
+			w,h,scale,min,max);
+	} else {
+	  Convert<ULONG>((ULONG *)src->DataOf(comp),src->BytesPerPixel(comp),src->BytesPerRow(comp),
+			 w,h,scale,min,max);
+	}
+      } else if (src->BitsOf(comp) <= 32 && src->isFloat(comp)) {
+	Convert<FLOAT>((FLOAT *)src->DataOf(comp),src->BytesPerPixel(comp),src->BytesPerRow(comp),
 		       w,h,scale,min,max);
-      }
-    } else if (src->BitsOf(comp) <= 16 && !src->isFloat(comp)) {
-      if (src->isSigned(comp)) {
-	Convert<WORD>((WORD *)src->DataOf(comp),src->BytesPerPixel(comp),src->BytesPerRow(comp),
-		      w,h,scale,min,max);
+      } else if (src->BitsOf(comp) == 64 && src->isFloat(comp)) {
+	Convert<DOUBLE>((DOUBLE *)src->DataOf(comp),src->BytesPerPixel(comp),src->BytesPerRow(comp),
+			w,h,scale,min,max);
       } else {
-	Convert<UWORD>((UWORD *)src->DataOf(comp),src->BytesPerPixel(comp),src->BytesPerRow(comp),
-		       w,h,scale,min,max);
+	throw "unsupported data format";
       }
-    } else if (src->BitsOf(comp) <= 32 && !src->isFloat(comp)) {
-      if (src->isSigned(comp)) {
-	Convert<LONG>((LONG *)src->DataOf(comp),src->BytesPerPixel(comp),src->BytesPerRow(comp),
+      break;
+    case Shift:
+      if (src->BitsOf(comp) <= 8) {
+	if (src->isSigned(comp)) {
+	  ShiftConv<BYTE>((BYTE *)src->DataOf(comp),src->BytesPerPixel(comp),src->BytesPerRow(comp),
 		      w,h,scale,min,max);
-      } else {
-	Convert<ULONG>((ULONG *)src->DataOf(comp),src->BytesPerPixel(comp),src->BytesPerRow(comp),
+	} else {
+	  ShiftConv<UBYTE>((UBYTE *)src->DataOf(comp),src->BytesPerPixel(comp),src->BytesPerRow(comp),
 		       w,h,scale,min,max);
-      }
-    } else if (src->BitsOf(comp) <= 32 && src->isFloat(comp)) {
-      Convert<FLOAT>((FLOAT *)src->DataOf(comp),src->BytesPerPixel(comp),src->BytesPerRow(comp),
+	}
+      } else if (src->BitsOf(comp) <= 16 && !src->isFloat(comp)) {
+	if (src->isSigned(comp)) {
+	  ShiftConv<WORD>((WORD *)src->DataOf(comp),src->BytesPerPixel(comp),src->BytesPerRow(comp),
+		      w,h,scale,min,max);
+	} else {
+	  ShiftConv<UWORD>((UWORD *)src->DataOf(comp),src->BytesPerPixel(comp),src->BytesPerRow(comp),
+		       w,h,scale,min,max);
+	}
+      } else if (src->BitsOf(comp) <= 32 && !src->isFloat(comp)) {
+	if (src->isSigned(comp)) {
+	  ShiftConv<LONG>((LONG *)src->DataOf(comp),src->BytesPerPixel(comp),src->BytesPerRow(comp),
+		      w,h,scale,min,max);
+	} else {
+	  ShiftConv<ULONG>((ULONG *)src->DataOf(comp),src->BytesPerPixel(comp),src->BytesPerRow(comp),
+		       w,h,scale,min,max);
+	}
+      } else if (src->BitsOf(comp) <= 32 && src->isFloat(comp)) {
+	ShiftConv<FLOAT>((FLOAT *)src->DataOf(comp),src->BytesPerPixel(comp),src->BytesPerRow(comp),
 		     w,h,scale,min,max);
-    } else if (src->BitsOf(comp) == 64 && src->isFloat(comp)) {
-      Convert<DOUBLE>((DOUBLE *)src->DataOf(comp),src->BytesPerPixel(comp),src->BytesPerRow(comp),
-		     w,h,scale,min,max);
-    } else {
-      throw "unsupported data format";
+      } else if (src->BitsOf(comp) == 64 && src->isFloat(comp)) {
+	ShiftConv<DOUBLE>((DOUBLE *)src->DataOf(comp),src->BytesPerPixel(comp),src->BytesPerRow(comp),
+		      w,h,scale,min,max);
+      } else {
+	throw "unsupported data format";
+      }
+      break;
     }
   }
 }

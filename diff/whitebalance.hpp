@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: whitebalance.hpp,v 1.1 2019/07/25 06:52:10 thor Exp $
+** $Id: whitebalance.hpp,v 1.2 2019/07/26 05:46:35 thor Exp $
 **
 ** This class scales the components of images with component dependent
 ** scale factors.
@@ -46,16 +46,32 @@ struct ImgSpecs;
 // scale factors.
 class WhiteBalance : public Meter {
   //
+public:
+  //
+  enum Operation {
+    Scale,  // scale components
+    Shift   // shift components
+  };
+  //
+private:
+  //
+  // The type of operation desired. Scale or shift.
+  Operation    m_Type;
+  //
   // The number of components for which we recorded scaling data.
   UWORD        m_usComponents;
   //
-  // The array of scaling factors
+  // The array of scaling factors or shifting offsets.
   DOUBLE      *m_pdFactors;
   //
   // This never changes the data type.
   template<typename T>
   void Convert(T *dst ,ULONG bytesperpixel,ULONG bytesperrow,
 	       ULONG w, ULONG h,double scale ,double min,double max);
+  //
+  template<typename T>
+  void ShiftConv(T *dst ,ULONG bytesperpixel,ULONG bytesperrow,
+		 ULONG w, ULONG h,double offset ,double min,double max);
   //
   //
   // Apply a scaling from the source to the image stored here.
@@ -64,7 +80,7 @@ class WhiteBalance : public Meter {
 public:
   //
   // Apply a component dependent white balance to the image.
-  WhiteBalance(const char *factors);
+  WhiteBalance(Operation type,const char *factors);
   //
   virtual ~WhiteBalance(void);
   //

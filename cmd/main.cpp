@@ -23,7 +23,7 @@ and conversion framework.
 /*
  * Main program
  * 
- * $Id: main.cpp,v 1.105 2019/07/25 13:36:19 thor Exp $
+ * $Id: main.cpp,v 1.106 2019/07/26 05:46:32 thor Exp $
  *
  * This class defines the main program and argument parsing.
  */
@@ -240,6 +240,7 @@ void Usage(const char *progname)
 	  "--xyztolms         : convert images from XYZ to LMS before comparing\n"
 	  "--lmstoxyz         : convert images from LMS to XYZ before comparing\n"
 	  "--scale a,b,c...   : scale components by the indicated factors before comparing\n"
+	  "--offset a,b,c...  : offset component values by the indicated values before comparing\n"
 	  "--tobayer          : convert a four-component image to a Bayer-pattern image\n"
 	  "--frombayer        : convert a Bayer patterned grey-scale image to four components\n"
 	  "--tobayersh   agmnt: convert a four-component image in component order RGGB\n"
@@ -1143,7 +1144,13 @@ class Meter *ParseTransferFunctions(int &argc,char **&argv,struct ImgSpecs &spec
   } else if (!strcmp(arg,"--scale")) {
     if (argc < 3)
       throw "--scale requires a comma-separated list of scaling factors";
-    m     = new class WhiteBalance(argv[2]);
+    m     = new class WhiteBalance(WhiteBalance::Scale,argv[2]);
+    argc -= 1;
+    argv += 1;
+  } else if (!strcmp(arg,"--offset")) {
+    if (argc < 3)
+      throw "--offset requires a comma-separated list of shift values";
+    m     = new class WhiteBalance(WhiteBalance::Shift,argv[2]);
     argc -= 1;
     argv += 1;
   }
