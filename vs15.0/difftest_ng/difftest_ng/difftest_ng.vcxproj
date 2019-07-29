@@ -92,18 +92,22 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\diff\add.cpp" />
+    <ClCompile Include="..\..\..\diff\bayercolor.cpp" />
     <ClCompile Include="..\..\..\diff\bayerconv.cpp" />
     <ClCompile Include="..\..\..\diff\clamp.cpp" />
     <ClCompile Include="..\..\..\diff\debayer.cpp" />
     <ClCompile Include="..\..\..\diff\downsampler.cpp" />
     <ClCompile Include="..\..\..\diff\fill.cpp" />
     <ClCompile Include="..\..\..\diff\flip.cpp" />
+    <ClCompile Include="..\..\..\diff\flipextend.cpp" />
     <ClCompile Include="..\..\..\diff\invert.cpp" />
     <ClCompile Include="..\..\..\diff\mapping.cpp" />
     <ClCompile Include="..\..\..\diff\paste.cpp" />
     <ClCompile Include="..\..\..\diff\peakpos.cpp" />
     <ClCompile Include="..\..\..\diff\shift.cpp" />
+    <ClCompile Include="..\..\..\diff\suppress.cpp" />
     <ClCompile Include="..\..\..\diff\upsampler.cpp" />
+    <ClCompile Include="..\..\..\diff\whitebalance.cpp" />
     <ClCompile Include="..\..\..\diff\xyz.cpp" />
     <ClCompile Include="..\..\..\img\simpledpx.cpp" />
     <ClCompile Include="..\..\..\std\assert.cpp" />
@@ -161,15 +165,19 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\diff\add.hpp" />
+    <ClInclude Include="..\..\..\diff\bayercolor.hpp" />
     <ClInclude Include="..\..\..\diff\bayerconv.hpp" />
     <ClInclude Include="..\..\..\diff\debayer.hpp" />
     <ClInclude Include="..\..\..\diff\downsampler.hpp" />
     <ClInclude Include="..\..\..\diff\flip.hpp" />
+    <ClInclude Include="..\..\..\diff\flipextend.hpp" />
     <ClInclude Include="..\..\..\diff\invert.hpp" />
     <ClInclude Include="..\..\..\diff\mapping.hpp" />
     <ClInclude Include="..\..\..\diff\peakpos.hpp" />
     <ClInclude Include="..\..\..\diff\shift.hpp" />
+    <ClInclude Include="..\..\..\diff\suppress.hpp" />
     <ClInclude Include="..\..\..\diff\upsampler.hpp" />
+    <ClInclude Include="..\..\..\diff\whitebalance.hpp" />
     <ClInclude Include="..\..\..\diff\xyz.hpp" />
     <ClInclude Include="..\..\..\img\simpledpx.hpp" />
     <ClInclude Include="..\..\..\tools\file.hpp" />
