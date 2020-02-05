@@ -23,7 +23,7 @@ and conversion framework.
 /*
  * This class saves and loads images in the dpx format.
  *
- * $Id: simpledpx.hpp,v 1.15 2020/02/05 11:28:21 thor Exp $
+ * $Id: simpledpx.hpp,v 1.16 2020/02/05 15:25:07 thor Exp $
  */
 
 #ifndef SIMPLEDPX_HPP
@@ -126,7 +126,7 @@ class SimpleDPX : public ImageLayout {
     // scan element is an alpha channel.
     ScanElement(struct ScanElement **&prev,UWORD targetchannel)
       : m_pNext(NULL), m_pData(NULL), m_pComponent(NULL), 
-	m_usTargetChannel(targetchannel)
+	m_usTargetChannel(targetchannel), m_bFirst(false)
     {
       *prev = this;
       prev  = &m_pNext;
