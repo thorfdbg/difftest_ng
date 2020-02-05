@@ -23,7 +23,7 @@ and conversion framework.
 /*
  * This class saves and loads images in any header-less format.
  *
- * $Id: simpleraw.cpp,v 1.21 2018/07/27 14:52:58 thor Exp $
+ * $Id: simpleraw.cpp,v 1.22 2019/08/23 05:47:16 thor Exp $
  */
 
 /// Includes
@@ -353,10 +353,12 @@ void SimpleRaw::ComponentLayoutFromFileName(const char *filename)
 	sep++;
 	break;
       }
+      /* Falls through. */
     case ':':
       lefty       = false;
       havepacking = false;
       sep++;
+      /* Falls through. */
     case '\0':
       // End of a bit-packing sequence, possibly. Count bits.
       // But this one is still included.

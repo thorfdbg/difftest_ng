@@ -23,7 +23,7 @@ and conversion framework.
 /*
  * This class saves and loads images in the dpx format.
  *
- * $Id: simpledpx.cpp,v 1.18 2019/03/01 10:16:01 thor Exp $
+ * $Id: simpledpx.cpp,v 1.21 2020/02/05 07:41:05 thor Exp $
  */
 
 /// Includes
@@ -95,6 +95,7 @@ bool SimpleDPX::BuildScanPattern(struct ImageElement *el)
     // Create two scan elements. The first scans Cb, the second Cr.
     new ScanElement(slp,0);
     new ScanElement(slp,1);
+    /* Falls through. */
   case 9:
     // "Composite video". Largely underspecified. No idea what the samples are here.
     yuv = true;
@@ -135,9 +136,9 @@ bool SimpleDPX::BuildScanPattern(struct ImageElement *el)
     el->m_ucSubX       = 2;
     yuv                = true;
     // Create three scan elements in the order Cb,Y,Cr,Y
-    new ScanElement(slp,1);
-    new ScanElement(slp,0);
     new ScanElement(slp,2);
+    new ScanElement(slp,0);
+    new ScanElement(slp,1);
     new ScanElement(slp,0);
     break;
   case 101:
@@ -223,13 +224,14 @@ bool SimpleDPX::ParseElementHeader(FILE *file,struct ImageElement *el)
   el->m_ucDescriptor = GetByte(file);
   //
   // Read the transfer characteristics. Not that we do anything about it.
+  // thor fix: apparently, some files use 255 as indicator, probably as 'we do not know'.
   xfer = GetByte(file);
-  if (xfer > 12)
+  if (xfer > 12 && xfer != 255)
     PostError("found unspecified DPX transfer characteristics in file %s",m_pcFileName);
   //
   // Read the colorimetric specification. Nothing we can make use of.
   color = GetByte(file);
-  if (color > 10)
+  if (color > 10 && color != 255)
     PostError("found invalid colorimetric specification in DPX file %s",m_pcFileName);
   //
   el->m_ucBitDepth = GetByte(file);

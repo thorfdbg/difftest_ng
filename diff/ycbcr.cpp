@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: ycbcr.cpp,v 1.15 2019/03/01 10:15:56 thor Exp $
+** $Id: ycbcr.cpp,v 1.16 2019/08/23 05:47:16 thor Exp $
 **
 ** This class converts between RGB and YCbCr signals
 */
@@ -1325,6 +1325,7 @@ void YCbCr::FromRCT(class ImageLayout *img,UBYTE *(&membuf)[4])
   case Delta_Trafo:
     cbits    = img->BitsOf(3);
     csign    = img->isSigned(3);
+    /* Falls through. */
   case RCTD_Trafo:
   case YCgCoD_Trafo:
     mindepth = 4;

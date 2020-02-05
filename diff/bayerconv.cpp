@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: bayerconv.cpp,v 1.7 2019/03/01 10:15:56 thor Exp $
+** $Id: bayerconv.cpp,v 1.8 2019/08/23 05:47:16 thor Exp $
 **
 ** This class converts bayer pattern images into four-component images
 ** and back. It *does not* attempt to de-bayer the images.
@@ -187,7 +187,7 @@ void BayerConv::ConvertFromBayer(UBYTE **&dest,class ImageLayout *src)
   //
   // Now perform the extraction.
   for(i = 0;i < m_usDepth;i++) {
-    ULONG sx,sy;
+    ULONG sx = 0,sy = 0;
     if (m_bReshuffle) {
       switch(i) {
       case 0:
@@ -205,6 +205,9 @@ void BayerConv::ConvertFromBayer(UBYTE **&dest,class ImageLayout *src)
       case 3:
 	sx = m_lbx;
 	sy = m_lby;
+	break;
+      default:
+	assert(!"invalid bayer pattern selected");
 	break;
       }
     } else {
@@ -420,9 +423,9 @@ void BayerConv::Convert422FromBayer(UBYTE **&dest,class ImageLayout *src)
     LONG sx    = i & 1;
     LONG sy    = i >> 1;
     ULONG width = m_ulWidth >> 1;
-    ULONG bpp;    // destination bytes per pixel. 
+    ULONG bpp = 0;// destination bytes per pixel. 
     ULONG dx = 0; // destination offset
-    UWORD j;      // target component.
+    UWORD j  = 0; // target component.
     if ((sx == m_lgx && sy == m_lgy) ||
 	(sx == m_lkx && sy == m_lky)) {
       // Source is first or second green component.
@@ -437,6 +440,8 @@ void BayerConv::Convert422FromBayer(UBYTE **&dest,class ImageLayout *src)
       // Source is blue.
       j   = 2;
       bpp = BytesPerPixel(2);
+    } else {
+      assert(!"invalid bayer pattern selected");
     }
     //
     if (isSigned(j)) {
@@ -550,10 +555,10 @@ void BayerConv::Convert422ToBayer(UBYTE **&dest,class ImageLayout *src)
   for(i = 0;i < 4;i++) {
     LONG sx = i & 1;
     LONG sy = i >> 1;
-    ULONG bpp; // source bytes per pixel.
+    ULONG bpp = 0; // source bytes per pixel.
     ULONG dx = 0;  // source offset into component.
     ULONG width = m_ulWidth;
-    UWORD j;   // source component
+    UWORD j  = 0;  // source component
     if ((sx == m_lgx && sy == m_lgy) ||
 	(sx == m_lkx && sy == m_lky)) {
       // Source is green
@@ -568,6 +573,8 @@ void BayerConv::Convert422ToBayer(UBYTE **&dest,class ImageLayout *src)
       // Source is blue
       j   = 2;
       bpp = src->BytesPerPixel(2);
+    } else {
+      assert(!"invalid bayer pattern arrangement");
     }
     //
     if (isSigned(0)) {

@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: flipextend.cpp,v 1.1 2019/07/24 13:04:44 thor Exp $
+** $Id: flipextend.cpp,v 1.2 2019/08/23 05:47:16 thor Exp $
 **
 ** This class flips images over vertically and horizonally, doubling
 ** their size.
@@ -135,7 +135,7 @@ void FlipExtend::ApplyExtension(class ImageLayout *src)
   for(comp = 0;comp < src->DepthOf();comp++) {
     ULONG  w    = src->WidthOf(comp);
     ULONG  h    = src->HeightOf(comp);
-    UBYTE *mem;
+    UBYTE *mem  = NULL;
     ULONG dbpp;
     ULONG dbpr;
     //
@@ -151,6 +151,9 @@ void FlipExtend::ApplyExtension(class ImageLayout *src)
       mem  = new UBYTE[w * (h << 1) * dbpp];
       m_pComponent[comp].m_ulWidth         = w;
       m_pComponent[comp].m_ulHeight        = h << 1;
+      break;
+    default:
+      assert(!"invalid flipping operation requested");
       break;
     }
     m_ppucImage[comp]                    = mem;

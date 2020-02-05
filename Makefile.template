@@ -1,6 +1,6 @@
 #! make
 ##
-## $Id: Makefile.template,v 1.8 2017/01/31 10:44:08 thor Exp $
+## $Id: Makefile.template,v 1.9 2019/08/23 05:47:16 thor Exp $
 ##
 ## This makefile template is included by all sub-directories
 ## to shorten the apropriate sub-makefiles to the minimum
@@ -54,8 +54,8 @@ VALGRIND	= -DUSE_VALGRIND=1
 AR		= ar
 AROPTS		= -sr
 CAT		= cat
-AUTOCONF	= autoconf2.59
-AUTOHEADER	= autoheader2.59
+AUTOCONF	= autoconf
+AUTOHEADER	= autoheader
 
 ##
 ## Definitions for the headers, object codes, sources,....

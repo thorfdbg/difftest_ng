@@ -1,6 +1,6 @@
 #######################################################################
 ##
-## $Id: Makefile,v 1.23 2018/02/07 14:24:33 thor Exp $
+## $Id: Makefile,v 1.24 2019/07/30 06:27:47 thor Exp $
 ##
 #######################################################################
 ## Makefile for the difftest_ng project,
@@ -317,10 +317,7 @@ Distrib.zip	:	doc dox configure autoconfig.h.in
 	@ touch configure
 	@ $(MAKE) --no-print-directory $(DIRLIBS) TARGET="zip"
 	@ $(ZIPASCII) -r Distrib.zip README README.license config.h
-	@ $(ZIPASCII) -r Distrib.zip vs10.0/difftest_ng/difftest_ng.sln vs10.0/difftest_ng/difftest_ng/difftest_ng.vcxproj
-	@ $(ZIPASCII) -r Distrib.zip vs14.0/difftest_ng/difftest_ng.sln vs14.0/difftest_ng/difftest_ng/difftest_ng.vcxproj
-	@ $(ZIPASCII) -r Distrib.zip vs15.0/difftest_ng/difftest_ng.sln vs14.0/difftest_ng/difftest_ng/difftest_ng.vcxproj
-	@ $(ZIPASCII) -r Distrib.zip vs9.0/difftest_ng/difftest_ng.sln vs9.0/difftest_ng/difftest_ng/difftest_ng.vcproj
+	@ $(ZIPASCII) -r Distrib.zip vs15.0/difftest_ng/difftest_ng.sln vs15.0/difftest_ng/difftest_ng/difftest_ng.vcxproj
 	@ $(ZIP) -r Distrib.zip Makefile Makefile.template Makefile_Settings.*
 	@ $(ZIP) -r Distrib.zip configure configure.in automakefile.in autoconfig.h.in
 

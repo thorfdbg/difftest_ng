@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: mapping.cpp,v 1.15 2019/07/25 13:36:24 thor Exp $
+** $Id: mapping.cpp,v 1.16 2019/08/23 05:47:16 thor Exp $
 **
 ** This class works like the scaler, but more elaborate as it allows a couple
 ** of less trivial conversions: gamma mapping, log mapping and half-log mapping.
@@ -627,9 +627,9 @@ void Mapping::ApplyMap(class ImageLayout *src,class ImageLayout *dst)
 { 
   UWORD comp;
   double limf = 1.0;
-  double gam,ts;
-  double offset;
-  double thres;
+  double gam,ts = 1.0;
+  double offset = 0.0;
+  double thres  = 0.0;
   //
   // Need to compute the 95% percentile?
   if (m_Type == Gamma && m_bInverse == false) {
