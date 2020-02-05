@@ -23,7 +23,7 @@ and conversion framework.
 /*
  * This class saves and loads images in the dpx format.
  *
- * $Id: simpledpx.cpp,v 1.21 2020/02/05 07:41:05 thor Exp $
+ * $Id: simpledpx.cpp,v 1.22 2020/02/05 11:28:21 thor Exp $
  */
 
 /// Includes
@@ -38,7 +38,7 @@ and conversion framework.
 /// SimpleDPX::SimpleDPX
 // default constructor
 SimpleDPX::SimpleDPX(void)
-  : m_bLittleEndian(true), m_bFlipX(false), m_bFlipY(false), m_bFlipXY(false)
+  : m_bLittleEndian(true), m_bLeftToRightScan(false), m_bFlipX(false), m_bFlipY(false), m_bFlipXY(false)
 {
 }
 ///
@@ -46,7 +46,7 @@ SimpleDPX::SimpleDPX(void)
 /// SimpleDPX::SimpleDPX
 // Copy the image from another source for later saving.
 SimpleDPX::SimpleDPX(const class ImageLayout &layout)
-  : ImageLayout(layout), m_bLittleEndian(true), m_bFlipX(false), m_bFlipY(false), m_bFlipXY(false)
+  : ImageLayout(layout), m_bLittleEndian(true), m_bLeftToRightScan(false), m_bFlipX(false), m_bFlipY(false), m_bFlipXY(false)
 {
 }
 ///
@@ -106,19 +106,35 @@ bool SimpleDPX::BuildScanPattern(struct ImageElement *el)
     // This is BGR (not RGB)
     el->m_ucDepth      = 3;
     // Create three scan elements in the order B,G,R.
-    new ScanElement(slp,2);
-    new ScanElement(slp,1);
-    new ScanElement(slp,0);
+    if (m_bLeftToRightScan) {
+      // Strangely enough, programs fall back to RGB
+      // if the scan order is wrong.
+      new ScanElement(slp,0);
+      new ScanElement(slp,1);
+      new ScanElement(slp,2);
+    } else {
+      new ScanElement(slp,2);
+      new ScanElement(slp,1);
+      new ScanElement(slp,0);
+    }
     break;
   case 51:
     // This is BGRA (not RGBA)
     el->m_ucDepth      = 3;
     el->m_ucAlphaDepth = 1;
     // Create three scan elements in the order B,G,R,A.
-    new ScanElement(slp,2);
-    new ScanElement(slp,1);
-    new ScanElement(slp,0);
-    new ScanElement(slp,MAX_UWORD);
+    if (m_bLeftToRightScan) {
+      // Actually, I do not really know what programs do here...
+      new ScanElement(slp,0);
+      new ScanElement(slp,1);
+      new ScanElement(slp,2);
+      new ScanElement(slp,MAX_UWORD);
+    } else {
+      new ScanElement(slp,2);
+      new ScanElement(slp,1);
+      new ScanElement(slp,0);
+      new ScanElement(slp,MAX_UWORD);
+    }
     break;
   case 52:
     // This is ARGB
@@ -136,9 +152,9 @@ bool SimpleDPX::BuildScanPattern(struct ImageElement *el)
     el->m_ucSubX       = 2;
     yuv                = true;
     // Create three scan elements in the order Cb,Y,Cr,Y
-    new ScanElement(slp,2);
-    new ScanElement(slp,0);
     new ScanElement(slp,1);
+    new ScanElement(slp,0);
+    new ScanElement(slp,2);
     new ScanElement(slp,0);
     break;
   case 101:
@@ -351,6 +367,11 @@ void SimpleDPX::ParseHeader(FILE *file,struct ImgSpecs &specs)
     PostError("input file %s is not a valid DPX file",m_pcFileName);
   }
 
+  // thor: ugly workaround, let's assume for a while that
+  // bit endian files are stored such that we read from the MSB.
+  // This is not following the specs, but apparently how it is done.
+  m_bLeftToRightScan = !m_bLittleEndian;
+  
   m_ulDataOffset = GetLong(file);
   
   version[8] = 0;
@@ -516,27 +537,53 @@ UQUAD SimpleDPX::ReadData(FILE *in,const struct ImageElement *el,bool issigned)
       UBYTE sign  = el->m_ucBitDepth;
       UBYTE bits  = el->m_ucBitDepth;
       UBYTE shift = 0;
-      
-      do {
-	// Refill the buffer if only the padding bits are left, or no bits are left.
-	if (m_cBit <= el->m_ucMSBPaddingBits) {
-	  // Fill up the bit-buffer.
-	  m_ulBitBuffer = GetLong(in);
-	  m_cBit        = 32;
-	  //
-	  // If LSB padding is on, remove now the LSB bits.
-	  m_cBit       -= el->m_ucLSBPaddingBits;
-	}
-	UBYTE avail = m_cBit;
-	if (avail > bits)
-	  avail = bits; // do not remove more bits than requested.
-	
-	// remove avail bits from the byte
-	res     |= ((m_ulBitBuffer >> (32 - m_cBit)) & ((1UL << avail) - 1)) << shift;
-	bits    -= avail;
-	shift   += avail;
-	m_cBit  -= avail;
-      } while(bits);
+
+      //
+      // Unfortunately, some DPX files scan left to right rather than
+      // right to left, reverse from what the specs say.
+      if (m_bLeftToRightScan) {
+	do {
+	  // Refill the buffer if only the padding bits are left, or no bits are left.
+	  if (m_cBit <= el->m_ucLSBPaddingBits) {
+	    // Fill up the bit-buffer.
+	    m_ulBitBuffer = GetLong(in);
+	    m_cBit        = 32;
+	    //
+	    // If LSB padding is on, remove now the LSB bits.
+	    m_cBit       -= el->m_ucMSBPaddingBits;
+	  }
+	  UBYTE avail = m_cBit;
+	  if (avail > bits)
+	    avail = bits; // do not remove more bits than requested.
+	  
+	  // remove avail bits from the long word
+	  res    <<= avail;
+	  res     |= (m_ulBitBuffer >> (m_cBit - avail)) & ((1UL << avail) - 1);
+	  bits    -= avail;
+	  m_cBit  -= avail;
+	} while(bits);
+      } else {
+	do {
+	  // Refill the buffer if only the padding bits are left, or no bits are left.
+	  if (m_cBit <= el->m_ucMSBPaddingBits) {
+	    // Fill up the bit-buffer.
+	    m_ulBitBuffer = GetLong(in);
+	    m_cBit        = 32;
+	    //
+	    // If LSB padding is on, remove now the LSB bits.
+	    m_cBit       -= el->m_ucLSBPaddingBits;
+	  }
+	  UBYTE avail = m_cBit;
+	  if (avail > bits)
+	    avail = bits; // do not remove more bits than requested.
+	  
+	  // remove avail bits from the long word
+	  res     |= ((m_ulBitBuffer >> (32 - m_cBit)) & ((1UL << avail) - 1)) << shift;
+	  bits    -= avail;
+	  shift   += avail;
+	  m_cBit  -= avail;
+	} while(bits);
+      }
 
       if (el->m_ucPackElements == 1)
 	m_cBit -= el->m_ucLSBPaddingBits + el->m_ucMSBPaddingBits;

@@ -23,7 +23,7 @@ and conversion framework.
 /*
  * This class saves and loads images in the dpx format.
  *
- * $Id: simpledpx.hpp,v 1.14 2017/01/31 11:58:04 thor Exp $
+ * $Id: simpledpx.hpp,v 1.15 2020/02/05 11:28:21 thor Exp $
  */
 
 #ifndef SIMPLEDPX_HPP
@@ -51,6 +51,11 @@ class SimpleDPX : public ImageLayout {
   // agnostic and can be both little and big endian.
   // The following is TRUE for little-endian images.
   bool  m_bLittleEndian;
+  //
+  // Strangely enough, some files seem to divert from the
+  // specs and read elements from the file from the MSB position
+  // rather the LSB position.
+  bool  m_bLeftToRightScan;
   //
   // The offset to the image data.
   ULONG m_ulDataOffset;
