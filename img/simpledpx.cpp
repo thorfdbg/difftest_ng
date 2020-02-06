@@ -23,7 +23,7 @@ and conversion framework.
 /*
  * This class saves and loads images in the dpx format.
  *
- * $Id: simpledpx.cpp,v 1.22 2020/02/05 11:28:21 thor Exp $
+ * $Id: simpledpx.cpp,v 1.23 2020/02/06 06:47:41 thor Exp $
  */
 
 /// Includes
@@ -1167,29 +1167,57 @@ void SimpleDPX::WriteData(FILE *out,struct ImageElement *el,UQUAD q)
   default:
     if (el->m_ucBitDepth < 32) {
       UBYTE bits  = el->m_ucBitDepth;
-      
-      do {
-	UBYTE avail = 32 - m_cBit;
-	// Compute the number of available bits.
-	if (avail > bits)
-	  avail = bits;
-	// 
-	// Fill the bits into the bit buffer.
-	m_ulBitBuffer |= (q & ((1L << avail) - 1)) << m_cBit;
-	m_cBit        += avail;
-	bits          -= avail;
-	q            >>= avail;
-	if (el->m_ucPackElements == 1)
-	  m_cBit += el->m_ucMSBPaddingBits + el->m_ucLSBPaddingBits;
-	//
-	// Empty the buffer if there is no room left.
-	if (m_cBit >= 32 - el->m_ucMSBPaddingBits) {
-	  // Fill up the bit-buffer. We can have packed sizes of 16 or 32.
-	  PutLong(out,m_ulBitBuffer);
-	  m_cBit        = el->m_ucLSBPaddingBits;
-	  m_ulBitBuffer = 0;
-	}
-      } while(bits);
+
+      //
+      // Unfortunately, some DPX readers expect a left to right scan rather
+      // than the standard-defined right-to-left scan.
+      if (m_bLeftToRightScan) {
+	do {
+	  UBYTE avail = 32 - m_cBit; // m_cBits counts the number of filled bits in the bit-buffer.
+	  // Compute the number of available = free bits in the bitbuffer.
+	  if (avail > bits)
+	    avail = bits;
+	  //
+	  // Fill the bits into the bit buffer.
+	  m_ulBitBuffer |= ((q << (32 - bits)) & (LONG(~0) >> avail)) >> m_cBit;
+	  m_cBit        += avail;
+	  bits          -= avail;
+	  q            <<= avail;
+	  if (el->m_ucPackElements == 1)
+	    m_cBit += el->m_ucMSBPaddingBits + el->m_ucLSBPaddingBits;
+	  //
+	  // Empty the buffer if there is no room left.
+	  if (m_cBit >= 32 - el->m_ucLSBPaddingBits) {
+	    // Fill up the bit-buffer. We can have packed sizes of 16 or 32.
+	    PutLong(out,m_ulBitBuffer);
+	    m_cBit        = el->m_ucMSBPaddingBits;
+	    m_ulBitBuffer = 0;
+	  }
+	} while(bits);
+      } else {
+	do {
+	  UBYTE avail = 32 - m_cBit;
+	  // Compute the number of available bits.
+	  if (avail > bits)
+	    avail = bits;
+	  // 
+	  // Fill the bits into the bit buffer.
+	  m_ulBitBuffer |= (q & ((1L << avail) - 1)) << m_cBit;
+	  m_cBit        += avail;
+	  bits          -= avail;
+	  q            >>= avail;
+	  if (el->m_ucPackElements == 1)
+	    m_cBit += el->m_ucMSBPaddingBits + el->m_ucLSBPaddingBits;
+	  //
+	  // Empty the buffer if there is no room left.
+	  if (m_cBit >= 32 - el->m_ucMSBPaddingBits) {
+	    // Fill up the bit-buffer. We can have packed sizes of 16 or 32.
+	    PutLong(out,m_ulBitBuffer);
+	    m_cBit        = el->m_ucLSBPaddingBits;
+	    m_ulBitBuffer = 0;
+	  }
+	} while(bits);
+      }
     } else {
       assert(!"invalid bit size in output buffer");
     }
@@ -1208,14 +1236,15 @@ void SimpleDPX::Flush(FILE *out,struct ImageElement *el)
     break;
   default:
     if (el->m_ucBitDepth < 32) {
-      if (m_cBit > el->m_ucLSBPaddingBits) {
+      // If there is some data in the buffer, flush the buffer.
+      if (m_cBit > ((m_bLeftToRightScan)?(el->m_ucMSBPaddingBits):(el->m_ucLSBPaddingBits))) {
 	PutLong(out,m_ulBitBuffer);
       }
     } else {
       assert(!"invalid bit size");
     }
   }
-  m_cBit        = el->m_ucLSBPaddingBits;
+  m_cBit        = (m_bLeftToRightScan)?(el->m_ucMSBPaddingBits):(el->m_ucLSBPaddingBits);
   m_ulBitBuffer = 0;
 }
 ///
@@ -1228,7 +1257,7 @@ void SimpleDPX::WriteElement(FILE *out,struct ImageElement *el)
   bool framedone = false;
 
   // Start at a new byte boundary.
-  m_cBit        = el->m_ucLSBPaddingBits;
+  m_cBit        = (m_bLeftToRightScan)?(el->m_ucMSBPaddingBits):(el->m_ucLSBPaddingBits);
   m_ulBitBuffer = 0;
   do {
     framedone = true;
@@ -1303,6 +1332,10 @@ void SimpleDPX::SaveImage(const char *name,const struct ImgSpecs &specs)
   } else {
     m_bLittleEndian = false;
   }
+  // thor: ugly workaround, let's assume for a while that
+  // bit endian files are stored such that we read from the MSB.
+  // This is not following the specs, but apparently how it is done.
+  m_bLeftToRightScan = !m_bLittleEndian;
   //
   // Create the layout of the components
   CreateElementLayout(specs);

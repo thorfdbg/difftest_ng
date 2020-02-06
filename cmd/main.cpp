@@ -23,7 +23,7 @@ and conversion framework.
 /*
  * Main program
  * 
- * $Id: main.cpp,v 1.106 2019/07/26 05:46:32 thor Exp $
+ * $Id: main.cpp,v 1.107 2020/02/06 06:49:42 thor Exp $
  *
  * This class defines the main program and argument parsing.
  */
@@ -265,6 +265,7 @@ void Usage(const char *progname)
 	  "--isyuv            : override automatic YUV detection, sources are really in YUV\n"
 	  "--isrgb            : override automatic YUV detection, sources are really in RGB\n"
 	  "--littleendian     : use little endian output if applicable\n"
+	  "--bigendian        : use big endian output if applicable\n"
 	  "--toabsradiance    : multiply floating point samples by recorded radiance scale to convert to absolute radiance\n"
 	  "--brief            : use a brief (only numeric) output format\n"
 	  ">,>=,==,!=,<=,< t  : last result must be larger, larger or equal, equal, not equal,\n"
