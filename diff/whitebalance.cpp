@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: whitebalance.cpp,v 1.2 2019/07/26 05:46:35 thor Exp $
+** $Id: whitebalance.cpp,v 1.3 2020/02/07 07:22:07 thor Exp $
 **
 ** This class scales the components of images with component dependent
 ** scale factors.
@@ -146,7 +146,7 @@ void WhiteBalance::ApplyScaling(class ImageLayout *src)
     ULONG  h    = src->HeightOf(comp);
     UBYTE bps   = src->BitsOf(comp);
     double min,max;
-    double scale;
+    double scale = 1.0;
     //
     if (comp < m_usComponents) {
       scale = m_pdFactors[comp]; // Or offsets...
