@@ -25,7 +25,7 @@ and conversion framework.
  * This is the image file format that is defined by JPEG2000 part 4
  * for encoding the test streams.
  *
- * $Id: simplepgx.cpp,v 1.22 2019/03/01 10:16:01 thor Exp $
+ * $Id: simplepgx.cpp,v 1.23 2020/07/29 11:10:47 thor Exp $
  */
 
 /// Includes
@@ -154,7 +154,7 @@ void SimplePgx::LoadImage(const char *basename,struct ImgSpecs &specs)
       if (!strchr(buffer,PATH_SEP)) {
 	const char *last = strrchr(basename,PATH_SEP);
 	if (last) {
-	  memmove(&buffer[last - basename + 1],buffer,strlen(buffer));
+	  memmove(&buffer[last - basename + 1],buffer,strlen(buffer)+1);
 	  memcpy(buffer,basename,last - basename + 1);
 	}
       }
