@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: histogram.hpp,v 1.6 2019/07/24 10:45:05 thor Exp $
+** $Id: histogram.hpp,v 1.6 2020/09/15 09:45:49 thor Exp $
 **
 ** This class saves the histogram to a file or writes it to
 ** stdout.

@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: mapping.cpp,v 1.16 2019/08/23 05:47:16 thor Exp $
+** $Id: mapping.cpp,v 1.14 2020/09/15 09:45:49 thor Exp $
 **
 ** This class works like the scaler, but more elaborate as it allows a couple
 ** of less trivial conversions: gamma mapping, log mapping and half-log mapping.
@@ -417,7 +417,72 @@ void Mapping::ToPQ(const FLOAT *org ,ULONG obytesperpixel,ULONG obytesperrow,
   }
 }
 ///
-
+/// Mapping::FromHLG
+// Compute the luminances from HLG-values
+template<typename T>
+void Mapping::FromHLG(const T *org ,ULONG obytesperpixel,ULONG obytesperrow,
+		      FLOAT *dst   ,ULONG dbytesperpixel,ULONG dbytesperrow,
+		      ULONG w, ULONG h, double scale)
+{
+  ULONG x,y;
+  const double lmax = 1000.0; /* This is the peak luminance HEVC uses for it */
+  const double a = 0.17883277, b = 0.28466892, c = 0.55991073;
+  
+  for(y = 0;y < h;y++) {
+    const T *orgrow = org;
+    FLOAT *dstrow   = dst;
+    for(x = 0;x < w;x++) {
+      double n = double(*orgrow) / scale; // normalized sample value
+      double l;
+      if (n <= 0.5) {
+	l = n * n / 3.0;
+      } else {
+	l = (exp((n - c)/ a) + b) / 12.0;
+      }
+      *dstrow  = l * lmax;
+      orgrow  = (const T *)((const UBYTE *)(orgrow) + obytesperpixel);
+      dstrow  = (FLOAT *)((UBYTE *)(dstrow) + dbytesperpixel);
+    }
+    org = (const T *)((const UBYTE *)(org) + obytesperrow);
+    dst = (FLOAT *)((UBYTE *)(dst) + dbytesperrow);
+  }
+}
+///
+/// Mapping::ToHLG
+// Compute HLG-values from luminances.
+template<typename T>
+void Mapping::ToHLG(const FLOAT *org ,ULONG obytesperpixel,ULONG obytesperrow,
+		    T *dst           ,ULONG dbytesperpixel,ULONG dbytesperrow,
+		    ULONG w, ULONG h, double scale)
+{
+  ULONG x,y;
+  const double a = 0.17883277, b = 0.28466892, c = 0.55991073;
+  const double r = sqrt(3.0);
+  const double t = 1.0 / 12.0;
+  const double lmax = 1000; // peak luminance
+  
+  for(y = 0;y < h;y++) {
+    const FLOAT *orgrow = org;
+    T *dstrow           = dst;
+    for(x = 0;x < w;x++) {
+      double l = *orgrow / lmax; // luminance (hopefully in nits)
+      double n;
+      if (l < t) {
+	n = r * sqrt(l);
+      } else {
+	n = a * log(12.0 * l - b) + c;
+      }
+      if (n > 1.0)
+	n = 1.0;
+      *dstrow  = T(n * scale);
+      orgrow  = (const FLOAT *)((const UBYTE *)(orgrow) + obytesperpixel);
+      dstrow  = (T *)((UBYTE *)(dstrow) + dbytesperpixel);
+    }
+    org = (const FLOAT *)((const UBYTE *)(org) + obytesperrow);
+    dst = (T *)((UBYTE *)(dst) + dbytesperrow);
+  }
+}
+///
 /// Mapping::~Mapping
 Mapping::~Mapping(void)
 {
@@ -722,7 +787,7 @@ void Mapping::ApplyMap(class ImageLayout *src,class ImageLayout *dst)
       } else {
 	if (!src->isFloat(comp))
 	  throw "this conversion tool expects floating point input";
-	if (m_Type != PQ && src->BitsOf(comp) != 16 && src->BitsOf(comp) != 32)
+	if ((m_Type != PQ && m_Type != HLG) && src->BitsOf(comp) != 16 && src->BitsOf(comp) != 32)
 	  throw "this conversion tool expects 16 bit half float or float input";
       }
       //
@@ -892,13 +957,44 @@ void Mapping::ApplyMap(class ImageLayout *src,class ImageLayout *dst)
 		      (UBYTE *)dst->DataOf(comp),dst->BytesPerPixel(comp),dst->BytesPerRow(comp),
 		      w,h,(1UL << m_ucTargetDepth) - 1);
 	} else if (m_ucTargetDepth <= 16) {
-	   ToPQ<UWORD>((const FLOAT *)src->DataOf(comp),src->BytesPerPixel(comp),src->BytesPerRow(comp),
+	  ToPQ<UWORD>((const FLOAT *)src->DataOf(comp),src->BytesPerPixel(comp),src->BytesPerRow(comp),
 		       (UWORD *)dst->DataOf(comp),dst->BytesPerPixel(comp),dst->BytesPerRow(comp),
-		       w,h,(1UL << m_ucTargetDepth) - 1);
+		      w,h,(1UL << m_ucTargetDepth) - 1);
 	} else if (m_ucTargetDepth <= 32) {
 	  ToPQ<ULONG>((const FLOAT *)src->DataOf(comp),src->BytesPerPixel(comp),src->BytesPerRow(comp),
 		      (ULONG *)dst->DataOf(comp),dst->BytesPerPixel(comp),dst->BytesPerRow(comp),
 		      w,h,(1UL << m_ucTargetDepth) - 1);
+	}
+      }
+      break;
+    case HLG: // Inverse HLG, i.e. from HLG to luminances.
+      if (m_bInverse) {
+	if (src->BitsOf(comp) <= 8) {
+	  FromHLG<UBYTE>((const UBYTE *)src->DataOf(comp),src->BytesPerPixel(comp),src->BytesPerRow(comp),
+			 (FLOAT *)dst->DataOf(comp),dst->BytesPerPixel(comp),dst->BytesPerRow(comp),
+			 w,h,(1UL << src->BitsOf(comp)) - 1);
+	} else if (src->BitsOf(comp) <= 16) {
+	  FromHLG<UWORD>((const UWORD *)src->DataOf(comp),src->BytesPerPixel(comp),src->BytesPerRow(comp),
+			 (FLOAT *)dst->DataOf(comp),dst->BytesPerPixel(comp),dst->BytesPerRow(comp),
+			 w,h,(1UL << src->BitsOf(comp)) - 1);
+	} else if (src->BitsOf(comp) <= 32) {
+	  FromHLG<ULONG>((const ULONG *)src->DataOf(comp),src->BytesPerPixel(comp),src->BytesPerRow(comp),
+			 (FLOAT *)dst->DataOf(comp),dst->BytesPerPixel(comp),dst->BytesPerRow(comp),
+			 w,h,(1UL << src->BitsOf(comp)) - 1);
+	}
+      } else {
+	if (m_ucTargetDepth <= 8) {
+	  ToHLG<UBYTE>((const FLOAT *)src->DataOf(comp),src->BytesPerPixel(comp),src->BytesPerRow(comp),
+		       (UBYTE *)dst->DataOf(comp),dst->BytesPerPixel(comp),dst->BytesPerRow(comp),
+		       w,h,(1UL << m_ucTargetDepth) - 1);
+	} else if (m_ucTargetDepth <= 16) {
+	   ToHLG<UWORD>((const FLOAT *)src->DataOf(comp),src->BytesPerPixel(comp),src->BytesPerRow(comp),
+			(UWORD *)dst->DataOf(comp),dst->BytesPerPixel(comp),dst->BytesPerRow(comp),
+			w,h,(1UL << m_ucTargetDepth) - 1);
+	} else if (m_ucTargetDepth <= 32) {
+	  ToHLG<ULONG>((const FLOAT *)src->DataOf(comp),src->BytesPerPixel(comp),src->BytesPerRow(comp),
+		       (ULONG *)dst->DataOf(comp),dst->BytesPerPixel(comp),dst->BytesPerRow(comp),
+		       w,h,(1UL << m_ucTargetDepth) - 1);
 	}
       }
       break;

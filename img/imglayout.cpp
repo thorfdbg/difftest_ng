@@ -23,7 +23,7 @@ and conversion framework.
 /*
  * Test main file
  * 
- * $Id: imglayout.cpp,v 1.40 2019/03/01 10:16:01 thor Exp $
+ * $Id: imglayout.cpp,v 1.38 2020/09/15 09:45:49 thor Exp $
  *
  * This class defines the image layout, width, height and the
  * image depth of the individual components. It is supplied by

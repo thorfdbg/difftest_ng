@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: upsampler.hpp,v 1.7 2018/09/04 11:44:48 thor Exp $
+** $Id: upsampler.hpp,v 1.6 2020/09/15 09:45:49 thor Exp $
 **
 ** This class upsamples in the spatial domain
 */

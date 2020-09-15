@@ -23,7 +23,7 @@ and conversion framework.
 /*
  * This class saves and loads images in the dpx format.
  *
- * $Id: simpledpx.cpp,v 1.23 2020/02/06 06:47:41 thor Exp $
+ * $Id: simpledpx.cpp,v 1.18 2020/09/15 09:45:49 thor Exp $
  */
 
 /// Includes

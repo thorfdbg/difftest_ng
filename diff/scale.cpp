@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: scale.cpp,v 1.18 2019/03/01 10:15:56 thor Exp $
+** $Id: scale.cpp,v 1.18 2020/09/15 09:45:49 thor Exp $
 **
 ** This class scales images, converts them from and to float
 */

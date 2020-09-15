@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: blankimg.hpp,v 1.7 2017/11/27 13:21:16 thor Exp $
+** $Id: blankimg.hpp,v 1.6 2020/09/15 09:45:49 thor Exp $
 **
 ** This image class doesn't do much useful, it only represents a blank
 ** image of a given dimension.

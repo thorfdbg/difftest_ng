@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: mapping.hpp,v 1.11 2019/07/25 13:36:24 thor Exp $
+** $Id: mapping.hpp,v 1.11 2020/09/15 09:45:49 thor Exp $
 **
 ** This class works like the scaler, but more elaborate as it allows a couple
 ** of less trivial conversions: gamma mapping, log mapping and half-log mapping.
@@ -52,7 +52,8 @@ public:
     Log,     // perform a logarithmic map with clamp value.
     PU2,     // Rafal's percetually uniform map.
     PQ,      // backwards PQ aka SMTPE-2084, compute PQ values from luminances
-    GammaToe // gamma with toe region as in sRGB with adjustable exponent and toe region
+    GammaToe,// gamma with toe region as in sRGB with adjustable exponent and toe region
+    HLG      // hybrid log gamma
   };
   //
 private:
@@ -164,6 +165,18 @@ private:
   void FromPQ(const T *org ,ULONG obytesperpixel,ULONG obytesperrow,
 	      FLOAT *dst   ,ULONG dbytesperpixel,ULONG dbytesperrow,
 	      ULONG w, ULONG h, double scale);
+  //
+  // Apply a mapping from luminances to HLG.
+  template<typename T>
+  void ToHLG(const FLOAT *org ,ULONG obytesperpixel,ULONG obytesperrow,
+	     T *dst           ,ULONG dbytesperpixel,ULONG dbytesperrow,
+	     ULONG w, ULONG h, double scale);
+  //
+  // Apply a mapping from HLG to luminances
+  template<typename T>
+  void FromHLG(const T *org ,ULONG obytesperpixel,ULONG obytesperrow,
+	       FLOAT *dst   ,ULONG dbytesperpixel,ULONG dbytesperrow,
+	       ULONG w, ULONG h, double scale);
   //
   // Apply a map from the source image to the target image that must be
   // already initialized.

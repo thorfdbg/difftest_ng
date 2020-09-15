@@ -23,7 +23,7 @@ and conversion framework.
 /*
  * Main program
  * 
- * $Id: main.cpp,v 1.107 2020/02/06 06:49:42 thor Exp $
+ * $Id: main.cpp,v 1.83 2020/09/15 09:45:49 thor Exp $
  *
  * This class defines the main program and argument parsing.
  */
@@ -170,6 +170,8 @@ void Usage(const char *progname)
 	  "--topercept        : convert from absolute luminance to a perceptually uniform space\n"
 	  "--topq bits        : convert floating point to SMPTE 2084 quantized to the given bits\n"
 	  "--frompq           : convert SMPTE 2084 quantized data to luminances\n"
+	  "--tohlg bits       : convert floating point to Hybrid Log Gamma with HEVC conventions\n"
+	  "--fromhlg          : convert Hybrid Log Gamma to linear luminance, 1000 nits peak\n"
 	  "--invert           : invert the source image before comparing\n"
 	  "--flipx            : flip the source horizontally before comparing\n"
 	  "--flipy            : flip the source vertically before comparing\n"
@@ -1142,6 +1144,18 @@ class Meter *ParseTransferFunctions(int &argc,char **&argv,struct ImgSpecs &spec
     argv += 1;
   } else if (!strcmp(arg,"--frompq")) {
     m   = new class Mapping(NULL,Mapping::PQ,1.0,true, 0, true,specout);
+  } else if (!strcmp(arg,"--tohlg")) {
+    long bits;
+    if (argc < 3)
+      throw "--tohlg requires a bit depth as argument";
+    bits  = ParseLong(argv[2]);
+    if (bits < 8 || bits > 32)
+      throw "--tohlg requires a bit depth between 8 and 32 bits";
+    m     = new class Mapping(NULL,Mapping::HLG,1.0,false,bits,true,specout);
+    argc -= 1;
+    argv += 1;
+  } else if (!strcmp(arg,"--fromhlg")) {
+    m   = new class Mapping(NULL,Mapping::HLG,1.0,true, 0, true,specout);
   } else if (!strcmp(arg,"--scale")) {
     if (argc < 3)
       throw "--scale requires a comma-separated list of scaling factors";

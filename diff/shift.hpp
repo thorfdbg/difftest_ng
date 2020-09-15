@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: shift.hpp,v 1.5 2018/09/07 09:00:11 thor Exp $
+** $Id: shift.hpp,v 1.5 2020/09/15 09:45:49 thor Exp $
 **
 ** This class shifts images in X or Y direction.
 */
