@@ -45,9 +45,11 @@ double Thres::Error(T *org,ULONG obytesperpixel,ULONG obytesperrow,
 
   switch(m_Type) {
   case Toe:
+  case Min:
     error = HUGE_VAL;
     break;
   case Head:
+  case Max:
     error = -HUGE_VAL;
     break;
   default:
@@ -112,9 +114,11 @@ double Thres::Measure(class ImageLayout *src,class ImageLayout *dst,double)
   
   switch(m_Type) {
   case Toe:
+  case Min:
     error = HUGE_VAL;
     break;
   case Head:
+  case Max:
     error = -HUGE_VAL;
     break;
   default:

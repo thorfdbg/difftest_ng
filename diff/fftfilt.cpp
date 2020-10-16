@@ -35,6 +35,7 @@ and conversion framework.
 #include "std/math.hpp"
 #include "std/string.hpp"
 #ifdef USE_GSL
+#include "img/imglayout.hpp"
 ///
 
 /// FFTFilt::CopyToFFT
@@ -211,7 +212,7 @@ double FFTFilt::Measure(class ImageLayout *src,class ImageLayout *dst,double in)
     UBYTE *mem;
     ULONG xr    = m_ulRadius;
     ULONG yr    = m_ulRadius;
-    UBYTE sbpp  = ImgLayout::SuggestBPP(src->BitsOf(comp),src->isFloat(comp));
+    UBYTE sbpp  = ImageLayout::SuggestBPP(src->BitsOf(comp),src->isFloat(comp));
     ULONG x,y;
     //
     m_ppucImage[comp]                    = mem = new UBYTE[w * h * sbpp];
