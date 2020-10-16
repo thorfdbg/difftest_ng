@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: mapping.hpp,v 1.11 2020/09/15 09:45:49 thor Exp $
+** $Id: mapping.hpp,v 1.12 2020/09/15 10:20:32 thor Exp $
 **
 ** This class works like the scaler, but more elaborate as it allows a couple
 ** of less trivial conversions: gamma mapping, log mapping and half-log mapping.

@@ -25,7 +25,7 @@ and conversion framework.
  * This is the image file format that is defined by JPEG2000 part 4
  * for encoding the test streams.
  *
- * $Id: simplepgx.cpp,v 1.20 2020/09/15 09:45:49 thor Exp $
+ * $Id: simplepgx.cpp,v 1.24 2020/09/15 10:20:32 thor Exp $
  */
 
 /// Includes

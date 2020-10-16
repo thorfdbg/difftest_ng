@@ -1,6 +1,6 @@
 #! make
 ##
-## $Id: Makefile.template,v 1.9 2020/09/15 09:45:44 thor Exp $
+## $Id: Makefile.template,v 1.10 2020/09/15 10:20:28 thor Exp $
 ##
 ## This makefile template is included by all sub-directories
 ## to shorten the apropriate sub-makefiles to the minimum

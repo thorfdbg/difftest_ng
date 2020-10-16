@@ -23,7 +23,7 @@ and conversion framework.
 /*
  * Main program
  * 
- * $Id: main.cpp,v 1.83 2020/09/15 09:45:49 thor Exp $
+ * $Id: main.cpp,v 1.111 2020/10/16 11:23:21 thor Exp $
  *
  * This class defines the main program and argument parsing.
  */
@@ -74,6 +74,7 @@ and conversion framework.
 #include "diff/debayer.hpp"
 #include "diff/bayercolor.hpp"
 #include "diff/whitebalance.hpp"
+#include "diff/fromgrey.hpp"
 #include "img/imglayout.hpp"
 #include "img/imgspecs.hpp"
 #include <new>
@@ -106,6 +107,8 @@ void Usage(const char *progname)
 	  "--peaky            : find the y position of the largest pixel error\n"
 	  "--min              : find the minimum value of original - distorted\n"
 	  "--max              : find the maximum value of original - distorted\n"
+	  "--toe              : find the minimum of the original\n"
+	  "--head             : find the maximum of the original\n"
 	  "--drift            : find the mean error (drift) between original and distorted\n"
 	  "--mae              : find the mean absolute error\n"
 	  "--pae              : find the peak absolute error\n"
@@ -210,6 +213,7 @@ void Usage(const char *progname)
 	  "--toycbcr2020bl    : convert images to 2020 YCbCr before comaring, and include a black level\n"
 	  "--fromycbcr2020    : convert images from 2020 YCbCr to RGB before comparing\n"
 	  "--fromycbcr2020bl  : convert images from 2020 YCbCr to RGB before comparing, and remove the black level\n"
+	  "--fromgrey         : convert a grey-scale image to color by duplicating components\n"
 	  "--torct            : convert an image with the RCT from JPEG 2000\n"
 	  "--tosignedrct      : convert an image with the RCT from JPEG 2000, leaving chroma signed\n"
 	  "--torctd           : convert a 4 component RGGB image to YCbCr+DeltaG with the RCT\n"
@@ -266,6 +270,8 @@ void Usage(const char *progname)
 	  "--separate         : encode output in separate planes if applicable\n"
 	  "--isyuv            : override automatic YUV detection, sources are really in YUV\n"
 	  "--isrgb            : override automatic YUV detection, sources are really in RGB\n"
+	  "--isfullrange      : override automatic range detection, source has no head/toe region\n"
+	  "--isreducedrange   : override automatic range detection, source has head/toe region\n"
 	  "--littleendian     : use little endian output if applicable\n"
 	  "--bigendian        : use big endian output if applicable\n"
 	  "--toabsradiance    : multiply floating point samples by recorded radiance scale to convert to absolute radiance\n"
@@ -526,6 +532,10 @@ class Meter *ParseMetrics(int &,char **&argv)
     return new class Thres(Thres::Avg);
   } else if (!strcmp(arg,"--pae")) {
     return new class Thres(Thres::Peak);
+  } else if (!strcmp(arg,"--toe")) {
+    return new class Thres(Thres::Toe);
+  } else if (!strcmp(arg,"--head")) {
+    return new class Thres(Thres::Head);
   }
 
   return NULL;
@@ -749,6 +759,8 @@ class Meter *ParseColor(int &,char **&argv,struct ImgSpecs &specout)
     m = new XYZ(XYZ::XYZtoLMS,false);
   } else if (!strcmp(arg,"--lmstoxyz")) {
     m = new XYZ(XYZ::XYZtoLMS,true);
+  } else if (!strcmp(arg,"--fromgrey")) {
+    m = new class FromGrey();
   }
 
   return m;
@@ -1590,6 +1602,12 @@ int main(int argc,char **argv)
 	} else if (!strcmp(arg,"--isrgb")) {
 	  spec1.YUVEncoded = ImgSpecs::No;
 	  spec2.YUVEncoded = ImgSpecs::No;
+	} else if (!strcmp(arg,"--isfullrange")) {
+	  spec1.FullRange  = ImgSpecs::Yes;
+	  spec2.FullRange  = ImgSpecs::Yes;
+	} else if (!strcmp(arg,"--isreducedrange")) {
+	  spec1.FullRange  = ImgSpecs::No;
+	  spec2.FullRange  = ImgSpecs::No;
 	} else if (!strcmp(arg,"--brief")) {
 	  brief = true;
 	} else {

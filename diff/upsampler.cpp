@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: upsampler.cpp,v 1.8 2020/09/15 09:45:49 thor Exp $
+** $Id: upsampler.cpp,v 1.12 2020/09/15 10:20:32 thor Exp $
 **
 ** This class downscales in the spatial domain
 */

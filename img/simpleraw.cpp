@@ -23,7 +23,7 @@ and conversion framework.
 /*
  * This class saves and loads images in any header-less format.
  *
- * $Id: simpleraw.cpp,v 1.21 2020/09/15 09:45:49 thor Exp $
+ * $Id: simpleraw.cpp,v 1.23 2020/09/15 10:20:32 thor Exp $
  */
 
 /// Includes

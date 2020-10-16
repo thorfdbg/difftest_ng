@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: thres.hpp,v 1.8 2017/01/31 11:58:04 thor Exp $
+** $Id: thres.hpp,v 1.9 2020/10/16 10:14:12 thor Exp $
 **
 ** This class finds the minimum and the maximum difference.
 */
@@ -48,8 +48,8 @@ class Thres : public Meter {
   // Templated implementations
   template<typename T>
   double Error(T *org,ULONG obytesperpixel,ULONG obytesperrow,
-		   T *dst,ULONG dbytesperpixel,ULONG dbytesperrow,
-		   ULONG w,ULONG h);
+	       T *dst,ULONG dbytesperpixel,ULONG dbytesperrow,
+	       ULONG w,ULONG h);
 public:
   //
   enum Type {
@@ -57,7 +57,9 @@ public:
     Max,
     Avg,
     Drift,
-    Peak
+    Peak,
+    Toe,
+    Head
   };
   //
   Thres(Type t)
@@ -79,6 +81,10 @@ public:
       return "Drift";
     case Peak:
       return "Peak Error";
+    case Toe:
+      return "Toe value";
+    case Head:
+      return "Head value";
     }
     return NULL;
   }

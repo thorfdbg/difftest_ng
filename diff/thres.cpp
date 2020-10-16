@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: thres.cpp,v 1.10 2017/01/31 11:58:04 thor Exp $
+** $Id: thres.cpp,v 1.11 2020/10/16 10:14:12 thor Exp $
 **
 ** This class finds the minimum and the maximum difference.
 */
@@ -40,9 +40,21 @@ double Thres::Error(T *org,ULONG obytesperpixel,ULONG obytesperrow,
 		    T *dst,ULONG dbytesperpixel,ULONG dbytesperrow,
 		    ULONG w,ULONG h)
 {
-  double error = 0.0;
+  double error;
   ULONG x,y;
 
+  switch(m_Type) {
+  case Toe:
+    error = HUGE_VAL;
+    break;
+  case Head:
+    error = -HUGE_VAL;
+    break;
+  default:
+    error = 0;
+    break;
+  }
+  
   for(y = 0;y < h;y++) {
     T *orgrow = org;
     T *dstrow = dst;
@@ -67,6 +79,15 @@ double Thres::Error(T *org,ULONG obytesperpixel,ULONG obytesperrow,
 	diff = fabs(diff);
 	if (diff > error)
 	  error = diff;
+	break;
+      case Toe:
+	if (*orgrow < error)
+	  error = *orgrow;
+	break;
+      case Head:
+	if (*orgrow > error)
+	  error = *orgrow;
+	break;
       }
       //
       orgrow      = (T *)((const UBYTE *)(orgrow) + obytesperpixel);
@@ -86,9 +107,21 @@ double Thres::Error(T *org,ULONG obytesperpixel,ULONG obytesperrow,
 /// Thres::Measure
 double Thres::Measure(class ImageLayout *src,class ImageLayout *dst,double)
 {
-  double error = 0.0;
+  double error;
   UWORD comp;
-
+  
+  switch(m_Type) {
+  case Toe:
+    error = HUGE_VAL;
+    break;
+  case Head:
+    error = -HUGE_VAL;
+    break;
+  default:
+    error = 0;
+    break;
+  }
+  
   for(comp = 0;comp < src->DepthOf();comp++) {
     double peak = 0.0;
     ULONG  w    = src->WidthOf(comp);
@@ -146,11 +179,13 @@ double Thres::Measure(class ImageLayout *src,class ImageLayout *dst,double)
     //
     switch(m_Type) {
     case Min:
+    case Toe:
       if (peak < error)
 	error = peak;
       break;
     case Max:
     case Peak:
+    case Head:
       if (peak > error)
 	error = peak;
       break;

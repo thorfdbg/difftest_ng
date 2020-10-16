@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: diffimg.cpp,v 1.19 2020/09/15 09:45:49 thor Exp $
+** $Id: diffimg.cpp,v 1.20 2020/09/15 10:20:32 thor Exp $
 **
 ** This class saves the difference image as a normalized 8bpp image
 ** with the same number of components as the original.

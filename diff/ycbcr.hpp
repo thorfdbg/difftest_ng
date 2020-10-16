@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: ycbcr.hpp,v 1.8 2020/09/15 09:45:49 thor Exp $
+** $Id: ycbcr.hpp,v 1.14 2020/09/15 10:20:32 thor Exp $
 **
 ** This class converts between RGB and YCbCr signals
 */

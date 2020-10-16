@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: psnr.cpp,v 1.22 2020/09/15 09:45:49 thor Exp $
+** $Id: psnr.cpp,v 1.23 2020/09/15 10:20:32 thor Exp $
 **
 ** This class measures the PSNR between two images, averaged over all samples
 ** and thus all components.

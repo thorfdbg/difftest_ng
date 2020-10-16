@@ -23,7 +23,7 @@ and conversion framework.
 /*
  * Image specifications
  * 
- * $Id: imgspecs.hpp,v 1.7 2017/01/31 11:58:04 thor Exp $
+ * $Id: imgspecs.hpp,v 1.8 2020/10/16 11:23:25 thor Exp $
  *
  * This structure defines a couple of specifications an image reader
  * may provide, and and image writer may acknowledge. 
@@ -68,10 +68,12 @@ struct ImgSpecs {
   // The radiance scale (if there is one)
   double        RadianceScale;
   //
+  BinaryFeature FullRange;
+  //
   ImgSpecs(void)
     : ASCII(Unspecified), Interleaved(Unspecified), YUVEncoded(Unspecified), 
       Palettized(Unspecified), LittleEndian(Unspecified), AbsoluteRadiance(Unspecified),
-      RadianceScale(1.0)
+      RadianceScale(1.0), FullRange(Unspecified)
   { }
   //
   // MergeSpecs: Merge this, and two other specs together. This one overrides all,

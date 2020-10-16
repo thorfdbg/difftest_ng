@@ -23,7 +23,7 @@ and conversion framework.
 /*
  * Image layout
  * 
- * $Id: imglayout.hpp,v 1.21 2020/09/15 09:45:49 thor Exp $
+ * $Id: imglayout.hpp,v 1.22 2020/09/15 10:20:32 thor Exp $
  *
  * This class defines the image layout, width, height and the
  * image depth of the individual components. It is supplied by

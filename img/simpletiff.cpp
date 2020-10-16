@@ -24,7 +24,7 @@ and conversion framework.
 /*
 ** An image class to load and save TIFF images (or some of them).
 **
-** $Id: simpletiff.cpp,v 1.33 2020/09/15 09:45:49 thor Exp $
+** $Id: simpletiff.cpp,v 1.35 2020/09/15 10:20:32 thor Exp $
 */
 
 /// Includes

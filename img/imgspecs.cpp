@@ -23,7 +23,7 @@ and conversion framework.
 /*
  * Image specifications
  * 
- * $Id: imgspecs.cpp,v 1.6 2017/01/31 11:58:04 thor Exp $
+ * $Id: imgspecs.cpp,v 1.7 2020/10/16 11:23:25 thor Exp $
  *
  * This structure defines a couple of specifications an image reader
  * may provide, and and image writer may acknowledge. 
@@ -44,6 +44,7 @@ void ImgSpecs::MergeSpecs(struct ImgSpecs &spec1,struct ImgSpecs &spec2)
   YUVEncoded       = MergeFeature(YUVEncoded ,spec1.YUVEncoded ,spec2.YUVEncoded);
   Palettized       = MergeFeature(Palettized ,spec1.Palettized ,spec2.Palettized);
   AbsoluteRadiance = MergeFeature(AbsoluteRadiance,spec1.AbsoluteRadiance,spec2.AbsoluteRadiance);
+  FullRange        = MergeFeature(FullRange  ,spec1.FullRange  ,spec2.FullRange);
   RadianceScale    = spec1.RadianceScale;
 }
 ///

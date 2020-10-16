@@ -23,63 +23,44 @@ and conversion framework.
 
 /*
 **
-** $Id: histogram.hpp,v 1.7 2020/09/15 10:20:32 thor Exp $
+** $Id: fromgrey.hpp,v 1.1 2020/10/16 09:38:15 thor Exp $
 **
-** This class saves the histogram to a file or writes it to
-** stdout.
+** This class converts a grey-scale image to an RGB image.
 */
 
-#ifndef DIFF_HISTOGRAM_HPP
-#define DIFF_HISTOGRAM_HPP
+#ifndef DIFF_FROMGREY_HPP
+#define DIFF_FROMGREY_HPP
 
 /// Includes
 #include "diff/meter.hpp"
+#include "img/imglayout.hpp"
 ///
 
-/// class Histogram
-// This class saves the histogram to a file or writes it to
-// stdout.
-class Histogram : public Meter {
+/// Forwards
+struct ImgSpecs;
+///
+
+/// class FromGrey
+// This class converts a grey-scale image to an RGB image.
+class FromGrey : public Meter, private ImageLayout {
   //
-  // The file name under which the difference image shall be saved.
-  const char *m_pcTargetFile;
-  //
-  // The threshold for measuring pixel ratios.
-  LONG        m_lThres;
-  //
-  // The histogram array.
-  ULONG      *m_pulHist;
-  //
-  // Measure the difference histogram, place results into the given array
-  // after adding the given offset to the difference.
-  template<typename T>
-  static void Measure(T *org       ,ULONG obytesperpixel,ULONG obytesperrow,
-		      T *dst       ,ULONG dbytesperpixel,ULONG dbytesperrow,
-		      ULONG w      ,ULONG h,ULONG *hist  ,LONG offset);
+  void GreyToRGB(class ImageLayout *src);
   //
 public:
   //
-  // Construct the histogram. Takes a file name.
-  Histogram(const char *filename)
-    : m_pcTargetFile(filename), m_lThres(-1), m_pulHist(NULL)
+  // Construct the difference image. Takes a file name.
+  FromGrey(void)
   {
   }
   //
-  // Construct the histogram for measuring pixel difference ratios.
-  Histogram(LONG thres)
-    : m_pcTargetFile(NULL), m_lThres(thres), m_pulHist(NULL)
+  virtual ~FromGrey(void)
   {
   }
-  //
-  virtual ~Histogram(void);
   //
   virtual double Measure(class ImageLayout *src,class ImageLayout *dst,double in);
   //
   virtual const char *NameOf(void) const
   {
-    if (!m_pcTargetFile)
-      return "PxAboveThres";
-    
     return NULL;
   }
 };
@@ -87,4 +68,3 @@ public:
 
 ///
 #endif
-

@@ -23,7 +23,7 @@ and conversion framework.
 /*
  * This class saves and loads images in the dpx format.
  *
- * $Id: simpledpx.cpp,v 1.18 2020/09/15 09:45:49 thor Exp $
+ * $Id: simpledpx.cpp,v 1.25 2020/10/16 11:23:25 thor Exp $
  */
 
 /// Includes
@@ -214,11 +214,12 @@ bool SimpleDPX::BuildScanPattern(struct ImageElement *el)
 
 /// SimpleDPX::ParseElementHeader
 // Parse a single element header from the given file.
-bool SimpleDPX::ParseElementHeader(FILE *file,struct ImageElement *el)
+bool SimpleDPX::ParseElementHeader(FILE *file,struct ImageElement *el,UWORD comp,struct ImgSpecs &specs)
 {
   ULONG sign;
   UBYTE xfer,color;
   UWORD packing,encoding;
+  ULONG toe;
   bool yuv = false;
   //
   // Read an element.
@@ -234,8 +235,16 @@ bool SimpleDPX::ParseElementHeader(FILE *file,struct ImageElement *el)
     PostError("found invalid signedness indicator in DPX file %s, must be either 1 or 0",m_pcFileName);
     break;
   }
-  // Next four are luma scaling attributes we do not need to support.
-  SkipBytes(file,4+4+4+4);
+  // Next four are luma scaling attributes. Only need to know whether this is fullrange or not.
+  toe = GetLong(file);
+  SkipBytes(file,4+4+4);
+  if (comp == 0) {
+    if (toe == 0) {
+      specs.FullRange = ImgSpecs::Yes;
+    } else if (toe != ULONG(~0UL)) {
+      specs.FullRange = ImgSpecs::No;
+    }
+  }
   //
   el->m_ucDescriptor = GetByte(file);
   //
@@ -432,7 +441,7 @@ void SimpleDPX::ParseHeader(FILE *file,struct ImgSpecs &specs)
     if (i < m_usElements) {
       m_Elements[i].m_ulWidth  = width;
       m_Elements[i].m_ulHeight = height;
-      if (ParseElementHeader(file,m_Elements + i))
+      if (ParseElementHeader(file,m_Elements + i,i,specs))
 	yuv = true;
     } else {
       // Skip over elements we do not need
@@ -1029,13 +1038,31 @@ void SimpleDPX::AssociateComponents(ULONG offset,ULONG planes[9])
 
 /// SimpleDPX::WriteElementHeader
 // Write the element specific header to the file.
-void SimpleDPX::WriteElementHeader(FILE *file,struct ImageElement *el,ULONG offset)
+void SimpleDPX::WriteElementHeader(FILE *file,struct ImageElement *el,ULONG offset,UWORD comp,const struct ImgSpecs &specs)
 {
+  ULONG head,toe;
   PutLong(file,el->m_bSigned?1:0);
-  // Reference low and high value remain undefined.
+  // Reference low and high value remain undefined unless the specs say otherwise.
+  head = ULONG(~0UL);
+  toe  = ULONG(~0UL);
+  if (specs.FullRange == ImgSpecs::Yes && comp < 3) {
+    toe  = 0;
+    head = (1UL << el->m_ucBitDepth) - 1;
+  } else if (specs.FullRange == ImgSpecs::No && comp == 0 && el->m_ucBitDepth >= 8) {
+    toe  = 16  * (1UL << (el->m_ucBitDepth - 8));
+    head = 235 * (1UL << (el->m_ucBitDepth - 8));
+  } else if (specs.FullRange == ImgSpecs::No && (comp == 1 || comp == 2) && el->m_ucBitDepth >= 8) {
+    toe  = 16  * (1UL << (el->m_ucBitDepth - 8));
+    if (specs.YUVEncoded == ImgSpecs::Yes) {
+      head = 240  * (1UL << (el->m_ucBitDepth - 8));
+    } else {
+      head = 235  * (1UL << (el->m_ucBitDepth - 8));
+    }
+  }
+  //
+  PutLong(file,toe); // this becomes the toe region
   PutLong(file,ULONG(~0UL));
-  PutLong(file,ULONG(~0UL));
-  PutLong(file,ULONG(~0UL));
+  PutLong(file,head); // this becomes the head region
   PutLong(file,ULONG(~0UL));
   // The descriptor.
   PutByte(file,el->m_ucDescriptor);
@@ -1068,7 +1095,7 @@ void SimpleDPX::WriteElementHeader(FILE *file,struct ImageElement *el,ULONG offs
 /// SimpleDPX::WriteHeader
 // Write the complete DPX header with all specifications.
 // pad data accordingly.
-void SimpleDPX::WriteHeader(FILE *file,ULONG planes[9])
+void SimpleDPX::WriteHeader(FILE *file,ULONG planes[9],const struct ImgSpecs &specs)
 {
   UWORD i;
   union {
@@ -1103,7 +1130,7 @@ void SimpleDPX::WriteHeader(FILE *file,ULONG planes[9])
   // Write now the image elements.
   for(i = 0;i < 8;i++) {
     if (i < m_usElements) {
-      WriteElementHeader(file,m_Elements + i,planes[i]);
+      WriteElementHeader(file,m_Elements + i,planes[i],i,specs);
     } else {
       PutString(file,"",4*5 + 1*4 + 2*2 + 4*3 + 32);
     }
@@ -1352,7 +1379,7 @@ void SimpleDPX::SaveImage(const char *name,const struct ImgSpecs &specs)
   File out(name,"wb");
   //
   m_pcFileName = name;
-  WriteHeader(out,planes);
+  WriteHeader(out,planes,specs);
   for(i = 0;i < m_usElements;i++) {
     WriteElement(out,m_Elements + i);
   }

@@ -23,7 +23,7 @@ and conversion framework.
 /*
  * This class saves and loads images in the dpx format.
  *
- * $Id: simpledpx.hpp,v 1.15 2020/09/15 09:45:49 thor Exp $
+ * $Id: simpledpx.hpp,v 1.18 2020/10/16 11:23:25 thor Exp $
  */
 
 #ifndef SIMPLEDPX_HPP
@@ -388,10 +388,10 @@ class SimpleDPX : public ImageLayout {
   void ParseHeader(FILE *file,struct ImgSpecs &specs);
   //
   // Parse the header of a single element. Returns the yuv flag.
-  bool ParseElementHeader(FILE *file,struct ImageElement *el);
+  bool ParseElementHeader(FILE *file,struct ImageElement *el,UWORD comp,struct ImgSpecs &specs);
   //
   // Write the element specific header to the file.
-  void WriteElementHeader(FILE *file,struct ImageElement *el,ULONG offset);
+  void WriteElementHeader(FILE *file,struct ImageElement *el,ULONG offset,UWORD comp,const struct ImgSpecs &specs);
   //
   // Parse an element of a dpx file, and fill its data into the
   // data container.
@@ -415,7 +415,7 @@ class SimpleDPX : public ImageLayout {
   //
   // Write the complete DPX header with all specifications.
   // pad data accordingly.
-  void WriteHeader(FILE *file,ULONG planes[9]);
+  void WriteHeader(FILE *file,ULONG planes[9],const struct ImgSpecs &specs);
   //
   // Generate the layout of elements given the information in
   // the component layout.
