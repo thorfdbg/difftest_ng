@@ -100,6 +100,7 @@
     <ClCompile Include="..\..\..\diff\fill.cpp" />
     <ClCompile Include="..\..\..\diff\flip.cpp" />
     <ClCompile Include="..\..\..\diff\flipextend.cpp" />
+    <ClCompile Include="..\..\..\diff\fromgrey.cpp" />
     <ClCompile Include="..\..\..\diff\invert.cpp" />
     <ClCompile Include="..\..\..\diff\mapping.cpp" />
     <ClCompile Include="..\..\..\diff\paste.cpp" />
@@ -171,6 +172,7 @@
     <ClInclude Include="..\..\..\diff\downsampler.hpp" />
     <ClInclude Include="..\..\..\diff\flip.hpp" />
     <ClInclude Include="..\..\..\diff\flipextend.hpp" />
+    <ClInclude Include="..\..\..\diff\fromgrey.hpp" />
     <ClInclude Include="..\..\..\diff\invert.hpp" />
     <ClInclude Include="..\..\..\diff\mapping.hpp" />
     <ClInclude Include="..\..\..\diff\peakpos.hpp" />
