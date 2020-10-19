@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: thres.cpp,v 1.11 2020/10/16 10:14:12 thor Exp $
+** $Id: thres.cpp,v 1.12 2020/10/19 05:38:05 thor Exp $
 **
 ** This class finds the minimum and the maximum difference.
 */

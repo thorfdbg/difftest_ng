@@ -58,8 +58,8 @@ The following file name extensions are currently recognized:
 				   may be concatenated together, difftest_ng understands this
 				   case, but always writes separate headers as output.
 
-.tif,.tiff			   The Tagged Image File Format, originally specified by
-				   Adobe. TIFF supports multiple formats, including YUV sub-
+.tif,.tiff			   The TIFF file format, specified and owned by Adobe.
+				   TIFF supports multiple formats, including YUV sub-
 				   sampling, palette files and floating-point formats.
 
 .png				   PNG is a simple lossless image compression scheme for
@@ -92,24 +92,30 @@ The following file name extensions are currently recognized:
 -----------------------------------------------------------------------------------------------
 
 Usage: difftest_ng [options] original distorted
-where original and distorted are ppm,pbm,pgm,pfm,pfs,bmp,pgx,tif,png,exr,rgbe or raw images and options are one or more of
+where original and distorted are ppm,pbm,pgm,pfm,pfs,bmp,pgx,tif,png,exr,rgbe or raw (craw,v12,yuv) images
+and options are one or more of
 --psnr             : measure the psnr with equal weights over all components
 --maxsnr           : measure the snr with equal weights over all components, normalize to maximum signal
 --snr              : measure the snr with equal weights over all components, normalize to source energy
 --mse              : measure the mean square error with equal weights over all components
+--rmse             : measure the root mean square error with equal weights over all components
 --minpsnr          : measure the minimum psnr over all components
 --ycbcrpsnr        : measure the psnr with weights derived from the YCbCr transformation
 --yuvpsnr          : measure the psnr with weights derived from the YUV transformation
+--swpsnr           : measure the psnr with weights coming from the subsampling factors
 --mrse             : measure the log of the mean relative square error with equal weights
 --minmrse          : measure the minimum mrse over all components
 --ycbcrmrse        : measure the mrse with weights derived from the YCbCr transformation
 --yuvmrse          : measure the mrse with weights derived from the YUV transformation
+--swmrse           : measure the mrse with weights coming from the subsampling factors
 --peak             : measure the peak relative error in dB over all components
 --avgpeak          : measure the peak relative error averaged over all components, in dB
 --peakx            : find the x position of the largest pixel error
 --peaky            : find the y position of the largest pixel error
 --min              : find the minimum value of original - distorted
 --max              : find the maximum value of original - distorted
+--toe              : find the minimum of the original
+--head             : find the maximum of the original
 --drift            : find the mean error (drift) between original and distorted
 --mae              : find the mean absolute error
 --pae              : find the peak absolute error
@@ -123,6 +129,7 @@ where original and distorted are ppm,pbm,pgm,pfm,pfs,bmp,pgx,tif,png,exr,rgbe or
 --diff target      : save the difference image (-i is an alternative form of this option)
 --rawdiff target   : similar to --diff, except that it doesn't scale the difference to maximum range
 --sdiff scale trgt : generate a differential signal with an explicitly given scale
+--suppress thres   : suppress all pixels in the target that are less than a threshold away from the source
 --mask roi         : mask the source image by the mask image before applying the comparison
 --notmask roi      : mask the source image by the inverse of the mask
 --convert target   : save the original image unaltered, but possibly in a new format
@@ -134,6 +141,7 @@ where original and distorted are ppm,pbm,pgm,pfm,pfs,bmp,pgx,tif,png,exr,rgbe or
 --comb x y r dst   : apply a comb filter in direction x y and radius r
 --ncomb x y r dst  : similar to --comb, but the output is normalized to the full range
 --hist target      : generate a histogram plot. If "target" is -, write to stdout
+--thres threshold  : compute the ratio of pixels whose difference is > than threshold
 --colorhist size   : generate reduced histogram separately for each component using the given bucket size
 --maxfreqr         : locate the absolute value of the most exposed frequency in the error image
 --maxfreqx         : locate the horizontal component of the most exposed frequency in the error image
@@ -144,49 +152,139 @@ where original and distorted are ppm,pbm,pgm,pfm,pfs,bmp,pgx,tif,png,exr,rgbe or
 --tohfl dst        : save a half-float version of the source image
 --touns bpp dst    : save an unsigned integer version with bpp bits per pixel of the source image
 --tosgn bpp dst    : save a signed integer version with bpp bits per pixel of the source image
---gamma bpp gamma dst : perform a gamma correction on a floating point image to create integer output
---invgamma gamma dst  : perform an inverse gamma correction creating a floating point image from integer
+--asuns bpp        : convert the two input images to unsigned bpp before further procesing
+--assgn bpp        : convert the two input images to signed bpp before further processing
+--gamma bpp gamma dst         : perform a gamma correction on a floating point image to create
+                                integer output
+--invgamma gamma dst          : perform an inverse gamma correction creating a floating point image
+                                from integer
+--toegamma slope gamma dst    : perform a gamma transformation on the same data type with a given slope in
+                                its toe region
+--invtoegamma slope gamma dst : perform an inverse gamma transformation on the same data with parameters
+                                as above
 --halflog dst      : represent a floating point image in IEEE half float format saved as 16 bit integers
 --halfexp dst      : read a 16-bit integer image using IEEE half float and save as floating point
 --togamma bpp gamma: convert both images to gamma before applying the measurement (apply as a filter)
 --fromgamma gamma  : convert both images from a gamma before applying the measurement
+--totoegamma slope gamma      : perform a forwards gamma transformation (linear to gamma) with given
+                                slope in the toe region
+--fromtoegamma slope gamma    : perform an inverse gamma transformation (gamma to linear) with given
+                                slope in the toe region
 --tohalflog        : convert to 16-bit integer before comparing (apply as filter)
 --fromhalflog      : convert from 16-bit integer to float before comparing (apply as filter)
 --tolog clamp      : convert to logarithmic domain with clamp value before comparing
 --topercept        : convert from absolute luminance to a perceptually uniform space
+--topq bits        : convert floating point to SMPTE 2084 quantized to the given bits
+--frompq           : convert SMPTE 2084 quantized data to luminances
+--tohlg bits       : convert floating point to Hybrid Log Gamma with HEVC conventions
+--fromhlg          : convert Hybrid Log Gamma to linear luminance, 1000 nits peak
 --invert           : invert the source image before comparing
 --flipx            : flip the source horizontally before comparing
 --flipy            : flip the source vertically before comparing
+--flipxextend      : create a twice as wide image by flipping it over the right edge
+--flipyextend      : create a twice as high image by flippingit over the bottom edge
+--shift dx dy      : shift the image by the given amount right/bottom (or right/up if < 0)
 --pad bpp dst      : pad (right-aligned) a component into a larger bit-depths
+--asprec bpp       : set the bit-depth to bpp, padding input and output into the target bitdepth
 --sub x y          : subsample all components by the subsampling factors in x and y direction
 --csub x y         : subsample all but component 0 by the subsampling factors in x and y direction
 --up x y           : upsample all components by the subsampling factors in x and y direction
+--up auto          : upsample all components such that we get consistent 1x1 (444) sampling
 --cup x y          : upsample all but component 0 by the subsampling factors in x and y direction
+--coup x y         : co-sited upsampling of all components in x and y direction
+--coup auto        : co-sited upsampling, with automatic choice of upsampling factors
+--cocup x y        : co-sited upsampling of the chroma components in x and y direction
+--boxup x y        : upsample with a simple box filter
+--boxcup x y       : upsample the chrome components with a simple box filter
+--clamp min max    : clamp the image(s) to the specified range of sample values
 --only component   : acts as a filter and restricts all following operations to the given component
 --upto component   : restricts all following operations to components 0..component-1
 --rgb              : restricts the activity to at most the first three components
 --crop x1 y1 x2 y2 : crop a rectangular image region (x1,y1)-(x2,y2). Edges are inclusive.
+--cropd x1 y1 x2 y2: crop a rectangular image region (x1,y1)-(x2,y2) from the distorted image only.
 --restore          : un-do the restrictions of --crop and --only or --rgb
---toycbcr          : convert images to YCbCr before comparing
---tosignedycbcr    : convert images to YCbCr with signed chroma components
---fromycbcr        : convert images from YCbCr to RGB before comparing
+--toycbcr          : convert images to 601 YCbCr before comparing
+--toycbcrbl        : convert images to 601 YCbCr before comparing, and include a black level
+--tosignedycbcr    : convert images to 601 YCbCr with signed chroma components
+--fromycbcr        : convert images from 601 YCbCr to RGB before comparing
+--fromycbcrbl      : convert images from 601 YCbCr to RGB before comparing, and remove the black level
+--toycbcr709       : convert images to 709 YCbCr before comparing
+--toycbcr709bl     : convert images to 709 YCbCr before comaring, and include a black level
+--fromycbcr709     : convert images from 709 YCbCr to RGB before comparing
+--fromycbcr709bl   : convert images from 709 YCbCr to RGB before comparing, and remove the black level
+--toycbcr2020      : convert images to 2020 YCbCr before comparing
+--toycbcr2020bl    : convert images to 2020 YCbCr before comaring, and include a black level
+--fromycbcr2020    : convert images from 2020 YCbCr to RGB before comparing
+--fromycbcr2020bl  : convert images from 2020 YCbCr to RGB before comparing, and remove the black level
+--fromgrey         : convert a grey-scale image to color by duplicating components
+--torct            : convert an image with the RCT from JPEG 2000
+--tosignedrct      : convert an image with the RCT from JPEG 2000, leaving chroma signed
+--torctd           : convert a 4 component RGGB image to YCbCr+DeltaG with the RCT
+--torctd1 agmnt    : convert a Bayer pattern with given arrangement with the above RCTD
+--torctx agmnt     : convert a Bayer pattern with given arrangement to RCT with
+                     an improved longer averaging filter for green
+--toydgcgcox agmnt : convert a Bayer pattern with given arrangement with an extended version
+                     of the YDgCgCo transformation
+--to422rct         : convert a 422 image with green in component 0 to YCbCr
+--to422signedrct   : convert a 422 image with green in component 0, leaving chroma signed
+--fromrct          : convert an image back to RGB with the inverse RCT
+--fromrctd         : convert a YCbCr+DeltaG to a four-component RGGB with the inverse RCTD
+--fromrctd1 agmnt  : convert a YCbCr+DeltaG to a 1-component RGGB Bayer pattern
+--fromrctx agmnt   : convert an RCTX-converted image to a Bayer pattern image with the
+                     given sample arrangment
+--fromydgcgcox agmt: convert a YDgCgCoX-converted image to a Bayer pattern image with the
+                     given sample arrangement
+--from422rct       : convert from YCbCr to RGB with green in channel 0
+--todeltag         : convert RGGB to RGB+DeltaG
+--toycgco          : convert an image with the YCgCo transformation
+--tosignedycgco    : convert an image to YCgCo leaving chroma signed
+--tocycbcod        : convert an RGGB image to YCgCo+DeltaG
+--fromycgco        : convert an image back to RGB with the inverse YCgCo transformation
+--fromycgcod       : convert a YCgCo+DeltaG to RGGB with the inverse RCT
+--fromdeltag       : convert RGB+DeltaG to RGGB
 --toxyz            : convert images from RGB to XYZ before comparing
 --fromxyz          : convert images from XYZ to RGB before comparing
 --tolms            : convert images from RGB to LMS before comparing
 --fromlms          : convert images from LMS to RGB before comparing
 --xyztolms         : convert images from XYZ to LMS before comparing
 --lmstoxyz         : convert images from LMS to XYZ before comparing
+--scale a,b,c...   : scale components by the indicated factors before comparing
+--offset a,b,c...  : offset component values by the indicated values before comparing
+--tobayer          : convert a four-component image to a Bayer-pattern image
+--frombayer        : convert a Bayer patterned grey-scale image to four components
+--tobayersh   agmnt: convert a four-component image in component order RGGB
+                     to a Bayer patterned image of the given arragement
+--frombayersh agmnt: convert a Bayer patterned image in the given sample order
+                     into a four-component image in RGGB order
+--422tobayer  agmnt: convert a 422 three-component image to a Bayer pattern image
+                     where the argument describes the sample organization. It can be either
+                     grbg,rggb,gbrg or bggr, and green becomes the luma component
+--bayerto422  agmnt: convert a Bayer pattern image to a 422 three component image with luma
+                     as green and Cb as red and Cr as blue component. The argument describes
+                     the bayer pattern arrangement as above.
+--debayer     agmnt: de-Bayer a bayer pattern image with bi-linear interpolation, org describes
+                     the sample organization and can be grbg,rggb,gbrg or bggr
+--debayerahd  argmt: de-Bayer with the Adaptive Homogeneity-Directed Demosaic Algorithm
+--fill r,g,b,...   : fill the source image with the given color
+--paste x y        : paste the distorted image at the given position into the source
 --raw              : encode output in raw if applicable
 --ascii            : encode output in ascii if applicable
 --interleaved      : encode output in interleaved samples if applicable
 --separate         : encode output in separate planes if applicable
+--isyuv            : override automatic YUV detection, sources are really in YUV
+--isrgb            : override automatic YUV detection, sources are really in RGB
+--isfullrange      : override automatic range detection, source has no head/toe region
+--isreducedrange   : override automatic range detection, source has head/toe region
 --littleendian     : use little endian output if applicable
+--bigendian        : use big endian output if applicable
 --toabsradiance    : multiply floating point samples by recorded radiance scale to convert to absolute radiance
 --brief            : use a brief (only numeric) output format
 >,>=,==,!=,<=,< t  : last result must be larger, larger or equal, equal, not equal,
                      smaller or equal or smaller than given threshold t.
                      Attention: Quoting required when used from the shell.
 
+If the source image is '-/<width>x<height>x<depth>', it is replaced by a blank image of the
+given dimensions. This image can be filled with any other color by --fill, see above.
 If the distorted image file name equals '-', then the image is replaced by a blank image
 
 --help             : print this page

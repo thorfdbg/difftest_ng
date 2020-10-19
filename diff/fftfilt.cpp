@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: fftfilt.cpp,v 1.16 2020/09/15 10:20:32 thor Exp $
+** $Id: fftfilt.cpp,v 1.17 2020/10/19 05:38:05 thor Exp $
 **
 ** This class filters the image with an FFT and selects only frequences around a horizontal and
 ** vertical base frequency and a given radius.

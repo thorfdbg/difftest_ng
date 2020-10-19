@@ -202,7 +202,7 @@
 #define HAVE_GSL_GSL_FFT_COMPLEX_H 1
 
 /* Define to 1 if you have the <half.h> header file. */
-#define HAVE_HALF_H 1
+/* #undef HAVE_HALF_H */
 
 /* Define to 1 if you have the `htonl' function. */
 #define HAVE_HTONL 1
@@ -211,16 +211,16 @@
 #define HAVE_HTONS 1
 
 /* Define to 1 if you have the <ImathBox.h> header file. */
-#define HAVE_IMATHBOX_H 1
+/* #undef HAVE_IMATHBOX_H */
 
 /* Define to 1 if you have the <ImfArray.h> header file. */
-#define HAVE_IMFARRAY_H 1
+/* #undef HAVE_IMFARRAY_H */
 
 /* Define to 1 if you have the <ImfInputFile.h> header file. */
-#define HAVE_IMFINPUTFILE_H 1
+/* #undef HAVE_IMFINPUTFILE_H */
 
 /* Define to 1 if you have the <ImfRgbaFile.h> header file. */
-#define HAVE_IMFRGBAFILE_H 1
+/* #undef HAVE_IMFRGBAFILE_H */
 
 /* Define to 1 if you have the <inttypes.h> header file. */
 #define HAVE_INTTYPES_H 1
