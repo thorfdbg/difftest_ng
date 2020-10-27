@@ -23,7 +23,7 @@ and conversion framework.
 /*
  * Main program
  * 
- * $Id: main.cpp,v 1.111 2020/10/16 11:23:21 thor Exp $
+ * $Id: main.cpp,v 1.113 2020/10/27 13:27:15 thor Exp $
  *
  * This class defines the main program and argument parsing.
  */
@@ -60,6 +60,7 @@ and conversion framework.
 #include "diff/mrse.hpp"
 #include "diff/ycbcr.hpp"
 #include "diff/xyz.hpp"
+#include "diff/sim2.hpp"
 #include "diff/mask.hpp"
 #include "diff/stripe.hpp"
 #include "diff/add.hpp"
@@ -146,7 +147,9 @@ void Usage(const char *progname)
 	  "--patternidx       : scan the FFT for suspicious patterns and output the likeliness of errors\n"
 #endif
 	  "--toflt dst        : save a floating point version of the source image\n"
+	  "--asflt            : convert to floating point before proceeding (run as filter)\n"
 	  "--tohfl dst        : save a half-float version of the source image\n"
+	  "--tohfl            : convert to half-float before proceeding (run as filter)\n"
 	  "--touns bpp dst    : save an unsigned integer version with bpp bits per pixel of the source image\n"
 	  "--tosgn bpp dst    : save a signed integer version with bpp bits per pixel of the source image\n"
 	  "--asuns bpp        : convert the two input images to unsigned bpp before further procesing\n"
@@ -241,6 +244,7 @@ void Usage(const char *progname)
 	  "--fromdeltag       : convert RGB+DeltaG to RGGB\n"
 	  "--toxyz            : convert images from RGB to XYZ before comparing\n"
 	  "--fromxyz          : convert images from XYZ to RGB before comparing\n"
+	  "--tosim2           : convert images from XYZ to the SIM2 monitor encoding\n"
 	  "--tolms            : convert images from RGB to LMS before comparing\n"
 	  "--fromlms          : convert images from LMS to RGB before comparing\n"
 	  "--xyztolms         : convert images from XYZ to LMS before comparing\n"
@@ -751,6 +755,8 @@ class Meter *ParseColor(int &,char **&argv,struct ImgSpecs &specout)
     m = new XYZ(XYZ::RGBtoXYZ,false);
   } else if (!strcmp(arg,"--fromxyz")) {
     m = new XYZ(XYZ::RGBtoXYZ,true);
+  } else if (!strcmp(arg,"--tosim2")) {
+    m = new Sim2();
   } else if (!strcmp(arg,"--tolms")) {
     m = new XYZ(XYZ::RGBtoLMS,false);
   } else if (!strcmp(arg,"--fromlms")) {
@@ -977,12 +983,16 @@ class Meter *ParseConversions(int &argc,char **&argv,struct ImgSpecs &specout)
     m = new class Scale(argv[2],false,true,false,false,32,false,specout);
     argc--;
     argv++;
+  } else if (!strcmp(arg,"--asflt")) {
+    m = new class Scale(NULL,false,true,false,false,32,false,specout);
   } else if (!strcmp(arg,"--tohfl")) {
     if (argc < 3)
       throw "--tohlf requires a file name as argument";
     m = new class Scale(argv[2],false,true,false,false,16,false,specout);
     argc--;
-    argv++;	  
+    argv++;
+  } else if (!strcmp(arg,"--ashfl")) {
+    m = new class Scale(NULL,false,true,false,false,16,false,specout);
   } else if (!strcmp(arg,"--touns")) {
     long bpp;
     if (argc < 4)

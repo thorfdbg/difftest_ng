@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: mapping.cpp,v 1.17 2020/09/15 10:20:32 thor Exp $
+** $Id: mapping.cpp,v 1.18 2020/10/27 13:27:33 thor Exp $
 **
 ** This class works like the scaler, but more elaborate as it allows a couple
 ** of less trivial conversions: gamma mapping, log mapping and half-log mapping.
@@ -764,7 +764,7 @@ void Mapping::ApplyMap(class ImageLayout *src,class ImageLayout *dst)
     //
     if (m_bInverse) { 
       // Integer to float.
-      if (src->isFloat(comp))
+      if (src->isFloat(comp) && m_Type != Gamma)
 	throw "this conversion tool operates on integer input only";
       if (src->isSigned(comp))
 	throw "this conversion tool works on unsigned integers only";
@@ -838,19 +838,27 @@ void Mapping::ApplyMap(class ImageLayout *src,class ImageLayout *dst)
       break;
     case Gamma:
       if (m_bInverse) {
-	if (src->BitsOf(comp) <= 8) {
-	  InvGamma<UBYTE,FLOAT>((const UBYTE *)src->DataOf(comp),src->BytesPerPixel(comp),src->BytesPerRow(comp),
-				(FLOAT *)dst->DataOf(comp),dst->BytesPerPixel(comp),dst->BytesPerRow(comp),
-				w,h,(1UL << src->BitsOf(comp)) - 1,1.0,m_dGamma);
-	} else if (src->BitsOf(comp) <= 16) {
-	  InvGamma<UWORD,FLOAT>((const UWORD *)src->DataOf(comp),src->BytesPerPixel(comp),src->BytesPerRow(comp),
-				(FLOAT *)dst->DataOf(comp),dst->BytesPerPixel(comp),dst->BytesPerRow(comp),
-				w,h,(1UL << src->BitsOf(comp)) - 1,1.0,m_dGamma);
-	} else if (src->BitsOf(comp) <= 32) {
-	  InvGamma<ULONG,FLOAT>((const ULONG *)src->DataOf(comp),src->BytesPerPixel(comp),src->BytesPerRow(comp),
-				(FLOAT *)dst->DataOf(comp),dst->BytesPerPixel(comp),dst->BytesPerRow(comp),
-				w,h,(1UL << src->BitsOf(comp)) - 1,1.0,m_dGamma);
-	} else throw "unsupported source bit depth, must be between 1 and 32 bits per pixel";
+	if (src->isFloat(comp)) {
+	  if (src->BitsOf(comp) <= 32) {
+	    InvGamma<FLOAT,FLOAT>((const FLOAT *)src->DataOf(comp),src->BytesPerPixel(comp),src->BytesPerRow(comp),
+				  (FLOAT *)dst->DataOf(comp),dst->BytesPerPixel(comp),dst->BytesPerRow(comp),
+				  w,h,1.0,1.0,m_dGamma);
+	  } else throw "unsupported source bit depth, must be 16 or 32 bits per pixel";
+	} else {
+	  if (src->BitsOf(comp) <= 8) {
+	    InvGamma<UBYTE,FLOAT>((const UBYTE *)src->DataOf(comp),src->BytesPerPixel(comp),src->BytesPerRow(comp),
+				  (FLOAT *)dst->DataOf(comp),dst->BytesPerPixel(comp),dst->BytesPerRow(comp),
+				  w,h,(1UL << src->BitsOf(comp)) - 1,1.0,m_dGamma);
+	  } else if (src->BitsOf(comp) <= 16) {
+	    InvGamma<UWORD,FLOAT>((const UWORD *)src->DataOf(comp),src->BytesPerPixel(comp),src->BytesPerRow(comp),
+				  (FLOAT *)dst->DataOf(comp),dst->BytesPerPixel(comp),dst->BytesPerRow(comp),
+				  w,h,(1UL << src->BitsOf(comp)) - 1,1.0,m_dGamma);
+	  } else if (src->BitsOf(comp) <= 32) {
+	    InvGamma<ULONG,FLOAT>((const ULONG *)src->DataOf(comp),src->BytesPerPixel(comp),src->BytesPerRow(comp),
+				  (FLOAT *)dst->DataOf(comp),dst->BytesPerPixel(comp),dst->BytesPerRow(comp),
+				  w,h,(1UL << src->BitsOf(comp)) - 1,1.0,m_dGamma);
+	  } else throw "unsupported source bit depth, must be between 1 and 32 bits per pixel";
+	}
       } else {
 	if (src->isFloat(comp)) {
 	  if (m_ucTargetDepth <= 8) {
@@ -1023,7 +1031,7 @@ void Mapping::CreateTargetBuffer(class ImageLayout *src)
     //
     if (m_bInverse) { 
       // Integer to float.
-      if (src->isFloat(comp))
+      if (src->isFloat(comp) && m_Type != Gamma)
 	throw "this conversion tool operates on integer input only";
       if (src->isSigned(comp))
 	throw "this conversion tool works on unsigned integers only";
