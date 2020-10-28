@@ -106,6 +106,7 @@
     <ClCompile Include="..\..\..\diff\paste.cpp" />
     <ClCompile Include="..\..\..\diff\peakpos.cpp" />
     <ClCompile Include="..\..\..\diff\shift.cpp" />
+    <ClCompile Include="..\..\..\diff\sim2.cpp" />
     <ClCompile Include="..\..\..\diff\suppress.cpp" />
     <ClCompile Include="..\..\..\diff\upsampler.cpp" />
     <ClCompile Include="..\..\..\diff\whitebalance.cpp" />
@@ -177,6 +178,7 @@
     <ClInclude Include="..\..\..\diff\mapping.hpp" />
     <ClInclude Include="..\..\..\diff\peakpos.hpp" />
     <ClInclude Include="..\..\..\diff\shift.hpp" />
+    <ClInclude Include="..\..\..\diff\sim2.hpp" />
     <ClInclude Include="..\..\..\diff\suppress.hpp" />
     <ClInclude Include="..\..\..\diff\upsampler.hpp" />
     <ClInclude Include="..\..\..\diff\whitebalance.hpp" />
