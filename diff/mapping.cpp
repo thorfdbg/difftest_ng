@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: mapping.cpp,v 1.18 2020/10/27 13:27:33 thor Exp $
+** $Id: mapping.cpp,v 1.19 2020/10/29 08:42:17 thor Exp $
 **
 ** This class works like the scaler, but more elaborate as it allows a couple
 ** of less trivial conversions: gamma mapping, log mapping and half-log mapping.
@@ -373,9 +373,13 @@ void Mapping::FromPQ(const T *org ,ULONG obytesperpixel,ULONG obytesperrow,
     const T *orgrow = org;
     FLOAT *dstrow       = dst;
     for(x = 0;x < w;x++) {
-      double n = double(*orgrow) / scale; // normalized sample value
-      double l = pow((pow(n,1.0 / m2) - c1) / (c2 - c3 * pow(n,1.0 / m2)),1.0 / m1);
-      *dstrow  = l * lmax;
+      if (*orgrow > 0) {
+	double n = double(*orgrow) / scale; // normalized sample value
+	double l = pow((pow(n,1.0 / m2) - c1) / (c2 - c3 * pow(n,1.0 / m2)),1.0 / m1);
+	*dstrow  = l * lmax;
+      } else {
+	*dstrow  = 0;
+      }
       orgrow  = (const T *)((const UBYTE *)(orgrow) + obytesperpixel);
       dstrow  = (FLOAT *)((UBYTE *)(dstrow) + dbytesperpixel);
     }
