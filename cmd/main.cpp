@@ -23,7 +23,7 @@ and conversion framework.
 /*
  * Main program
  * 
- * $Id: main.cpp,v 1.113 2020/10/27 13:27:15 thor Exp $
+ * $Id: main.cpp,v 1.114 2020/11/25 08:13:49 thor Exp $
  *
  * This class defines the main program and argument parsing.
  */
@@ -74,6 +74,7 @@ and conversion framework.
 #include "diff/bayerconv.hpp"
 #include "diff/debayer.hpp"
 #include "diff/bayercolor.hpp"
+#include "diff/tobayer.hpp"
 #include "diff/whitebalance.hpp"
 #include "diff/fromgrey.hpp"
 #include "img/imglayout.hpp"
@@ -265,7 +266,8 @@ void Usage(const char *progname)
 	  "                     the bayer pattern arrangement as above.\n"
 	  "--debayer     agmnt: de-Bayer a bayer pattern image with bi-linear interpolation, org describes\n"
 	  "                     the sample organization and can be grbg,rggb,gbrg or bggr\n"
-	  "--debayerahd  argmt: de-Bayer with the Adaptive Homogeneity-Directed Demosaic Algorithm\n"
+	  "--debayerahd  agmnt: de-Bayer with the Adaptive Homogeneity-Directed Demosaic Algorithm\n"
+	  "--rgbtobayer  agmnt: create a 1 component Bayer pattern from an RGB image\n"
 	  "--fill r,g,b,...   : fill the source image with the given color\n"
 	  "--paste x y        : paste the distorted image at the given position into the source\n"
 	  "--raw              : encode output in raw if applicable\n"
@@ -960,6 +962,21 @@ class Meter *ParseBayer(int &argc,char **&argv)
       m = new BayerColor(true,BayerColor::YDgCoCgX,BayerColor::GBRG);
     else if (!strcmp(argv[2],"bggr"))
       m = new BayerColor(true,BayerColor::YDgCoCgX,BayerColor::BGGR);
+    else
+      throw "unknown Bayer subpixel arrangement";
+    argc--;
+    argv++;
+  } else if (!strcmp(arg,"--rgbtobayer")) {
+    if (argc < 3)
+      throw "--rgbtobayer requires a string argument";
+    if (!strcmp(argv[2],"grbg"))
+      m = new ToBayer(ToBayer::GRBG);
+    else if (!strcmp(argv[2],"rggb"))
+      m = new ToBayer(ToBayer::RGGB);
+    else if (!strcmp(argv[2],"gbrg"))
+      m = new ToBayer(ToBayer::GBRG);
+    else if (!strcmp(argv[2],"bggr"))
+      m = new ToBayer(ToBayer::BGGR);
     else
       throw "unknown Bayer subpixel arrangement";
     argc--;

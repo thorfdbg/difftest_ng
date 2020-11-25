@@ -108,6 +108,7 @@
     <ClCompile Include="..\..\..\diff\shift.cpp" />
     <ClCompile Include="..\..\..\diff\sim2.cpp" />
     <ClCompile Include="..\..\..\diff\suppress.cpp" />
+    <ClCompile Include="..\..\..\diff\tobayer.cpp" />
     <ClCompile Include="..\..\..\diff\upsampler.cpp" />
     <ClCompile Include="..\..\..\diff\whitebalance.cpp" />
     <ClCompile Include="..\..\..\diff\xyz.cpp" />
@@ -180,6 +181,7 @@
     <ClInclude Include="..\..\..\diff\shift.hpp" />
     <ClInclude Include="..\..\..\diff\sim2.hpp" />
     <ClInclude Include="..\..\..\diff\suppress.hpp" />
+    <ClInclude Include="..\..\..\diff\tobayer.hpp" />
     <ClInclude Include="..\..\..\diff\upsampler.hpp" />
     <ClInclude Include="..\..\..\diff\whitebalance.hpp" />
     <ClInclude Include="..\..\..\diff\xyz.hpp" />
