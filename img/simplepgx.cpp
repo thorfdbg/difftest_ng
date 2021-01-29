@@ -25,7 +25,7 @@ and conversion framework.
  * This is the image file format that is defined by JPEG2000 part 4
  * for encoding the test streams.
  *
- * $Id: simplepgx.cpp,v 1.24 2020/09/15 10:20:32 thor Exp $
+ * $Id: simplepgx.cpp,v 1.25 2021/01/29 14:54:44 thor Exp $
  */
 
 /// Includes
@@ -88,7 +88,7 @@ void SimplePgx::LoadImage(const char *basename,struct ImgSpecs &specs)
   struct ComponentLayout *layout;
   ULONG w,h;
   UWORD depth = 0;
-  char buffer[256 + 4];
+  char buffer[512 + 4];
   bool embedded = false; // if the header is embedded in the file and the file names are generated.
   bool single   = false;
   bool yuv      = false;
@@ -102,7 +102,7 @@ void SimplePgx::LoadImage(const char *basename,struct ImgSpecs &specs)
   do {
     size_t len;
     if (!embedded) {
-      if (fgets(buffer,255,file) == NULL) {
+      if (fgets(buffer,sizeof(buffer) - 5,file) == NULL) {
 	break;
       }
     }
@@ -110,7 +110,7 @@ void SimplePgx::LoadImage(const char *basename,struct ImgSpecs &specs)
     // Is this probably not the header file but the first data file?
     if (depth == 0 && buffer[0] == 'P' && (buffer[1] == 'G' || buffer[1] == 'F') && buffer[2] == ' ') {
       const char *dot = strrchr(basename,'.');
-      if (dot && !strcmp(dot,".pgx") && dot - 1 > basename && dot < basename + 256) {
+      if (dot && !strcmp(dot,".pgx") && dot - 1 > basename && dot < basename + sizeof(basename) - 4) {
 	if (dot[-1] == '0') {
 	  embedded = true;
 	} else {
@@ -180,7 +180,7 @@ void SimplePgx::LoadImage(const char *basename,struct ImgSpecs &specs)
     size_t len;
     int depth;
     // Copy the name over, and replace the .raw with .h.
-    strncpy(buffer,name->m_pName,256);
+    strncpy(buffer,name->m_pName,sizeof(buffer) - 4);
     if (!embedded) {
       char *cr = strchr(buffer,'\r');
       // Windows binary reader needs to get rid of the \r
@@ -203,7 +203,7 @@ void SimplePgx::LoadImage(const char *basename,struct ImgSpecs &specs)
     //
     // Read the header into the file. This should be one
     // single stream.
-    data = fgets(buffer,255,header);
+    data = fgets(buffer,sizeof(buffer) - 5,header);
     fclose(header);
     if (data == NULL) {
       PostError("failed to read the pgx header file.\n");
@@ -436,7 +436,7 @@ void SimplePgx::SaveImage(const char *basename,const struct ImgSpecs &specs)
 {
   File output(basename,"w");
   int i;
-  char buffer[256+4];
+  char buffer[512+4];
   bool le = (specs.LittleEndian == ImgSpecs::Yes)?(true):(false);
   //
   // Write the file header containing the references to
@@ -445,7 +445,8 @@ void SimplePgx::SaveImage(const char *basename,const struct ImgSpecs &specs)
     struct ComponentLayout *cl = m_pComponent + i;
     ULONG w,h;
     FILE *raw,*hdr;
-    sprintf(buffer,"%s_%d.raw",basename,i);
+    const char *sep      = strrchr(basename,PATH_SEP);
+    sprintf(buffer,"%s_%d.raw",(sep)?(sep + 1):(basename),i);
     fprintf(output,"%s\n",buffer);
     //
     // Compute width and height of this component.
