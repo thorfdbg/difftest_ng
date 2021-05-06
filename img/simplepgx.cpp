@@ -25,7 +25,7 @@ and conversion framework.
  * This is the image file format that is defined by JPEG2000 part 4
  * for encoding the test streams.
  *
- * $Id: simplepgx.cpp,v 1.25 2021/01/29 14:54:44 thor Exp $
+ * $Id: simplepgx.cpp,v 1.26 2021/05/06 11:39:19 thor Exp $
  */
 
 /// Includes
@@ -454,6 +454,7 @@ void SimplePgx::SaveImage(const char *basename,const struct ImgSpecs &specs)
     h = cl->m_ulHeight;
     //
     // Write the raw output file.
+    sprintf(buffer,"%s_%d.raw",basename,i);
     raw = fopen(buffer,"wb");
     if (raw) {
       ULONG x,y;
