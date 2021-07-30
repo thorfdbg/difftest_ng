@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: mapping.cpp,v 1.20 2021/07/30 08:23:41 thor Exp $
+** $Id: mapping.cpp,v 1.21 2021/07/30 12:04:43 thor Exp $
 **
 ** This class works like the scaler, but more elaborate as it allows a couple
 ** of less trivial conversions: gamma mapping, log mapping and half-log mapping.
@@ -85,7 +85,11 @@ void Mapping::InvGamma(const S *src  ,ULONG obytesperpixel,ULONG obytesperrow,
     T *dstrow       = dst;
     for(x = 0;x < w;x++) {
       double v    = *orgrow;
-      v = outscale * pow(v * invscale,gamma);
+      if (v >= 0) {
+	v = outscale * pow(v * invscale,gamma);
+      } else {
+	v = -outscale * pow(-v * invscale,gamma);
+      }
       *dstrow = v;
       orgrow  = (const S *)((const UBYTE *)(orgrow) + obytesperpixel);
       dstrow  = (T       *)((UBYTE *)(dstrow) + dbytesperpixel);
