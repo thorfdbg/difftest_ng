@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: mapping.cpp,v 1.21 2021/07/30 12:04:43 thor Exp $
+** $Id: mapping.cpp,v 1.23 2021/07/30 12:19:40 thor Exp $
 **
 ** This class works like the scaler, but more elaborate as it allows a couple
 ** of less trivial conversions: gamma mapping, log mapping and half-log mapping.
@@ -412,7 +412,7 @@ void Mapping::ToPQ(const FLOAT *org ,ULONG obytesperpixel,ULONG obytesperrow,
     const FLOAT *orgrow = org;
     T *dstrow           = dst;
     for(x = 0;x < w;x++) {
-      double l = *orgrow / lmax; // luminance (hopefully in nits)
+      double l = (*orgrow >= 0.0)?(*orgrow / lmax):(0.0); // luminance (hopefully in nits)
       double n = pow((c2*pow(l,m1) + c1)/(c3*pow(l,m1) + 1.0),m2);
       if (n > 1.0)
 	n = 1.0;
@@ -473,7 +473,7 @@ void Mapping::ToHLG(const FLOAT *org ,ULONG obytesperpixel,ULONG obytesperrow,
     const FLOAT *orgrow = org;
     T *dstrow           = dst;
     for(x = 0;x < w;x++) {
-      double l = *orgrow / lmax; // luminance (hopefully in nits)
+      double l = (*orgrow >= 0.0)?(*orgrow / lmax):(0.0); // luminance (hopefully in nits)
       double n;
       if (l < t) {
 	n = r * sqrt(l);
