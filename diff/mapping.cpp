@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: mapping.cpp,v 1.19 2020/10/29 08:42:17 thor Exp $
+** $Id: mapping.cpp,v 1.20 2021/07/30 08:23:41 thor Exp $
 **
 ** This class works like the scaler, but more elaborate as it allows a couple
 ** of less trivial conversions: gamma mapping, log mapping and half-log mapping.
@@ -770,7 +770,7 @@ void Mapping::ApplyMap(class ImageLayout *src,class ImageLayout *dst)
       // Integer to float.
       if (src->isFloat(comp) && m_Type != Gamma)
 	throw "this conversion tool operates on integer input only";
-      if (src->isSigned(comp))
+      if (src->isSigned(comp) && !src->isFloat(comp))
 	throw "this conversion tool works on unsigned integers only";
       //
       // make sure the target is float.
@@ -1037,7 +1037,7 @@ void Mapping::CreateTargetBuffer(class ImageLayout *src)
       // Integer to float.
       if (src->isFloat(comp) && m_Type != Gamma)
 	throw "this conversion tool operates on integer input only";
-      if (src->isSigned(comp))
+      if (src->isSigned(comp) && !src->isFloat(comp))
 	throw "this conversion tool works on unsigned integers only";
       //
       if (m_Type == GammaToe) {
