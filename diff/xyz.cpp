@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: xyz.cpp,v 1.5 2017/01/31 11:58:04 thor Exp $
+** $Id: xyz.cpp,v 1.6 2021/08/02 07:23:46 thor Exp $
 **
 ** This class converts between RGB and YCbCr signals
 */
@@ -98,6 +98,14 @@ void XYZ::Multiply(class ImageLayout *img)
 	matrix = m;
       }
       break;
+    case RGB2020toXYZ:
+      {
+	static const double m[] = {+1.7373780,-0.3599092,-0.2564567,
+				   -0.6747329,+1.6181260,0.01697220,
+				   +0.0178699,-0.0428552,+0.9420576};
+	matrix = m;
+      }
+      break;
     case XYZtoLMS:
       {
 	static const double m[] = {+1.8600666,-1.1294801,+0.2198983,
@@ -122,6 +130,14 @@ void XYZ::Multiply(class ImageLayout *img)
 	static const double m[] = {+0.4124564,+0.3575761,+0.1804375,
 				   +0.2126729,+0.7151522,+0.0721750,
 				   +0.0193339,+0.1191920,+0.9503041};
+	matrix = m;
+      }
+      break;
+    case RGB2020toXYZ:
+      {
+	static const double m[] = {+0.6370   ,+0.1446   ,+0.1689,
+				   +0.2627   ,+0.6780   ,+0.0593,
+				   +0        ,0.0281    ,+1.0610};
 	matrix = m;
       }
       break;

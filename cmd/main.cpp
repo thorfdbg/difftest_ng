@@ -23,7 +23,7 @@ and conversion framework.
 /*
  * Main program
  * 
- * $Id: main.cpp,v 1.114 2020/11/25 08:13:49 thor Exp $
+ * $Id: main.cpp,v 1.116 2021/08/02 07:31:54 thor Exp $
  *
  * This class defines the main program and argument parsing.
  */
@@ -243,8 +243,10 @@ void Usage(const char *progname)
 	  "--fromycgco        : convert an image back to RGB with the inverse YCgCo transformation\n"
 	  "--fromycgcod       : convert a YCgCo+DeltaG to RGGB with the inverse RCT\n"
 	  "--fromdeltag       : convert RGB+DeltaG to RGGB\n"
-	  "--toxyz            : convert images from RGB to XYZ before comparing\n"
-	  "--fromxyz          : convert images from XYZ to RGB before comparing\n"
+	  "--toxyz            : convert images from 709 RGB to XYZ before comparing\n"
+	  "--fromxyz          : convert images from XYZ to 709 RGB before comparing\n"
+	  "--2020toxyz        : convert images from 2020 RGB to XYZ before comparing\n"
+	  "--fromxyzto2020    : convert images from XYZ to 2020 RGB before comparing\n"
 	  "--tosim2           : convert images from XYZ to the SIM2 monitor encoding\n"
 	  "--tolms            : convert images from RGB to LMS before comparing\n"
 	  "--fromlms          : convert images from LMS to RGB before comparing\n"
@@ -757,6 +759,10 @@ class Meter *ParseColor(int &,char **&argv,struct ImgSpecs &specout)
     m = new XYZ(XYZ::RGBtoXYZ,false);
   } else if (!strcmp(arg,"--fromxyz")) {
     m = new XYZ(XYZ::RGBtoXYZ,true);
+  } else if (!strcmp(arg,"--2020toxyz")) {
+    m = new XYZ(XYZ::RGB2020toXYZ,false);
+  } else if (!strcmp(arg,"--fromxyzto2020")) {
+    m = new XYZ(XYZ::RGB2020toXYZ,true);
   } else if (!strcmp(arg,"--tosim2")) {
     m = new Sim2();
   } else if (!strcmp(arg,"--tolms")) {

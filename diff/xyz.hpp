@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: xyz.hpp,v 1.5 2017/01/31 11:58:04 thor Exp $
+** $Id: xyz.hpp,v 1.6 2021/08/02 07:23:46 thor Exp $
 **
 ** This class converts between RGB and YCbCr signals
 */
@@ -50,7 +50,8 @@ public:
   enum ConversionDirection {
     RGBtoXYZ,
     XYZtoLMS,
-    RGBtoLMS
+    RGBtoLMS,
+    RGB2020toXYZ,
   };
   //
 private:
