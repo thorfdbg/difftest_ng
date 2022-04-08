@@ -25,7 +25,7 @@ and conversion framework.
  * This is the image file format that is defined by JPEG2000 part 4
  * for encoding the test streams.
  *
- * $Id: simplepgx.cpp,v 1.26 2021/05/06 11:39:19 thor Exp $
+ * $Id: simplepgx.cpp,v 1.27 2022/04/08 11:33:51 thor Exp $
  */
 
 /// Includes
@@ -110,7 +110,7 @@ void SimplePgx::LoadImage(const char *basename,struct ImgSpecs &specs)
     // Is this probably not the header file but the first data file?
     if (depth == 0 && buffer[0] == 'P' && (buffer[1] == 'G' || buffer[1] == 'F') && buffer[2] == ' ') {
       const char *dot = strrchr(basename,'.');
-      if (dot && !strcmp(dot,".pgx") && dot - 1 > basename && dot < basename + sizeof(basename) - 4) {
+      if (dot && !strcmp(dot,".pgx") && dot - 1 > basename && dot <= basename + strlen(basename) - 4) {
 	if (dot[-1] == '0') {
 	  embedded = true;
 	} else {
