@@ -23,7 +23,7 @@ and conversion framework.
 /*
  * Main program
  * 
- * $Id: main.cpp,v 1.116 2021/08/02 07:31:54 thor Exp $
+ * $Id: main.cpp,v 1.117 2022/08/12 06:54:57 thor Exp $
  *
  * This class defines the main program and argument parsing.
  */
@@ -77,6 +77,7 @@ and conversion framework.
 #include "diff/tobayer.hpp"
 #include "diff/whitebalance.hpp"
 #include "diff/fromgrey.hpp"
+#include "diff/butterfly.hpp"
 #include "img/imglayout.hpp"
 #include "img/imgspecs.hpp"
 #include <new>
@@ -124,6 +125,7 @@ void Usage(const char *progname)
 	  "--diff target      : save the difference image (-i is an alternative form of this option)\n"
 	  "--rawdiff target   : similar to --diff, except that it doesn't scale the difference to maximum range\n"
 	  "--sdiff scale trgt : generate a differential signal with an explicitly given scale\n"
+	  "--butterfly target : merge source and destination image in butterfly style\n"
 	  "--suppress thres   : suppress all pixels in the target that are less than a threshold away from the source\n"
 	  "--mask roi         : mask the source image by the mask image before applying the comparison\n"
 	  "--notmask roi      : mask the source image by the inverse of the mask\n"
@@ -1532,6 +1534,12 @@ int main(int argc,char **argv)
 	  m = new class DiffImg(argv[3],specout,false,ParseDouble(argv[2]));
 	  argc -= 2;
 	  argv += 2;
+	} else if (!strcmp(arg,"--butterfly")) {
+	  if (argc < 3)
+	    throw "--butterfly requires the target file name as argument";
+	  m = new class Butterfly(argv[2],specout);
+	  argc--;
+	  argv++;
 	} else if (!strcmp(arg,"--suppress")) {
 	  double t;
 	  if (argc < 3)
