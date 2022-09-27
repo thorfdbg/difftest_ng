@@ -23,14 +23,14 @@ and conversion framework.
 
 /*
 **
-** $Id: sim2.hpp,v 1.1 2020/10/26 10:06:06 thor Exp $
+** $Id: sim2.hpp,v 1.2 2022/09/27 09:08:22 thor Exp $
 **
 ** This class converts between XYZ and SIM2 signals, the latter are used to drive
 ** the SIM2 monitor.
 */
 
 #ifndef DIFF_SIM2_HPP
-#define DIFF_ISM2_HPP
+#define DIFF_SIM2_HPP
 
 /// Includes
 #include "diff/meter.hpp"
