@@ -25,7 +25,7 @@ and conversion framework.
  * This is the image file format that is defined by JPEG2000 part 4
  * for encoding the test streams.
  *
- * $Id: simplepgx.cpp,v 1.27 2022/04/08 11:33:51 thor Exp $
+ * $Id: simplepgx.cpp,v 1.29 2022/11/23 14:19:42 thor Exp $
  */
 
 /// Includes
@@ -88,15 +88,16 @@ void SimplePgx::LoadImage(const char *basename,struct ImgSpecs &specs)
   struct ComponentLayout *layout;
   ULONG w,h;
   UWORD depth = 0;
-  char buffer[512 + 4];
+  char buffer[1024 + 4];
   bool embedded = false; // if the header is embedded in the file and the file names are generated.
   bool single   = false;
   bool yuv      = false;
   File file(basename,"r");
   //
-  if (m_pComponent) {
+  if (m_pComponent)
     PostError("Image is already loaded.\n");
-  }
+  if (strlen(basename) > sizeof(buffer) - 16)
+    PostError("image base name is too long\n");
   //
   // Read the names, one after another.
   do {
@@ -436,8 +437,11 @@ void SimplePgx::SaveImage(const char *basename,const struct ImgSpecs &specs)
 {
   File output(basename,"w");
   int i;
-  char buffer[512+4];
+  char buffer[1024+4];
   bool le = (specs.LittleEndian == ImgSpecs::Yes)?(true):(false);
+  //
+  if (strlen(basename) > sizeof(buffer) - 16)
+    PostError("image base name is too long\n");
   //
   // Write the file header containing the references to
   // to all the components.
