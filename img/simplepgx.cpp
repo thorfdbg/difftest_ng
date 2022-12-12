@@ -25,7 +25,7 @@ and conversion framework.
  * This is the image file format that is defined by JPEG2000 part 4
  * for encoding the test streams.
  *
- * $Id: simplepgx.cpp,v 1.29 2022/11/23 14:19:42 thor Exp $
+ * $Id: simplepgx.cpp,v 1.30 2022/12/12 14:38:09 thor Exp $
  */
 
 /// Includes
@@ -39,7 +39,7 @@ and conversion framework.
 ///
 
 /// Path separator
-#ifdef _WINDLL // wrong-way path separator on windows...
+#if defined(_WINDLL) || defined(WIN32) // wrong-way path separator on windows...
 # define PATH_SEP '\\'
 #else
 # define PATH_SEP '/'
