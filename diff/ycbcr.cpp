@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: ycbcr.cpp,v 1.17 2020/09/15 10:20:32 thor Exp $
+** $Id: ycbcr.cpp,v 1.19 2023/06/12 07:34:45 thor Exp $
 **
 ** This class converts between RGB and YCbCr signals
 */
@@ -185,6 +185,47 @@ void YCbCr::ToYCbCr(S *r,S *g,S *b,
 }
 ///
 
+/// YCbCr::ToYCbCrBL
+template<typename S,typename T>
+void YCbCr::ToYCbCrBL(S *r,S *g,S *b,
+		      double yoffset,double coffset,
+		      double min,double max,
+		      double cmin,double cmax,
+		      ULONG bppr,ULONG bppg,ULONG bppb,
+		      ULONG bprr,ULONG bprg,ULONG bprb,
+		      ULONG w, ULONG h)
+{
+  ULONG x,y;
+
+  for(y = 0;y < h;y++) {
+    S *rrow = r;
+    S *grow = g;
+    S *brow = b;
+    for(x = 0;x < w;x++) {
+      double y  =  *rrow * 0.299    + *grow * 0.587    + *brow * 0.114                   + yoffset;
+      double cb = (*rrow * -0.16875 + *grow * -0.33126 + *brow * 0.5     ) * 224.0/219.0 + coffset;
+      double cr = (*rrow * 0.5      + *grow * -0.41869 + *brow * -0.08131) * 224.0/219.0 + coffset;
+      //
+      // clip to range.
+      y  = (y  <  min)?( min):(( y >  max)?( max):( y));
+      cb = (cb < cmin)?(cmin):((cb > cmax)?(cmax):(cb));
+      cr = (cr < cmin)?(cmin):((cr > cmax)?(cmax):(cr));
+      //
+      *rrow        = S(y);
+      *((T *)grow) = T(cb);
+      *((T *)brow) = T(cr);
+      //
+      rrow  = (S *)((UBYTE *)(rrow) + bppr);
+      grow  = (S *)((UBYTE *)(grow) + bppg);
+      brow  = (S *)((UBYTE *)(brow) + bppb);
+    }
+    r  = (S *)((UBYTE *)(r) + bprr);
+    g  = (S *)((UBYTE *)(g) + bprg);
+    b  = (S *)((UBYTE *)(b) + bprb);
+  }
+}
+///
+
 /// YCbCr::ToYCbCr709
 template<typename S,typename T>
 void YCbCr::ToYCbCr709(S *r,S *g,S *b,
@@ -230,6 +271,50 @@ void YCbCr::ToYCbCr709(S *r,S *g,S *b,
 }
 /// 
 
+/// YCbCr::ToYCbCr709BL
+template<typename S,typename T>
+void YCbCr::ToYCbCr709BL(S *r,S *g,S *b,
+			 double yoffset,double coffset,
+			 double min,double max,
+			 double cmin,double cmax,
+			 ULONG bppr,ULONG bppg,ULONG bppb,
+			 ULONG bprr,ULONG bprg,ULONG bprb,
+			 ULONG w, ULONG h)
+{
+  ULONG x,y;
+  const double kb = 0.0722;
+  const double kr = 0.2126;
+  const double kg = 1.0 - kb - kr;
+
+  for(y = 0;y < h;y++) {
+    S *rrow = r;
+    S *grow = g;
+    S *brow = b;
+    for(x = 0;x < w;x++) {
+      double y  = *rrow * kr    + *grow * kg    + *brow * kb;
+      double cb = (*brow - y) / 1.8556 + coffset;
+      double cr = (*rrow - y) / 1.5748 + coffset;
+      //
+      // clip to range.
+      y += yoffset;
+      y  = (y  <  min)?( min):(( y >  max)?( max):( y));
+      cb = (cb < cmin)?(cmin):((cb > cmax)?(cmax):(cb));
+      cr = (cr < cmin)?(cmin):((cr > cmax)?(cmax):(cr));
+      //
+      *rrow        = S(y);
+      *((T *)grow) = T(cb);
+      *((T *)brow) = T(cr);
+      //
+      rrow  = (S *)((UBYTE *)(rrow) + bppr);
+      grow  = (S *)((UBYTE *)(grow) + bppg);
+      brow  = (S *)((UBYTE *)(brow) + bppb);
+    }
+    r  = (S *)((UBYTE *)(r) + bprr);
+    g  = (S *)((UBYTE *)(g) + bprg);
+    b  = (S *)((UBYTE *)(b) + bprb);
+  }
+}
+/// 
 
 /// YCbCr::ToYCbCr2020
 template<typename S,typename T>
@@ -315,6 +400,48 @@ void YCbCr::FromYCbCr(S *yp,T *cb,T *cr,
 }
 ///
 
+/// YCbCr::FromYCbCrBL
+template<typename S,typename T>
+void YCbCr::FromYCbCrBL(S *yp,T *cb,T *cr,
+		      double yoffset,double coffset,
+		      double min,double max,
+		      ULONG bppy,ULONG bppcb,ULONG bppcr,
+		      ULONG bpry,ULONG bprcb,ULONG bprcr,
+		      ULONG w, ULONG h)
+{
+  ULONG x,y;
+
+  for(y = 0;y < h;y++) {
+    S *yrow  = yp;
+    T *cbrow = cb;
+    T *crrow = cr;
+    for(x = 0;x < w;x++) {
+      double cb = (*cbrow - coffset) * 219.0/224.0;
+      double cr = (*crrow - coffset) * 219.0/224.0;
+      double r  = (*yrow - yoffset) + cr * 1.402;
+      double g  = (*yrow - yoffset) + cb *-0.34413 + cr *-0.71414;
+      double b  = (*yrow - yoffset) + cb * 1.772;
+      //
+      // clip to range.
+      r  = (r < min)?(min):((r > max)?(max):(r));
+      g  = (g < min)?(min):((g > max)?(max):(g));
+      b  = (b < min)?(min):((b > max)?(max):(b));
+      //
+      *yrow         = S(r);
+      *((S *)cbrow) = S(g);
+      *((S *)crrow) = S(b);
+      //
+      yrow   = (S *)((UBYTE *)(yrow ) + bppy);
+      cbrow  = (T *)((UBYTE *)(cbrow) + bppcb);
+      crrow  = (T *)((UBYTE *)(crrow) + bppcr);
+    }
+    yp  = (S *)((UBYTE *)(yp) + bpry);
+    cb  = (T *)((UBYTE *)(cb) + bprcb);
+    cr  = (T *)((UBYTE *)(cr) + bprcr);
+  }
+}
+///
+
 /// YCbCr::FromYCbCr709
 template<typename S,typename T>
 void YCbCr::FromYCbCr709(S *yp,T *cb,T *cr,
@@ -334,6 +461,46 @@ void YCbCr::FromYCbCr709(S *yp,T *cb,T *cr,
       double r  = (*yrow - yoffset) + (*crrow - coffset)*1.5748;
       double g  = (*yrow - yoffset) + (*cbrow - coffset)*-0.1873242729306488 + (*crrow - coffset)*-0.4681242729306488;
       double b  = (*yrow - yoffset) + (*cbrow - coffset)*1.8556;
+      //
+      // clip to range.
+      r  = (r < min)?(min):((r > max)?(max):(r));
+      g  = (g < min)?(min):((g > max)?(max):(g));
+      b  = (b < min)?(min):((b > max)?(max):(b));
+      //
+      *yrow         = S(r);
+      *((S *)cbrow) = S(g);
+      *((S *)crrow) = S(b);
+      //
+      yrow   = (S *)((UBYTE *)(yrow ) + bppy);
+      cbrow  = (T *)((UBYTE *)(cbrow) + bppcb);
+      crrow  = (T *)((UBYTE *)(crrow) + bppcr);
+    }
+    yp  = (S *)((UBYTE *)(yp) + bpry);
+    cb  = (T *)((UBYTE *)(cb) + bprcb);
+    cr  = (T *)((UBYTE *)(cr) + bprcr);
+  }
+}
+/// 
+
+/// YCbCr::FromYCbCr709BL
+template<typename S,typename T>
+void YCbCr::FromYCbCr709BL(S *yp,T *cb,T *cr,
+			   double yoffset,double coffset,
+			   double min,double max,
+			   ULONG bppy,ULONG bppcb,ULONG bppcr,
+			   ULONG bpry,ULONG bprcb,ULONG bprcr,
+			   ULONG w, ULONG h)
+{
+  ULONG x,y;
+
+  for(y = 0;y < h;y++) {
+    S *yrow  = yp;
+    T *cbrow = cb;
+    T *crrow = cr;
+    for(x = 0;x < w;x++) {
+      double r  = (*yrow - yoffset) * 1.16895 + (*crrow - coffset) * 1.79977;
+      double g  = (*yrow - yoffset) * 1.16895 - (*cbrow - coffset) * 0.214085 - (*crrow - coffset) * 0.534999;
+      double b  = (*yrow - yoffset) * 1.16895 + (*cbrow - coffset) * 2.12069;
       //
       // clip to range.
       r  = (r < min)?(min):((r > max)?(max):(r));
@@ -1159,18 +1326,34 @@ void YCbCr::DispatchToYCbCr(const class ImageLayout *img,double yoffset,double c
 {
   switch(m_Conversion) {
   case YCbCr_Trafo:     // this is actually a BT.601 conversion
-    ToYCbCr<S,T>((S *)img->DataOf(0),(S *)img->DataOf(1),(S *)img->DataOf(2),
-		 yoffset,coffset,ymin,ymax,cmin,cmax,
-		 img->BytesPerPixel(0),img->BytesPerPixel(1),img->BytesPerPixel(2),
-		 img->BytesPerRow(0)  ,img->BytesPerRow(1)  ,img->BytesPerRow(2),
-		 w,h);
+    if (m_bBlackLevel) {
+      ToYCbCrBL<S,T>((S *)img->DataOf(0),(S *)img->DataOf(1),(S *)img->DataOf(2),
+		     yoffset,coffset,ymin,ymax,cmin,cmax,
+		     img->BytesPerPixel(0),img->BytesPerPixel(1),img->BytesPerPixel(2),
+		     img->BytesPerRow(0)  ,img->BytesPerRow(1)  ,img->BytesPerRow(2),
+		     w,h);
+    } else {
+      ToYCbCr<S,T>((S *)img->DataOf(0),(S *)img->DataOf(1),(S *)img->DataOf(2),
+		   yoffset,coffset,ymin,ymax,cmin,cmax,
+		   img->BytesPerPixel(0),img->BytesPerPixel(1),img->BytesPerPixel(2),
+		   img->BytesPerRow(0)  ,img->BytesPerRow(1)  ,img->BytesPerRow(2),
+		   w,h);
+    }
     break;
   case YCbCr709_Trafo:  // This is the BT.709 conversion
-    ToYCbCr709<S,T>((S *)img->DataOf(0),(S *)img->DataOf(1),(S *)img->DataOf(2),
-		    yoffset,coffset,ymin,ymax,cmin,cmax,
-		    img->BytesPerPixel(0),img->BytesPerPixel(1),img->BytesPerPixel(2),
-		    img->BytesPerRow(0)  ,img->BytesPerRow(1)  ,img->BytesPerRow(2),
-		    w,h);
+    if (m_bBlackLevel) {
+      ToYCbCr709BL<S,T>((S *)img->DataOf(0),(S *)img->DataOf(1),(S *)img->DataOf(2),
+			yoffset,coffset,ymin,ymax,cmin,cmax,
+			img->BytesPerPixel(0),img->BytesPerPixel(1),img->BytesPerPixel(2),
+			img->BytesPerRow(0)  ,img->BytesPerRow(1)  ,img->BytesPerRow(2),
+			w,h);
+    } else {
+      ToYCbCr709<S,T>((S *)img->DataOf(0),(S *)img->DataOf(1),(S *)img->DataOf(2),
+		      yoffset,coffset,ymin,ymax,cmin,cmax,
+		      img->BytesPerPixel(0),img->BytesPerPixel(1),img->BytesPerPixel(2),
+		      img->BytesPerRow(0)  ,img->BytesPerRow(1)  ,img->BytesPerRow(2),
+		      w,h);
+    }
     break;
   case YCbCr2020_Trafo: // This is the transformation for BT.2020
     ToYCbCr2020<S,T>((S *)img->DataOf(0),(S *)img->DataOf(1),(S *)img->DataOf(2),
@@ -1279,18 +1462,34 @@ void YCbCr::DispatchFromYCbCr(const class ImageLayout *img,double yoffset,double
 {
   switch(m_Conversion) {
   case YCbCr_Trafo:     // this is actually a BT.601 conversion
-    FromYCbCr<S,T>((S *)img->DataOf(0),(T *)img->DataOf(1),(T *)img->DataOf(2),
-		   yoffset,coffset,min,max,
-		   img->BytesPerPixel(0),img->BytesPerPixel(1),img->BytesPerPixel(2),
-		   img->BytesPerRow(0)  ,img->BytesPerRow(1)  ,img->BytesPerRow(2),
-		   w,h);
+    if (m_bBlackLevel) {
+      FromYCbCrBL<S,T>((S *)img->DataOf(0),(T *)img->DataOf(1),(T *)img->DataOf(2),
+		       yoffset,coffset,min,max,
+		       img->BytesPerPixel(0),img->BytesPerPixel(1),img->BytesPerPixel(2),
+		       img->BytesPerRow(0)  ,img->BytesPerRow(1)  ,img->BytesPerRow(2),
+		       w,h);
+    } else {
+      FromYCbCr<S,T>((S *)img->DataOf(0),(T *)img->DataOf(1),(T *)img->DataOf(2),
+		     yoffset,coffset,min,max,
+		     img->BytesPerPixel(0),img->BytesPerPixel(1),img->BytesPerPixel(2),
+		     img->BytesPerRow(0)  ,img->BytesPerRow(1)  ,img->BytesPerRow(2),
+		     w,h);
+    }
     break;
   case YCbCr709_Trafo:  // This is the BT.709 conversion
-    FromYCbCr709<S,T>((S *)img->DataOf(0),(T *)img->DataOf(1),(T *)img->DataOf(2),
-		      yoffset,coffset,min,max,
-		      img->BytesPerPixel(0),img->BytesPerPixel(1),img->BytesPerPixel(2),
-		      img->BytesPerRow(0)  ,img->BytesPerRow(1)  ,img->BytesPerRow(2),
-		      w,h);
+    if (m_bBlackLevel) {
+      FromYCbCr709BL<S,T>((S *)img->DataOf(0),(T *)img->DataOf(1),(T *)img->DataOf(2),
+			  yoffset,coffset,min,max,
+			  img->BytesPerPixel(0),img->BytesPerPixel(1),img->BytesPerPixel(2),
+			  img->BytesPerRow(0)  ,img->BytesPerRow(1)  ,img->BytesPerRow(2),
+			  w,h);
+    } else {
+      FromYCbCr709<S,T>((S *)img->DataOf(0),(T *)img->DataOf(1),(T *)img->DataOf(2),
+			yoffset,coffset,min,max,
+			img->BytesPerPixel(0),img->BytesPerPixel(1),img->BytesPerPixel(2),
+			img->BytesPerRow(0)  ,img->BytesPerRow(1)  ,img->BytesPerRow(2),
+			w,h);
+    }
     break;
   case YCbCr2020_Trafo: // This is the transformation for BT.2020
     FromYCbCr2020<S,T>((S *)img->DataOf(0),(T *)img->DataOf(1),(T *)img->DataOf(2),

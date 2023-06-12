@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: ycbcr.hpp,v 1.14 2020/09/15 10:20:32 thor Exp $
+** $Id: ycbcr.hpp,v 1.16 2023/06/12 07:34:45 thor Exp $
 **
 ** This class converts between RGB and YCbCr signals
 */
@@ -96,6 +96,15 @@ private:
 		      ULONG w, ULONG h);
   //
   template<typename S,typename T>
+  static void ToYCbCrBL(S *r,S *g,S *b,
+			double yoffset,double coffset,
+			double min,double max,
+			double cmin,double cmax,
+			ULONG bppr,ULONG bppg,ULONG bppb,
+			ULONG bprr,ULONG bprg,ULONG bprb,
+			ULONG w, ULONG h);
+  //
+  template<typename S,typename T>
   static void ToYCbCr709(S *r,S *g,S *b,
 			 double yoffset,double coffset,
 			 double min,double max,
@@ -103,6 +112,15 @@ private:
 			 ULONG bppr,ULONG bppg,ULONG bppb,
 			 ULONG bprr,ULONG bprg,ULONG bprb,
 			 ULONG w, ULONG h);
+  //
+  template<typename S,typename T>
+  static void ToYCbCr709BL(S *r,S *g,S *b,
+			   double yoffset,double coffset,
+			   double min,double max,
+			   double cmin,double cmax,
+			   ULONG bppr,ULONG bppg,ULONG bppb,
+			   ULONG bprr,ULONG bprg,ULONG bprb,
+			   ULONG w, ULONG h);
   //
   template<typename S,typename T>
   static void ToYCbCr2020(S *r,S *g,S *b,
@@ -162,12 +180,28 @@ private:
 			ULONG w, ULONG h);
   //
   template<typename S,typename T>
+  static void FromYCbCrBL(S *y,T *cb,T *cr,
+			  double yoffset,double coffset,
+			  double min,double max,
+			  ULONG bppy,ULONG bppcb,ULONG bppcr,
+			  ULONG bpry,ULONG bprcb,ULONG bprcr,
+			  ULONG w, ULONG h);
+  //
+  template<typename S,typename T>
   static void FromYCbCr709(S *y,T *cb,T *cr,
 			   double yoffset,double coffset,
 			   double min,double max,
 			   ULONG bppy,ULONG bppcb,ULONG bppcr,
 			   ULONG bpry,ULONG bprcb,ULONG bprcr,
 			   ULONG w, ULONG h);
+  //
+  template<typename S,typename T>
+  static void FromYCbCr709BL(S *y,T *cb,T *cr,
+			     double yoffset,double coffset,
+			     double min,double max,
+			     ULONG bppy,ULONG bppcb,ULONG bppcr,
+			     ULONG bpry,ULONG bprcb,ULONG bprcr,
+			     ULONG w, ULONG h);
   //
   template<typename S,typename T>
   static void FromYCbCr2020(S *y,T *cb,T *cr,
