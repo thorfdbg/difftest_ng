@@ -23,7 +23,7 @@ and conversion framework.
 /*
  * Main program
  * 
- * $Id: main.cpp,v 1.117 2022/08/12 06:54:57 thor Exp $
+ * $Id: main.cpp,v 1.119 2023/07/11 11:53:38 thor Exp $
  *
  * This class defines the main program and argument parsing.
  */
@@ -78,6 +78,8 @@ and conversion framework.
 #include "diff/whitebalance.hpp"
 #include "diff/fromgrey.hpp"
 #include "diff/butterfly.hpp"
+#include "diff/extractfield.hpp"
+#include "diff/mergefields.hpp"
 #include "img/imglayout.hpp"
 #include "img/imgspecs.hpp"
 #include <new>
@@ -126,6 +128,9 @@ void Usage(const char *progname)
 	  "--rawdiff target   : similar to --diff, except that it doesn't scale the difference to maximum range\n"
 	  "--sdiff scale trgt : generate a differential signal with an explicitly given scale\n"
 	  "--butterfly target : merge source and destination image in butterfly style\n"
+	  "--topfield         : extract even lines form the top field to form an interlaced signal\n"
+	  "--bottomfield      : extract odd lines to form the bottom field of an interlaced signal\n"
+	  "--mergefields      : merge source (top field) and destination (bottom field) to progressive\n"
 	  "--suppress thres   : suppress all pixels in the target that are less than a threshold away from the source\n"
 	  "--mask roi         : mask the source image by the mask image before applying the comparison\n"
 	  "--notmask roi      : mask the source image by the inverse of the mask\n"
@@ -1540,6 +1545,12 @@ int main(int argc,char **argv)
 	  m = new class Butterfly(argv[2],specout);
 	  argc--;
 	  argv++;
+	} else if (!strcmp(arg,"--topfield")) {
+	  m = new class ExtractField(false);
+	} else if (!strcmp(arg,"--bottomfield")) {
+	  m = new class ExtractField(true);
+	} else if (!strcmp(arg,"--mergefields")) {
+	  m = new class MergeFields;
 	} else if (!strcmp(arg,"--suppress")) {
 	  double t;
 	  if (argc < 3)

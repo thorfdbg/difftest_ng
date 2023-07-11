@@ -23,7 +23,7 @@ and conversion framework.
 /*
  * Test main file
  * 
- * $Id: imglayout.cpp,v 1.41 2020/09/15 10:20:32 thor Exp $
+ * $Id: imglayout.cpp,v 1.42 2023/07/11 10:34:06 thor Exp $
  *
  * This class defines the image layout, width, height and the
  * image depth of the individual components. It is supplied by
@@ -274,6 +274,23 @@ void ImageLayout::Crop(ULONG x1,ULONG y1,ULONG x2,ULONG y2)
       (x1 / m_pComponent[i].m_ucSubX) * m_pComponent[i].m_ulBytesPerPixel +
       (y1 / m_pComponent[i].m_ucSubY) * m_pComponent[i].m_ulBytesPerRow;
   }
+}
+///
+
+/// ImageLayout::ExtractField
+// Limit to the given field of all components.
+void ImageLayout::ExtractField(bool oddfield)
+{
+  UWORD i;
+
+  for(i = 0;i < m_usDepth;i++) {
+    struct ComponentLayout *comp = &m_pComponent[i];
+    if (oddfield)
+      comp->m_pPtr          = (UBYTE *)(comp->m_pPtr) + comp->m_ulBytesPerRow;
+    comp->m_ulHeight        = (comp->m_ulHeight + ((oddfield)?(0):(1))) >> 1;
+    comp->m_ulBytesPerRow <<= 1;
+  }
+  m_ulHeight        = (m_ulHeight + ((oddfield)?(0):(1))) >> 1;
 }
 ///
 

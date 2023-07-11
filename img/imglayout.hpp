@@ -23,7 +23,7 @@ and conversion framework.
 /*
  * Image layout
  * 
- * $Id: imglayout.hpp,v 1.22 2020/09/15 10:20:32 thor Exp $
+ * $Id: imglayout.hpp,v 1.23 2023/07/11 10:34:06 thor Exp $
  *
  * This class defines the image layout, width, height and the
  * image depth of the individual components. It is supplied by
@@ -266,6 +266,9 @@ public:
   //
   // Crop an image region from the image given the coordinates of the edges.
   void Crop(ULONG x1,ULONG y1,ULONG x2,ULONG y2);
+  //
+  // Limit to the given field of all components.
+  void ExtractField(bool oddfield);
   //
   // Return or link the next image in here.
   class ImageLayout *&NextOf(void)
