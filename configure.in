@@ -956,12 +956,7 @@ AC_SUBST(PTHREAD_LIBS)
 AC_SUBST(PTHREAD_CFLAGS)
 #
 # Check for additional features for this hardware.
-# Check whether we have a processor type. If not, set to
-# "unknown" and check for uname -m.
-HARDWARE=`(uname -p) 2>/dev/null || echo unknown`
-if test "$HARDWARE" = "unknown"; then
-   HARDWARE=`(uname -m) 2>/dev/null || echo unknown`
-fi
+HARDWARE=`(uname -m) 2>/dev/null || echo unknown`
 #
 # For hysterical raisons, "sparc" is kept here as "sun4u" Yuck.
 if test "$HARDWARE" = "sparc"; then
