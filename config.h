@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 ** Config file for difftest_ng
-** $Id: config.h,v 1.9 2017/01/31 12:07:31 thor Exp $
+** $Id: config.h,v 1.10 2024/11/07 09:25:04 thor Exp $
 **
 */
 
@@ -46,7 +46,7 @@ and conversion framework.
 # define USE_GSL
 #endif
 //
-#if defined(HAVE_PNG_H) && defined(HAVE_PNG_INIT_IO)
+#if defined(HAVE_PNG_H)
 # define USE_PNG
 #endif
 //

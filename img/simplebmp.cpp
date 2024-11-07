@@ -26,7 +26,7 @@ and conversion framework.
  * and save simple (hence, the name) BMP images. It
  * does not support any kind of RLC encoded images.
  *
- * $Id: simplebmp.cpp,v 1.23 2017/01/31 11:58:04 thor Exp $
+ * $Id: simplebmp.cpp,v 1.24 2024/11/07 09:25:08 thor Exp $
  *
  */
 
@@ -328,14 +328,20 @@ void SimpleBmp::LoadImage(const char *basename,struct ImgSpecs &specs)
   if (compression == BI_BITFIELDS) {
     ULONG mask;
     //
-    if (bpad < 3 * 4)
-      PostError("BMP file invalid, missing bitfield masks");
-    if (bitcount <= 8)
-      PostError("BMP file invalid, bitfield compression requires more than 8 bits per pixel");
-    bpad -= 12;
-    rmask = getULONG(fp);
-    gmask = getULONG(fp);
-    bmask = getULONG(fp);
+    if (bpad == 0 && (bitcount == 24 || bitcount == 32)) {
+      rmask     = 0xff << 16;
+      gmask     = 0xff << 8;
+      bmask     = 0xff;
+    } else {
+      if (bpad < 3 * 4)
+	PostError("BMP file invalid, missing bitfield masks");
+      if (bitcount <= 8)
+	PostError("BMP file invalid, bitfield compression requires more than 8 bits per pixel");
+      bpad -= 12;
+      rmask = getULONG(fp);
+      gmask = getULONG(fp);
+      bmask = getULONG(fp);
+    }
     //
     for(mask = rmask,rshift = 0;(mask & 0x01) == 0;rshift++,mask >>= 1) {}
     for(mask = gmask,gshift = 0;(mask & 0x01) == 0;gshift++,mask >>= 1) {}
@@ -606,7 +612,7 @@ void SimpleBmp::LoadImage(const char *basename,struct ImgSpecs &specs)
     } else {
       PostError("Invalid BMP file, unsupported compression type");
     }
-  } else if (compression == BI_RGB) {
+  } else if (compression == BI_RGB || compression == BI_BITFIELDS) {
     // RGB 16/24/32 bit images
     // calculate the padding
     ULONG w = (m_ulWidth * bitcount + 7) >> 3;
