@@ -23,7 +23,7 @@ and conversion framework.
 /*
  * Test main file
  * 
- * $Id: imglayout.cpp,v 1.42 2023/07/11 10:34:06 thor Exp $
+ * $Id: imglayout.cpp,v 1.43 2024/11/08 14:37:19 thor Exp $
  *
  * This class defines the image layout, width, height and the
  * image depth of the individual components. It is supplied by
@@ -130,7 +130,7 @@ class ImageLayout &ImageLayout::operator=(const class ImageLayout &src)
 // error
 void TYPE_CDECL ImageLayout::PostError(const char *fmt,...)
 {
-  char buffer[4096];
+  static char buffer[4096];
   va_list args;
   //
   va_start(args,fmt);
