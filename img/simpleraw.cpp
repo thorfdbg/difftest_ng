@@ -23,7 +23,7 @@ and conversion framework.
 /*
  * This class saves and loads images in any header-less format.
  *
- * $Id: simpleraw.cpp,v 1.23 2020/09/15 10:20:32 thor Exp $
+ * $Id: simpleraw.cpp,v 1.24 2025/06/17 09:54:56 thor Exp $
  */
 
 /// Includes
@@ -368,9 +368,8 @@ void SimpleRaw::ComponentLayoutFromFileName(const char *filename)
       if (packedbits > 64) {
 	PostError("cannot pack more than 64 bits into a field");
 	return;
-      } else if (packedbits != 0 && packedbits != 8 && packedbits != 16 &&
-		 packedbits != 32 && packedbits != 64) {
-	PostError("the number of bits packed together in interleaved planes must be either 8,16,32 or 64");
+      } else if (packedbits & 7) {
+	PostError("the number of bits packed together in interleaved planes must be divisble by 8");
 	return;
       }
       
@@ -438,81 +437,25 @@ void SimpleRaw::ComponentLayoutFromFileName(const char *filename)
 
 /// SimpleRaw::ReadData
 // Read a single pixel from the specified file.
-UQUAD SimpleRaw::ReadData(FILE *in,UBYTE bitsize,UBYTE packsize,bool littleendian,bool issigned,bool lefty)
+UQUAD SimpleRaw::ReadData(FILE *in,UBYTE bitsize,UBYTE packsize,bool littleendian,bool issigned,bool lefty,bool chunk)
 {
-  if (bitsize == 8) {
-    int d1 = getc(in);
-    if (d1 < 0) {
-      PostError("unexpected EOF while reading %s",m_pcFilename);
+  if (chunk && (bitsize & 7) == 0) {
+    UQUAD d = 0;
+    int   s = 0;
+    while(bitsize > 0) {
+      int d1 = getc(in);
+      if (d1 < 0) {
+	PostError("unexpected EOF while reading %s",m_pcFilename);
+      }
+      if (littleendian) {
+	d |= UQUAD(d1) << s;
+	s += 8;
+      } else {
+	d = (d << 8) | UQUAD(d1);
+      }
+      bitsize -= 8;
     }
-    return d1;
-  } else if (bitsize == 16) {
-    int d1,d2;
-    if (littleendian) {
-      d2 = getc(in);
-      d1 = getc(in);
-    } else {
-      d1 = getc(in);
-      d2 = getc(in);
-    }
-    if (d1 < 0 || d2 < 0) {
-      PostError("unexpected EOF while reading %s",m_pcFilename);
-    }
-    return (UQUAD(d1) << 8) | (UQUAD(d2));
-  } else if (bitsize == 32) {
-    int d1,d2,d3,d4;
-    if (littleendian) {
-      d4 = getc(in);
-      d3 = getc(in);
-      d2 = getc(in);
-      d1 = getc(in);
-    } else {
-      d1 = getc(in);
-      d2 = getc(in);
-      d3 = getc(in);
-      d4 = getc(in);
-    }
-    //
-    if (d1 < 0 || d2 < 0 || d3 < 0 || d4 < 0) {
-      PostError("unexpected EOF while reading %s",m_pcFilename);
-    }
-    return ((UQUAD(d1) << 24) |
-	    (UQUAD(d2) << 16) |
-	    (UQUAD(d3) <<  8) |
-	    (UQUAD(d4) <<  0));
-  } else if (bitsize == 64) {
-    int d1,d2,d3,d4,d5,d6,d7,d8;
-    if (littleendian) {
-      d8 = getc(in);
-      d7 = getc(in);
-      d6 = getc(in);
-      d5 = getc(in);
-      d4 = getc(in);
-      d3 = getc(in);
-      d2 = getc(in);
-      d1 = getc(in);
-    } else {
-      d1 = getc(in);
-      d2 = getc(in);
-      d3 = getc(in);
-      d4 = getc(in);
-      d5 = getc(in);
-      d6 = getc(in);
-      d7 = getc(in);
-      d8 = getc(in);
-    }
-    //
-    if (d1 < 0 || d2 < 0 || d3 < 0 || d4 < 0 || d5 < 0 || d6 < 0 || d7 < 0 || d8 < 0) {
-      PostError("unexpected EOF while reading %s",m_pcFilename);
-    }
-    return ((UQUAD(d1) << 56) |
-	    (UQUAD(d2) << 48) |
-	    (UQUAD(d3) << 40) |
-	    (UQUAD(d4) << 32) |
-	    (UQUAD(d5) << 24) |
-	    (UQUAD(d6) << 16) |
-	    (UQUAD(d7) <<  8) |
-	    (UQUAD(d8) <<  0));
+    return d;
   } else if (bitsize < 64) {
     ULONG res   = 0;
     UBYTE sign  = bitsize;
@@ -521,8 +464,8 @@ UQUAD SimpleRaw::ReadData(FILE *in,UBYTE bitsize,UBYTE packsize,bool littleendia
     do {
       if (m_ucBit == 0) {
 	if (packsize == 0)
-	  PostError("Pixels must be packed into units of 8,16 or 32 bits, add dummy channels to discard unused bits");
-	m_uqBitBuffer = ReadData(in,packsize,packsize,littleendian,issigned,false);
+	  PostError("Pixels must be packed into units of 8 bits, add dummy channels to discard unused bits");
+	m_uqBitBuffer = ReadData(in,packsize,packsize,littleendian,issigned,false,true);
 	m_ucBit       = packsize;
       }
       UBYTE avail = m_ucBit;
@@ -669,7 +612,7 @@ void SimpleRaw::LoadImage(const char *nameandspecs,struct ImgSpecs &specs)
 	    struct RawLayout *ro = rl;
 	    do {
 	      UQUAD data = ReadData(in,ro->m_ucBits,ro->m_ucBitsPacked,ro->m_bLittleEndian,
-				    ro->m_bSigned,ro->m_bLefty);
+				    ro->m_bSigned,ro->m_bLefty,false);
 	      if (!ro->m_bIsPadding) {
 		struct ComponentLayout *cl = m_pComponent + ro->m_usTargetChannel;
 		UBYTE *ptr = ((UBYTE *)(cl->m_pPtr)) + (y * cl->m_ulBytesPerRow) + (x * cl->m_ulBytesPerPixel);
@@ -704,7 +647,7 @@ void SimpleRaw::LoadImage(const char *nameandspecs,struct ImgSpecs &specs)
 	for(y = 0;y < height;y++) {
 	  UBYTE *ptr = rptr;
 	  for(x = 0;x < width;x++) {
-	    UQUAD data = ReadData(in,rl->m_ucBits,8,rl->m_bLittleEndian,rl->m_bSigned,rl->m_bLefty);
+	    UQUAD data = ReadData(in,rl->m_ucBits,8,rl->m_bLittleEndian,rl->m_bSigned,rl->m_bLefty,false);
 	    if (!rl->m_bIsPadding) {
 	      if (rl->m_ucBits <= 8) {
 		*(UBYTE *)ptr = UBYTE(data);
@@ -740,7 +683,7 @@ void SimpleRaw::LoadImage(const char *nameandspecs,struct ImgSpecs &specs)
       do {
 	for(rl = m_pRawList,rowdone = true;rl;rl = rl->m_pNext) {
 	  UQUAD data = ReadData(in,rl->m_ucBits,rl->m_ucBitsPacked,
-				rl->m_bLittleEndian,rl->m_bSigned,rl->m_bLefty);
+				rl->m_bLittleEndian,rl->m_bSigned,rl->m_bLefty,false);
 
 	  if (!rl->m_bIsPadding) {
 	    UWORD i = rl->m_usTargetChannel;
@@ -789,7 +732,7 @@ void SimpleRaw::LoadImage(const char *nameandspecs,struct ImgSpecs &specs)
 void SimpleRaw::BitAlignOut(FILE *out,UBYTE packsize,bool littleendian,bool lefty)
 {
   if (m_ucBit < packsize) {
-    WriteData(out,m_uqBitBuffer,packsize,packsize,littleendian,lefty);
+    WriteData(out,m_uqBitBuffer,packsize,packsize,littleendian,lefty,true);
     m_ucBit       = packsize;
     m_uqBitBuffer = 0;
   }
@@ -798,49 +741,17 @@ void SimpleRaw::BitAlignOut(FILE *out,UBYTE packsize,bool littleendian,bool left
 
 /// SimpleRaw::WriteData
 // Write a single data item to the file.
-void SimpleRaw::WriteData(FILE *out,UQUAD data,UBYTE bitsize,UBYTE packsize,bool littleendian,bool lefty)
+void SimpleRaw::WriteData(FILE *out,UQUAD data,UBYTE bitsize,UBYTE packsize,bool littleendian,bool lefty,bool chunk)
 {
-  if (bitsize == 8) {
-    putc(data,out);
-  } else if (bitsize == 16) {
-    if (littleendian) {
-      putc(UBYTE(data >> 0),out);
-      putc(UBYTE(data >> 8),out);
-    } else {
-      putc(UBYTE(data >> 8),out);
-      putc(UBYTE(data >> 0),out);
-    }
-  } else if (bitsize == 32) {
-    if (littleendian) {
-      putc(UBYTE(data >>  0),out);
-      putc(UBYTE(data >>  8),out);
-      putc(UBYTE(data >> 16),out);
-      putc(UBYTE(data >> 24),out);
-    } else {
-      putc(UBYTE(data >> 24),out);
-      putc(UBYTE(data >> 16),out);
-      putc(UBYTE(data >>  8),out);
-      putc(UBYTE(data >>  0),out);
-    }
-  } else if (bitsize == 64) {
-    if (littleendian) {
-      putc(UBYTE(data >>  0),out);
-      putc(UBYTE(data >>  8),out);
-      putc(UBYTE(data >> 16),out);
-      putc(UBYTE(data >> 24),out);
-      putc(UBYTE(data >> 32),out);
-      putc(UBYTE(data >> 40),out);
-      putc(UBYTE(data >> 48),out);
-      putc(UBYTE(data >> 56),out);
-    } else {
-      putc(UBYTE(data >> 56),out);
-      putc(UBYTE(data >> 48),out);
-      putc(UBYTE(data >> 40),out);
-      putc(UBYTE(data >> 32),out);
-      putc(UBYTE(data >> 24),out);
-      putc(UBYTE(data >> 16),out);
-      putc(UBYTE(data >>  8),out);
-      putc(UBYTE(data >>  0),out);
+  if (chunk && (bitsize & 7) == 0) {
+    while(bitsize > 0) {
+      bitsize -= 8;
+      if (littleendian) {
+	putc(data,out);
+	data >>= 8;
+      } else {
+	putc(data >> bitsize,out);
+      }
     }
   } else if (bitsize < 64) {
     data &= (1UL << bitsize) - 1;
@@ -852,7 +763,7 @@ void SimpleRaw::WriteData(FILE *out,UQUAD data,UBYTE bitsize,UBYTE packsize,bool
 	// We have to write more bits than there is room in the bit buffer.
 	// Hence, the complete buffer can be filled.
 	m_uqBitBuffer |= (UQUAD(data) & ((1ULL << m_ucBit) - 1)) << (packsize - m_ucBit);
-	WriteData(out,m_uqBitBuffer,packsize,packsize,littleendian,false);
+	WriteData(out,m_uqBitBuffer,packsize,packsize,littleendian,false,true);
 	m_uqBitBuffer  = 0;
 	// Remove lower bits.
 	data         >>= m_ucBit;
@@ -868,7 +779,7 @@ void SimpleRaw::WriteData(FILE *out,UQUAD data,UBYTE bitsize,UBYTE packsize,bool
 	// We have to write more bits than there is room in the bit buffer.
 	// Hence, the complete buffer can be filled.
 	m_uqBitBuffer |= UQUAD(data) >> (bitsize - m_ucBit);
-	WriteData(out,m_uqBitBuffer,packsize,packsize,littleendian,false);
+	WriteData(out,m_uqBitBuffer,packsize,packsize,littleendian,false,true);
 	m_uqBitBuffer  = 0;
 	bitsize       -= m_ucBit;
 	m_ucBit        = packsize;
@@ -955,7 +866,7 @@ void SimpleRaw::SaveImage(const char *nameandspecs,const struct ImgSpecs &)
 	    struct RawLayout *ro = rl;
 	    do {
 	      if (ro->m_bIsPadding) {
-		WriteData(out,0,ro->m_ucBits,ro->m_ucBitsPacked,ro->m_bLittleEndian,ro->m_bLefty);
+		WriteData(out,0,ro->m_ucBits,ro->m_ucBitsPacked,ro->m_bLittleEndian,ro->m_bLefty,false);
 	      } else {
 		struct ComponentLayout *cl = m_pComponent + ro->m_usTargetChannel;
 		UBYTE *ptr = ((UBYTE *)(cl->m_pPtr)) + (y * cl->m_ulBytesPerRow) + (x * cl->m_ulBytesPerPixel);
@@ -974,7 +885,7 @@ void SimpleRaw::SaveImage(const char *nameandspecs,const struct ImgSpecs &)
 		} else if (ro->m_ucBits <= 64) {
 		  data = *(UQUAD *)(ptr);
 		}
-		WriteData(out,data,ro->m_ucBits,ro->m_ucBitsPacked,ro->m_bLittleEndian,ro->m_bLefty);
+		WriteData(out,data,ro->m_ucBits,ro->m_ucBitsPacked,ro->m_bLittleEndian,ro->m_bLefty,false);
 	      }
 	    } while((ro = ro->m_pNext) && ro->m_bStartPacking == false && ro->m_ucBitsPacked);
 	  }
@@ -988,7 +899,7 @@ void SimpleRaw::SaveImage(const char *nameandspecs,const struct ImgSpecs &)
 	m_ucBit = 8;
 	for(y = 0;y < height;y++) {
 	  for(x = 0;x < width;x++) {
-	    WriteData(out,0,rl->m_ucBits,8,rl->m_bLittleEndian,rl->m_bLefty);
+	    WriteData(out,0,rl->m_ucBits,8,rl->m_bLittleEndian,rl->m_bLefty,false);
 	  }
 	  BitAlignOut(out,8,rl->m_bLittleEndian,rl->m_bLefty);
 	}
@@ -1015,7 +926,7 @@ void SimpleRaw::SaveImage(const char *nameandspecs,const struct ImgSpecs &)
 	    } else if (rl->m_ucBits <= 64) {
 	      data = *(UQUAD *)(ptr);
 	    }
-	    WriteData(out,data,rl->m_ucBits,8,rl->m_bLittleEndian,rl->m_bLefty);
+	    WriteData(out,data,rl->m_ucBits,8,rl->m_bLittleEndian,rl->m_bLefty,false);
 	    ptr += cl->m_ulBytesPerPixel;
 	  }
 	  BitAlignOut(out,8,rl->m_bLittleEndian,rl->m_bLefty);
@@ -1033,7 +944,7 @@ void SimpleRaw::SaveImage(const char *nameandspecs,const struct ImgSpecs &)
 	m_ucBit = m_pRawList->m_ucBitsPacked;
 	for(rl = m_pRawList,rowdone = true;rl;rl = rl->m_pNext) {
 	  if (rl->m_bIsPadding) {
-	    WriteData(out,0,rl->m_ucBits,rl->m_ucBitsPacked,rl->m_bLittleEndian,rl->m_bLefty);
+	    WriteData(out,0,rl->m_ucBits,rl->m_ucBitsPacked,rl->m_bLittleEndian,rl->m_bLefty,false);
 	  } else {
 	    UWORD i = rl->m_usTargetChannel;
 	    struct ComponentLayout *cl = m_pComponent + i;
@@ -1055,13 +966,13 @@ void SimpleRaw::SaveImage(const char *nameandspecs,const struct ImgSpecs &)
 	      } else if (rl->m_ucBits <= 64) {
 		data = *(UQUAD *)(ptr);
 	      }
-	      WriteData(out,data,rl->m_ucBits,rl->m_ucBitsPacked,rl->m_bLittleEndian,rl->m_bLefty);
+	      WriteData(out,data,rl->m_ucBits,rl->m_ucBitsPacked,rl->m_bLittleEndian,rl->m_bLefty,false);
 	      //
 	      // Advance to the next display position for this channel.
 	      x[i]++;
 	    } else {
 	      // Write out dummy data to align it.
-	      WriteData(out,0,rl->m_ucBits,rl->m_ucBitsPacked,rl->m_bLittleEndian,rl->m_bLefty);
+	      WriteData(out,0,rl->m_ucBits,rl->m_ucBitsPacked,rl->m_bLittleEndian,rl->m_bLefty,false);
 	    }
 	  }
 	  if (rl->m_ucBitsPacked && ((rl->m_pNext == NULL) || rl->m_pNext->m_bStartPacking ||
