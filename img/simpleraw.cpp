@@ -23,7 +23,7 @@ and conversion framework.
 /*
  * This class saves and loads images in any header-less format.
  *
- * $Id: simpleraw.cpp,v 1.24 2025/06/17 09:54:56 thor Exp $
+ * $Id: simpleraw.cpp,v 1.25 2025/06/23 11:40:09 thor Exp $
  */
 
 /// Includes
@@ -439,7 +439,7 @@ void SimpleRaw::ComponentLayoutFromFileName(const char *filename)
 // Read a single pixel from the specified file.
 UQUAD SimpleRaw::ReadData(FILE *in,UBYTE bitsize,UBYTE packsize,bool littleendian,bool issigned,bool lefty,bool chunk)
 {
-  if (chunk && (bitsize & 7) == 0) {
+  if (packsize == 0 || (chunk && (bitsize & 7) == 0)) {
     UQUAD d = 0;
     int   s = 0;
     while(bitsize > 0) {
@@ -743,7 +743,7 @@ void SimpleRaw::BitAlignOut(FILE *out,UBYTE packsize,bool littleendian,bool left
 // Write a single data item to the file.
 void SimpleRaw::WriteData(FILE *out,UQUAD data,UBYTE bitsize,UBYTE packsize,bool littleendian,bool lefty,bool chunk)
 {
-  if (chunk && (bitsize & 7) == 0) {
+  if (packsize == 0 || (chunk && (bitsize & 7) == 0)) {
     while(bitsize > 0) {
       bitsize -= 8;
       if (littleendian) {
