@@ -23,7 +23,7 @@ and conversion framework.
 /*
  * Main program
  * 
- * $Id: main.cpp,v 1.120 2025/08/04 12:54:02 thor Exp $
+ * $Id: main.cpp,v 1.121 2025/08/04 13:55:11 thor Exp $
  *
  * This class defines the main program and argument parsing.
  */
@@ -321,13 +321,18 @@ void RawHelp(void)
 	  "The format specification itself consists of two parts, the image dimensions and\n"
 	  "the layout of the data:\n"
 	  "\n"
-	  "<width>x<height>x<depth>:<datalayout>\n"
+	  "<width>x<height>x<depth>[,align=A]:<datalayout>\n"
 	  "\n"
 	  "where <width> is the width, <height> the height and <depth> the number of\n"
 	  "components in the image, without the angle brackets (pure numerical values).\n"
 	  "Numbers are separated by 'x' (lower-case x).\n"
 	  "This part MAY be omitted for saving since image dimensions are known.\n"
 	  "The colon ':', however, must be present.\n"
+	  "Behind the image dimensions may follow a comma-separated list of options\n"
+	  "terminated by a single colon ':'. There is currently only a single option\n"
+	  "specifying the byte-alignment of each line. It inserts (or skips, on reading)\n"
+	  "bytes such that an entire line written is a multiple of these alignment bytes\n"
+	  "long. If omitted, no padding bytes are ever written or skipped.\n"
 	  "\n"
 	  "Image data can be either represented INTERLEAVED, that is, all components of a\n"
 	  "single pixel are adjacent to each other, or SEPARATE, that is, each component is\n"
@@ -448,6 +453,9 @@ void RawHelp(void)
 	  "                             Subsampling factors are derived from the sample counts\n"
 	  "                             and padding is applied at the end of each line to one\n"
 	  "                             complete cycle.\n"
+	  "                             V210 mandates pitches aligned to 128 byte boundaries,\n"
+	  "                             thus an additional ',align=128' is necessary upfront\n"
+	  "                             the format string.\n"
 	  "{6-},{10-=0}:{6-},{10-=1}:{6-},{10-=0}:{6-},{10-=2}:\n"
 	  "                             pixel-interleaved yuv in little-endian, where samples are\n"
 	  "                             packed as YUYV, each in a 16 bit little-endian format.\n"

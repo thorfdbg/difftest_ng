@@ -23,7 +23,7 @@ and conversion framework.
 /*
  * This class saves and loads images in any header-less format.
  *
- * $Id: simpleraw.cpp,v 1.25 2025/06/23 11:40:09 thor Exp $
+ * $Id: simpleraw.cpp,v 1.26 2025/08/04 13:55:38 thor Exp $
  */
 
 /// Includes
@@ -52,7 +52,8 @@ SimpleRaw::SimpleRaw(void)
 SimpleRaw::SimpleRaw(const class ImageLayout &org)
   : ImageLayout(org), m_pcFilename(NULL), m_pRawList(NULL), 
     m_ulNominalWidth(0), m_ulNominalHeight(0), m_usNominalDepth(0), 
-    m_usFields(0), m_bSeparate(false), m_ucBit(0), m_uqBitBuffer(0)
+    m_usFields(0), m_bSeparate(false), m_ucBit(0), m_uqBitBuffer(0),
+    m_ulAlignment(0)
 {
 }
 ///
@@ -104,8 +105,8 @@ void SimpleRaw::ComponentLayoutFromFileName(const char *filename)
   memcpy(m_pcFilename,filename,len);
   m_pcFilename[len] = '\0'; // terminate here.
   sep++;
-  
-  if (*sep != ':') {
+
+  if (*sep != ':' && *sep != ',') {
     long data;
     // Not immediately the field specifications, read dimensions.
     data = strtol(sep,&end,0);
@@ -151,8 +152,8 @@ void SimpleRaw::ComponentLayoutFromFileName(const char *filename)
       PostError("the depth must be strictly positive and smaller than 32768");
       return;
     }
-    if (*end != ':') {
-      PostError("the depth must be separated from the field specifications by ':'");
+    if (*end != ':' && *end != ',') {
+      PostError("the depth must be separated from the field specifications by ':' or ','");
       return;
     }
     //
@@ -165,6 +166,22 @@ void SimpleRaw::ComponentLayoutFromFileName(const char *filename)
       PostError("image dimensions must be provided for loading in raw format");
       return;
     }
+  }
+  //
+  // Parse off options if a ";" follows.
+  while(*sep == ',') {
+    if (!strncmp(sep + 1,"align=",6)) {
+      m_ulAlignment = strtol(sep + 7,&end,0);
+      sep = end;
+    } else {
+      PostError("unknown raw option behind , detected in raw format string");
+      return;
+    }
+  }
+  //
+  if (*sep != ':') {
+    PostError("image dimensions and options must be separated from the format by a colon");
+    return;
   }
   //
   // Dimensions (if available) have now been parsed off. Now go for the field list.
@@ -608,6 +625,7 @@ void SimpleRaw::LoadImage(const char *nameandspecs,struct ImgSpecs &specs)
       // Are these multiple components packed together?
       if (rl->m_bStartPacking) {
 	for(y = 0;y < height;y++) {
+	  long rowstart = ftell(in);
 	  for(x = 0;x < width;x++) {
 	    struct RawLayout *ro = rl;
 	    do {
@@ -637,6 +655,8 @@ void SimpleRaw::LoadImage(const char *nameandspecs,struct ImgSpecs &specs)
 	    } while((ro = ro->m_pNext) && ro->m_bStartPacking == false && ro->m_ucBitsPacked);
 	  }
 	  BitAlignIn();
+	  while(m_ulAlignment && (ftell(in) - rowstart) % m_ulAlignment && !feof(in))
+	    fgetc(in);
 	}
 	//
 	// Advance over the packed sequence.
@@ -645,6 +665,7 @@ void SimpleRaw::LoadImage(const char *nameandspecs,struct ImgSpecs &specs)
 	//
       } else {
 	for(y = 0;y < height;y++) {
+	  long rowstart = ftell(in);
 	  UBYTE *ptr = rptr;
 	  for(x = 0;x < width;x++) {
 	    UQUAD data = ReadData(in,rl->m_ucBits,8,rl->m_bLittleEndian,rl->m_bSigned,rl->m_bLefty,false);
@@ -670,6 +691,8 @@ void SimpleRaw::LoadImage(const char *nameandspecs,struct ImgSpecs &specs)
 	    ptr += rl->m_ulBytesPerPixel;
 	  }
 	  BitAlignIn();
+	  while(m_ulAlignment && (ftell(in) - rowstart) % m_ulAlignment && !feof(in))
+	    fgetc(in);
 	  rptr += rl->m_ulBytesPerRow;
 	}
       }
@@ -679,6 +702,7 @@ void SimpleRaw::LoadImage(const char *nameandspecs,struct ImgSpecs &specs)
     for(y = 0;y < m_ulHeight;y++) {
       ULONG x[MAX_UWORD];
       bool rowdone;
+      long rowstart = ftell(in);
       memset(x,0,sizeof(x));
       do {
 	for(rl = m_pRawList,rowdone = true;rl;rl = rl->m_pNext) {
@@ -722,6 +746,8 @@ void SimpleRaw::LoadImage(const char *nameandspecs,struct ImgSpecs &specs)
 	    rowdone = false;
 	}
       } while(rowdone == false);
+      while(m_ulAlignment && (ftell(in) - rowstart) % m_ulAlignment && !feof(in))
+	fgetc(in);
     }
   }
 }
@@ -862,6 +888,7 @@ void SimpleRaw::SaveImage(const char *nameandspecs,const struct ImgSpecs &)
       if (rl->m_bStartPacking) {
 	m_ucBit = rl->m_ucBitsPacked;
 	for(y = 0;y < height;y++) {
+	  long filepos = ftell(out);
 	  for(x = 0;x < width;x++) {
 	    struct RawLayout *ro = rl;
 	    do {
@@ -890,6 +917,8 @@ void SimpleRaw::SaveImage(const char *nameandspecs,const struct ImgSpecs &)
 	    } while((ro = ro->m_pNext) && ro->m_bStartPacking == false && ro->m_ucBitsPacked);
 	  }
 	  BitAlignOut(out,8,rl->m_bLittleEndian,rl->m_bLefty);
+	  while(m_ulAlignment && (ftell(out) - filepos) % m_ulAlignment)
+	    fputc(0,out);
 	}
 	// Advance over the packed sequence.
 	while(rl->m_pNext && rl->m_pNext->m_bStartPacking == false && rl->m_pNext->m_ucBitsPacked)
@@ -898,10 +927,13 @@ void SimpleRaw::SaveImage(const char *nameandspecs,const struct ImgSpecs &)
       } else if (rl->m_bIsPadding) {
 	m_ucBit = 8;
 	for(y = 0;y < height;y++) {
+	  long filepos = ftell(out);
 	  for(x = 0;x < width;x++) {
 	    WriteData(out,0,rl->m_ucBits,8,rl->m_bLittleEndian,rl->m_bLefty,false);
 	  }
 	  BitAlignOut(out,8,rl->m_bLittleEndian,rl->m_bLefty);
+	  while(m_ulAlignment && (ftell(out) - filepos) % m_ulAlignment)
+	    fputc(0,out);
 	}
       } else {
 	UWORD i                    = rl->m_usTargetChannel;
@@ -909,6 +941,7 @@ void SimpleRaw::SaveImage(const char *nameandspecs,const struct ImgSpecs &)
 	UBYTE *rptr                = (UBYTE *)cl->m_pPtr;
 	m_ucBit = 8;
 	for(y = 0;y < height;y++) {
+	  long filepos = ftell(out);
 	  UBYTE *ptr = rptr;
 	  for(x = 0;x < width;x++) {
 	    UQUAD data = 0;
@@ -931,6 +964,8 @@ void SimpleRaw::SaveImage(const char *nameandspecs,const struct ImgSpecs &)
 	  }
 	  BitAlignOut(out,8,rl->m_bLittleEndian,rl->m_bLefty);
 	  rptr += cl->m_ulBytesPerRow;
+	  while(m_ulAlignment && (ftell(out) - filepos) % m_ulAlignment)
+	    fputc(0,out);
 	}
       }
     }
@@ -939,6 +974,7 @@ void SimpleRaw::SaveImage(const char *nameandspecs,const struct ImgSpecs &)
     for(y = 0;y < m_ulHeight;y++) {
       ULONG x[MAX_UWORD];
       bool rowdone;
+      long filepos = ftell(out);
       memset(x,0,sizeof(x));
       do {
 	m_ucBit = m_pRawList->m_ucBitsPacked;
@@ -993,6 +1029,8 @@ void SimpleRaw::SaveImage(const char *nameandspecs,const struct ImgSpecs &)
 	    rowdone = false;
 	}
       } while(rowdone == false);
+      while(m_ulAlignment && (ftell(out) - filepos) % m_ulAlignment)
+	fputc(0,out);
     }
   }
 }

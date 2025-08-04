@@ -23,7 +23,7 @@ and conversion framework.
 /*
  * This class saves and loads images in any header-less format.
  *
- * $Id: simpleraw.hpp,v 1.13 2025/06/17 09:54:56 thor Exp $
+ * $Id: simpleraw.hpp,v 1.14 2025/08/04 13:55:38 thor Exp $
  */
 
 #ifndef SIMPLERAW_HPP
@@ -142,6 +142,10 @@ class SimpleRaw : public ImageLayout {
   //
   // The input or output bit buffer.
   UQUAD m_uqBitBuffer;
+  //
+  // Alignment of the byte-pitch between lines. 0 for natural
+  // alignment.
+  ULONG m_ulAlignment;
   //
   // Read a single pixel from the specified file.
   UQUAD ReadData(FILE *in,UBYTE bitsize,UBYTE packsize,
