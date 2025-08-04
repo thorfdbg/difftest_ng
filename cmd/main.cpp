@@ -23,7 +23,7 @@ and conversion framework.
 /*
  * Main program
  * 
- * $Id: main.cpp,v 1.119 2023/07/11 11:53:38 thor Exp $
+ * $Id: main.cpp,v 1.120 2025/08/04 12:54:02 thor Exp $
  *
  * This class defines the main program and argument parsing.
  */
@@ -451,6 +451,13 @@ void RawHelp(void)
 	  "{6-},{10-=0}:{6-},{10-=1}:{6-},{10-=0}:{6-},{10-=2}:\n"
 	  "                             pixel-interleaved yuv in little-endian, where samples are\n"
 	  "                             packed as YUYV, each in a 16 bit little-endian format.\n"
+	  "[8=0]:[8=1]/2x2,[8=2]/2x2:\n"
+	  "                             two-plane 420 sampled data where the first plane constists\n"
+	  "                             of luma samples and the second plane consists of U and V\n"
+	  "                             samples that are interleaved with each other such that\n"
+	  "                             this plane is as wide as the luma plane, but only half\n"
+	  "                             as high. All samples are 8 bit in size. This is also known\n"
+	  "                             as NV12.\n"
 	  "\n");
 }
 ///
