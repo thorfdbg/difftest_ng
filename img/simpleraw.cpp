@@ -23,7 +23,7 @@ and conversion framework.
 /*
  * This class saves and loads images in any header-less format.
  *
- * $Id: simpleraw.cpp,v 1.26 2025/08/04 13:55:38 thor Exp $
+ * $Id: simpleraw.cpp,v 1.27 2025/08/14 12:18:45 thor Exp $
  */
 
 /// Includes
@@ -42,7 +42,9 @@ and conversion framework.
 SimpleRaw::SimpleRaw(void)
   : m_pcFilename(NULL), m_pRawList(NULL), 
     m_ulNominalWidth(0), m_ulNominalHeight(0), m_usNominalDepth(0), 
-    m_usFields(0), m_bSeparate(false), m_ucBit(0), m_uqBitBuffer(0)
+    m_usFields(0), m_bSeparate(false), m_ucBit(0), m_uqBitBuffer(0),
+    m_ulAlignment(0)
+  
 {
 }
 ///
