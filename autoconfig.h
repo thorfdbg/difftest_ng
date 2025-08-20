@@ -187,16 +187,16 @@
 #define HAVE_GETTIMEOFDAY 1
 
 /* Define to 1 if you have the `gsl_fft_complex_backward' function. */
-/* #undef HAVE_GSL_FFT_COMPLEX_BACKWARD */
+#define HAVE_GSL_FFT_COMPLEX_BACKWARD 1
 
 /* Define to 1 if you have the `gsl_fft_complex_forward' function. */
-/* #undef HAVE_GSL_FFT_COMPLEX_FORWARD */
+#define HAVE_GSL_FFT_COMPLEX_FORWARD 1
 
 /* Define to 1 if you have the `gsl_fft_complex_workspace_alloc' function. */
-/* #undef HAVE_GSL_FFT_COMPLEX_WORKSPACE_ALLOC */
+#define HAVE_GSL_FFT_COMPLEX_WORKSPACE_ALLOC 1
 
 /* Define to 1 if you have the `gsl_fft_complex_workspace_free' function. */
-/* #undef HAVE_GSL_FFT_COMPLEX_WORKSPACE_FREE */
+#define HAVE_GSL_FFT_COMPLEX_WORKSPACE_FREE 1
 
 /* Define to 1 if you have the <gsl/gsl_fft_complex.h> header file. */
 #define HAVE_GSL_GSL_FFT_COMPLEX_H 1

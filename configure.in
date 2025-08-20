@@ -2,7 +2,7 @@
 #** Makefile for the difftest_ng project,
 #** THOR Software, Thomas Richter for Accusoft
 #**
-#** $Id: configure.in,v 1.16 2017/04/13 13:29:55 thor Exp $
+#** $Id: configure.in,v 1.17 2025/08/20 06:10:16 thor Exp $
 #**
 #** In this module: autoconf script for difftest_ng
 #**
@@ -137,9 +137,9 @@ AC_MSG_RESULT($ac_has_gsl_config)
 if test ${ac_has_gsl_config} = no; then
    AC_SUBST(GSL_CFLAGS,[""])
    AC_SUBST(GSL_LDFLAGS,[""])
-   AC_SEARCH_LIBS([cblas_ccopy],[gslcblas])
-   AC_SEARCH_LIBS([gsl_fft_complex_forward],[gsl])
 fi
+AC_SEARCH_LIBS([cblas_ccopy],[gslcblas])
+AC_SEARCH_LIBS([gsl_fft_complex_forward],[gsl])
 #
 # Now test the gsl headers.
 ac_save_CFLAGS=$CFLAGS
