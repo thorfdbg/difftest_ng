@@ -15,14 +15,14 @@ COMPILER_CMD	=	g++
 CC_ONLY         =       gcc
 SETTINGS	=	gcc
 PREFIX		=	/home/thor/bin/wavelet
-PTHREADCFLAGS	=	-pthread
-PTHREADLDFLAGS	=	-pthread
+PTHREADCFLAGS	=	
+PTHREADLDFLAGS	=	
 PTHREADLIBS	=	 
 HWTYPE		=	x86_64
 HAVE_ADDONS	=	no
 ##
 ## Additional options
-ADDOPTS		=	-DUSE_AUTOCONF -mfpmath=387 -D__IS_x86_64__ -pthread -I/usr/include/OpenEXR -I/usr/include/libpng16 -I/usr/include
+ADDOPTS		=	-DUSE_AUTOCONF -mfpmath=387 -D__IS_x86_64__ -I/usr/include/OpenEXR -pthread -I/usr/include/Imath  -I/usr/include/libpng16 -I/usr/include
 LIB_OPTS	=	-fvisibility=internal -fPIC -DBUILD_LIB
 EXTRA_LIBS	=	
 ##
@@ -35,7 +35,7 @@ PNG_LDFLAGS	=	-lpng16 -lz
 PNG_CFLAGS	=	-I/usr/include/libpng16
 ##
 ## Options for EXR
-EXR_LDFLAGS	=	-lIlmImf-2_5 -lImath-2_5 -lHalf-2_5 -lIex-2_5 -lIexMath-2_5 -lIlmThread-2_5 -pthread
-EXR_CFLAGS	=	-pthread -I/usr/include/OpenEXR
+EXR_LDFLAGS	=	-lOpenEXR-3_1 -lOpenEXRUtil-3_1 -lOpenEXRCore-3_1 -lIex-3_1 -lIlmThread-3_1 -lImath-3_1 
+EXR_CFLAGS	=	-I/usr/include/OpenEXR -pthread -I/usr/include/Imath 
 
 

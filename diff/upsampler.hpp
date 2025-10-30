@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: upsampler.hpp,v 1.8 2020/09/15 10:20:32 thor Exp $
+** $Id: upsampler.hpp,v 1.9 2025/10/30 12:01:09 thor Exp $
 **
 ** This class upsamples in the spatial domain
 */
@@ -70,6 +70,13 @@ private:
   //
   FilterType  m_FilterType;
   //
+  // Is upsampling limited to a region?
+  bool        m_bRegional;
+  //
+  // Definition of the region that is not upsampled.
+  LONG        m_lX1,m_lY1;
+  LONG        m_lX2,m_lY2;
+  //
   // Release the temporary buffer.
   void ReleaseComponents(UBYTE **p);
   //
@@ -84,17 +91,51 @@ private:
 		      int sx,int sy);
   //
   template<typename S>
+  void RegionalBilinearFilter(const S *org,ULONG obytesperpixel,ULONG obytesperrow,
+			      S *dest,ULONG tbytesperpixel,ULONG tbytesperrow,
+			      ULONG w,ULONG h,LONG x1,LONG y1,LONG x2,LONG y2,
+			      S min,S max);
+  //
+  template<typename S>
   void BoxFilter(const S *org,ULONG obytesperpixel,ULONG obytesperrow,
 		 S *dest,ULONG tbytesperpixel,ULONG tbytesperrow,
 		 ULONG w,ULONG h,
 		 int sx,int sy);
   //
+  template<typename S>
+  void RegionalBoxFilter(const S *org,ULONG obytesperpixel,ULONG obytesperrow,
+			 S *dest,ULONG tbytesperpixel,ULONG tbytesperrow,
+			 ULONG w,ULONG h,LONG x1,LONG y1,LONG x2,LONG y2);
+  //
+  // Compute the width of the upsampled image.
+  ULONG UpsampledWidth(ULONG width) const
+  {
+    if (m_bRegional) {
+      if (m_lX2 >= LONG(width))
+	throw "non-upsampled region is larger than the image";
+      return m_lX2 - m_lX1 + m_lX1 * m_ucScaleX + (width - m_lX2) * m_ucScaleX;
+    } else {
+      return width * m_ucScaleX;
+    }
+  }
+  //
+  // Compute the height of the upsampled image.
+  ULONG UpsampledHeight(ULONG height) const
+  {
+    if (m_bRegional) {
+      if (m_lY2 >= LONG(height))
+	throw "non-upsampled region is larger than the image";
+      return m_lY2 - m_lY1 + m_lY1 * m_ucScaleY + (height - m_lY2) * m_ucScaleY;
+    } else {
+      return height * m_ucScaleY;
+    }
+  }
   //
 public:
   Upsampler(UBYTE sx,UBYTE sy,bool chromaonly,FilterType type,bool automatic = false)
     : m_ppucSource(NULL),m_ppucDestination(NULL), m_usAllocated(0),
       m_ucScaleX(sx), m_ucScaleY(sy), m_bChromaOnly(chromaonly),
-      m_bAutomatic(automatic), m_FilterType(type)
+      m_bAutomatic(automatic), m_FilterType(type), m_bRegional(false)
   { }
   //
   virtual ~Upsampler(void);
@@ -104,6 +145,18 @@ public:
   virtual const char *NameOf(void) const
   {
     return NULL;
+  }
+  //
+  // Limit upsampling to a region outside of the given rectangle.
+  void LimitRegion(LONG x1,LONG y1,LONG x2,LONG y2)
+  {
+    if (m_ucScaleX != 2 || m_ucScaleY != 2)
+      throw "only upsampling factors 2,2 are supported for regional upscaling";
+    m_bRegional = true;
+    m_lX1       = x1;
+    m_lY1       = y1;
+    m_lX2       = x2;
+    m_lY2       = y2;
   }
 };
 ///

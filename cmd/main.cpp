@@ -23,7 +23,7 @@ and conversion framework.
 /*
  * Main program
  * 
- * $Id: main.cpp,v 1.121 2025/08/04 13:55:11 thor Exp $
+ * $Id: main.cpp,v 1.122 2025/10/30 12:01:09 thor Exp $
  *
  * This class defines the main program and argument parsing.
  */
@@ -204,6 +204,7 @@ void Usage(const char *progname)
 	  "--cocup x y        : co-sited upsampling of the chroma components in x and y direction\n"
 	  "--boxup x y        : upsample with a simple box filter\n"
 	  "--boxcup x y       : upsample the chrome components with a simple box filter\n"
+	  "--outside x y x2 y2: constrain upsampling to an area outside of the given rectangle\n"
 	  "--clamp min max    : clamp the image(s) to the specified range of sample values\n"
 	  "--only component   : acts as a filter and restricts all following operations to the given component\n"
 	  "--upto component   : restricts all following operations to components 0..component-1\n"
@@ -1271,6 +1272,7 @@ class Meter *ParseSubsampling(int &argc,char **&argv)
     argc -= 2;
     argv += 2;
   } else if (!strcmp(arg,"--up")) {
+    class Upsampler *up;
     long sx,sy;
     bool automatic = false;
     if (argc < 3)
@@ -1287,13 +1289,27 @@ class Meter *ParseSubsampling(int &argc,char **&argv)
     }
     if (sx >= 16 || sx <= 0 || sy >= 16 || sy <= 0)
       throw "upsampling factors must be positive and smaller than 16";
-    m     = new class Upsampler(sx,sy,false,Upsampler::Centered,automatic);
+    m     = up = new class Upsampler(sx,sy,false,Upsampler::Centered,automatic);
     if (automatic) {
       argc--;
       argv++;
     } else {
       argc -= 2;
       argv += 2;
+    }
+    if (argc > 2 && !strcmp(argv[2],"--outside")) {
+      long x1,y1,x2,y2;
+      if (argc < 7)
+	throw "--outside requires 4 arguments, defining a rectangle";
+      x1 = ParseLong(argv[3]);
+      y1 = ParseLong(argv[4]);
+      x2 = ParseLong(argv[5]);
+      y2 = ParseLong(argv[6]);
+      if (x1 >= x2 || y1 >= y2)
+	throw "--outside first coordinate must be smaller than second, defining a rectangle";
+      up->LimitRegion(x1,y1,x2,y2);
+      argc -= 5;
+      argv += 5;
     }
   } else if (!strcmp(arg,"--cup")) {
     long sx,sy;
@@ -1343,6 +1359,7 @@ class Meter *ParseSubsampling(int &argc,char **&argv)
     argc -= 2;
     argv += 2;
   } else if (!strcmp(arg,"--boxup")) {
+    class Upsampler *up;
     long sx,sy;
     if (argc < 4)
       throw "--boxup requires two arguments, subsampling factors in x and y direction";
@@ -1350,9 +1367,23 @@ class Meter *ParseSubsampling(int &argc,char **&argv)
     sy = ParseLong(argv[3]);
     if (sx >= 16 || sx <= 0 || sy >= 16 || sy <= 0)
       throw "upsampling factors must be positive and smaller than 16";
-    m     = new class Upsampler(sx,sy,false,Upsampler::Boxed);
+    m     = up = new class Upsampler(sx,sy,false,Upsampler::Boxed);
     argc -= 2;
     argv += 2;
+    if (argc > 2 && !strcmp(argv[2],"--outside")) {
+      long x1,y1,x2,y2;
+      if (argc < 7)
+	throw "--outside requires 4 arguments, defining a rectangle";
+      x1 = ParseLong(argv[3]);
+      y1 = ParseLong(argv[4]);
+      x2 = ParseLong(argv[5]);
+      y2 = ParseLong(argv[6]);
+      if (x1 >= x2 || y1 >= y2)
+	throw "--outside first coordinate must be smaller than second, defining a rectangle";
+      up->LimitRegion(x1,y1,x2,y2);
+      argc -= 5;
+      argv += 5;
+    }
   } else if (!strcmp(arg,"--boxcup")) {
     long sx,sy;
     if (argc < 4)

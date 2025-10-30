@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: upsampler.cpp,v 1.12 2020/09/15 10:20:32 thor Exp $
+** $Id: upsampler.cpp,v 1.13 2025/10/30 12:01:09 thor Exp $
 **
 ** This class downscales in the spatial domain
 */
@@ -88,6 +88,47 @@ void Upsampler::BilinearFilter(const S *org,ULONG obytesperpixel,ULONG obytesper
 }
 ///
 
+/// Upsampler::RegionalBilinearFilter
+template<typename S>
+void Upsampler::RegionalBilinearFilter(const S *org,ULONG obytesperpixel,ULONG obytesperrow,
+				       S *dest,ULONG tbytesperpixel,ULONG tbytesperrow,
+				       ULONG w,ULONG h,LONG x1,LONG y1,LONG x2,LONG y2,
+				       S min,S max)
+{
+  ULONG x,y;
+  
+  for(y = 0;y < h;y++) {
+    S *dstrow = dest;
+    const S *orgrow  = org; // First line to interpolate from
+    const S *orgrow2 = org; // Second line to interpolate from
+    if (((LONG(y) < y1 || LONG(y) >= y2)) && (y & 1) && y + 1 < h)
+      orgrow2 = (const S *)(((const UBYTE *)orgrow2) + obytesperrow);
+    for(x = 0;x < w;x++) {
+      double v = (double(*orgrow) + double(*orgrow2)) * 0.5;
+      if ((LONG(x) < x1 || LONG(x) >= x2) && (x & 1) && x + 1 < w) {
+	const S *orgrowx  = (const S *)(((const UBYTE *)orgrow)  + obytesperpixel);
+	const S *orgrow2x = (const S *)(((const UBYTE *)orgrow2) + obytesperpixel);
+	double v2 = (double(*orgrowx) + double(*orgrow2x)) * 0.5;
+	v = (v + v2) * 0.5;
+      }
+      if (v > max)
+	v = max;
+      if (v < min)
+	v = min;
+      *dstrow = S(v);
+      dstrow  = (S *)(((UBYTE *)dstrow) + tbytesperpixel);
+      if ((LONG(x) >= x1 && LONG(x) < x2) || (x & 1)) {
+	orgrow  = (const S *)(((const UBYTE *)orgrow ) + obytesperpixel);
+	orgrow2 = (const S *)(((const UBYTE *)orgrow2) + obytesperpixel);
+      }
+    }
+    if ((LONG(y) >= y1 && LONG(y) < y2) || (y & 1))
+      org = (const S *)(((const UBYTE *)org) + obytesperrow);
+    dest  = (S *)(((UBYTE *)dest) + tbytesperrow);
+  }
+}
+///
+
 /// Upsampler::BoxFilter
 template<typename S>
 void Upsampler::BoxFilter(const S *org,ULONG obytesperpixel,ULONG obytesperrow,
@@ -112,6 +153,32 @@ void Upsampler::BoxFilter(const S *org,ULONG obytesperpixel,ULONG obytesperrow,
   }
 }
 ///
+
+/// Upsampler::RegionalBoxFilter
+template<typename S>
+void Upsampler::RegionalBoxFilter(const S *org,ULONG obytesperpixel,ULONG obytesperrow,
+				  S *dest,ULONG tbytesperpixel,ULONG tbytesperrow,
+				  ULONG w,ULONG h,LONG x1,LONG y1,LONG x2,LONG y2)
+{
+  ULONG x,y;
+
+  for(y = 0;y < h;y++) {
+    S *dstrow = dest;
+    const S *orgrow = org;
+    for(x = 0;x < w;x++) {
+      *dstrow = S(*orgrow);
+      if ((LONG(x) >= x1 && LONG(x) < x2) || (x & 1))
+	orgrow = (const S *)(((const UBYTE *)orgrow) + obytesperpixel);
+      dstrow  = (S *)(((UBYTE *)dstrow) + tbytesperpixel);
+    }
+    if ((LONG(y) >= y1 && LONG(y) < y2) || (y & 1))
+      org = (const S *)(((const UBYTE *)org) + obytesperrow);
+    dest  = (S *)(((UBYTE *)dest) + tbytesperrow);
+  }
+}
+///
+
+
 
 /// Upsampler::~Upsampler
 Upsampler::~Upsampler(void)
@@ -152,8 +219,8 @@ void Upsampler::Upsample(UBYTE **&data,class ImageLayout *src)
     m_ulWidth     = src->WidthOf();
     m_ulHeight    = src->HeightOf();
   } else { 
-    m_ulWidth     = src->WidthOf()  * m_ucScaleX;
-    m_ulHeight    = src->HeightOf() * m_ucScaleY;
+    m_ulWidth     = UpsampledWidth(src->WidthOf());
+    m_ulHeight    = UpsampledHeight(src->HeightOf());
   }
   //
   m_usDepth     = src->DepthOf();
@@ -166,8 +233,8 @@ void Upsampler::Upsample(UBYTE **&data,class ImageLayout *src)
       m_pComponent[i].m_ulHeight = src->HeightOf();
     } else {
       if (m_bChromaOnly == false || i > 0) { 
-	m_pComponent[i].m_ulWidth  = src->WidthOf(i)  * m_ucScaleX;
-	m_pComponent[i].m_ulHeight = src->HeightOf(i) * m_ucScaleY;
+	m_pComponent[i].m_ulWidth  = UpsampledWidth(src->WidthOf(i));
+	m_pComponent[i].m_ulHeight = UpsampledHeight(src->HeightOf(i));
       } else {
 	m_pComponent[i].m_ulWidth  = src->WidthOf(i);
 	m_pComponent[i].m_ulHeight = src->HeightOf(i);
@@ -176,7 +243,7 @@ void Upsampler::Upsample(UBYTE **&data,class ImageLayout *src)
     m_pComponent[i].m_ucBits   = src->BitsOf(i);
     m_pComponent[i].m_bSigned  = src->isSigned(i);
     m_pComponent[i].m_bFloat   = src->isFloat(i);
-    if (m_bAutomatic || (m_bChromaOnly && i > 0)) { 
+    if (m_bAutomatic || (m_bChromaOnly && i > 0) || m_bRegional) { 
       m_pComponent[i].m_ucSubX   = 1;
       m_pComponent[i].m_ucSubY   = 1;
     } else {
@@ -212,143 +279,265 @@ void Upsampler::Upsample(UBYTE **&data,class ImageLayout *src)
       sy = 1;
     }
     //
-    if (isSigned(i)) {
-      if (BitsOf(i) <= 8) {
-	if (m_FilterType == Boxed) {
-	  BoxFilter<BYTE>((BYTE *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
-			  (BYTE *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
-			  WidthOf(i),HeightOf(i),
-			  sx,sy);
+    if (m_bRegional) {
+      if (isSigned(i)) {
+	if (BitsOf(i) <= 8) {
+	  if (m_FilterType == Boxed) {
+	    RegionalBoxFilter<BYTE>((BYTE *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
+				    (BYTE *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
+				    WidthOf(i),HeightOf(i),m_lX1,m_lY1,m_lX2,m_lY2);
+	  } else {
+	    RegionalBilinearFilter<BYTE>((BYTE *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
+					 (BYTE *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
+					 WidthOf(i),HeightOf(i),m_lX1,m_lY1,m_lX2,m_lY2,
+					 BYTE(-1UL << (BitsOf(i) - 1)),BYTE((1UL << (BitsOf(i) - 1)) - 1));
+	  }
+	} else if (!isFloat(i) && BitsOf(i) <= 16) {
+	  if (m_FilterType == Boxed) {
+	    RegionalBoxFilter<WORD>((WORD *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
+				    (WORD *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
+				    WidthOf(i),HeightOf(i),m_lX1,m_lY1,m_lX2,m_lY2);
+	  } else {
+	    RegionalBilinearFilter<WORD>((WORD *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
+					 (WORD *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
+					 WidthOf(i),HeightOf(i),m_lX1,m_lY1,m_lX2,m_lY2,
+					 WORD(-1UL << (BitsOf(i) - 1)),WORD((1UL << (BitsOf(i) - 1)) - 1));
+	  }
+	} else if (!isFloat(i) && BitsOf(i) <= 32) {
+	  if (m_FilterType == Boxed) {
+	    RegionalBoxFilter<LONG>((LONG *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
+				    (LONG *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
+				    WidthOf(i),HeightOf(i),m_lX1,m_lY1,m_lX2,m_lY2);
+	  } else {
+	    RegionalBilinearFilter<LONG>((LONG *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
+					 (LONG *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
+					 WidthOf(i),HeightOf(i),m_lX1,m_lY1,m_lX2,m_lY2,
+					 LONG(-1UL << (BitsOf(i) - 1)),LONG((1UL << (BitsOf(i) - 1)) - 1));
+	  }
+	} else if (isFloat(i) && BitsOf(i) <= 32) {
+	  if (m_FilterType == Boxed) {
+	    RegionalBoxFilter<FLOAT>((FLOAT *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
+				     (FLOAT *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
+				     WidthOf(i),HeightOf(i),m_lX1,m_lY1,m_lX2,m_lY2);
+	  } else {
+	    RegionalBilinearFilter<FLOAT>((FLOAT *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
+					  (FLOAT *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
+					  WidthOf(i),HeightOf(i),m_lX1,m_lY1,m_lX2,m_lY2,
+					  -HUGE_VAL,HUGE_VAL);
+	  }
+	} else if (isFloat(i) && BitsOf(i) == 64) {
+	  if (m_FilterType == Boxed) {
+	    RegionalBoxFilter<DOUBLE>((DOUBLE *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
+				      (DOUBLE *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
+				      WidthOf(i),HeightOf(i),m_lX1,m_lY1,m_lX2,m_lY2);
+	  } else {
+	    RegionalBilinearFilter<DOUBLE>((DOUBLE *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
+					   (DOUBLE *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
+					   WidthOf(i),HeightOf(i),m_lX1,m_lY1,m_lX2,m_lY2,
+					   -HUGE_VAL,HUGE_VAL);
+	  }
 	} else {
-	  BilinearFilter<BYTE>((BYTE *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
-			       (BYTE *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
-			       WidthOf(i),HeightOf(i),
-			       BYTE(-1UL << (BitsOf(i) - 1)),BYTE((1UL << (BitsOf(i) - 1)) - 1),
-			       sx,sy);
-	}
-      } else if (!isFloat(i) && BitsOf(i) <= 16) {
-	if (m_FilterType == Boxed) {
-	  BoxFilter<WORD>((WORD *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
-			  (WORD *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
-			  WidthOf(i),HeightOf(i),
-			  sx,sy);
-	} else {
-	  BilinearFilter<WORD>((WORD *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
-			       (WORD *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
-			       WidthOf(i),HeightOf(i),
-			       WORD(-1UL << (BitsOf(i) - 1)),WORD((1UL << (BitsOf(i) - 1)) - 1),
-			       sx,sy);
-	}
-      } else if (!isFloat(i) && BitsOf(i) <= 32) {
-	if (m_FilterType == Boxed) {
-	  BoxFilter<LONG>((LONG *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
-			  (LONG *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
-			  WidthOf(i),HeightOf(i),
-			  sx,sy);
-	} else {
-	  BilinearFilter<LONG>((LONG *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
-			       (LONG *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
-			       WidthOf(i),HeightOf(i),
-			       LONG(-1UL << (BitsOf(i) - 1)),LONG((1UL << (BitsOf(i) - 1)) - 1),
-			       sx,sy);
-	}
-      } else if (isFloat(i) && BitsOf(i) <= 32) {
-	if (m_FilterType == Boxed) {
-	  BoxFilter<FLOAT>((FLOAT *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
-			   (FLOAT *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
-			   WidthOf(i),HeightOf(i),
-			   sx,sy);
-	} else {
-	  BilinearFilter<FLOAT>((FLOAT *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
-				(FLOAT *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
-				WidthOf(i),HeightOf(i),
-				-HUGE_VAL,HUGE_VAL,
-				sx,sy);
-	}
-      } else if (isFloat(i) && BitsOf(i) == 64) {
-	if (m_FilterType == Boxed) {
-	  BoxFilter<DOUBLE>((DOUBLE *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
-			    (DOUBLE *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
-			    WidthOf(i),HeightOf(i),
-			    sx,sy);
-	} else {
-	  BilinearFilter<DOUBLE>((DOUBLE *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
-				 (DOUBLE *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
-				 WidthOf(i),HeightOf(i),
-				 -HUGE_VAL,HUGE_VAL,
-				 sx,sy);
+	  throw "unsupported data type";
 	}
       } else {
-	throw "unsupported data type";
+	if (BitsOf(i) <= 8) {
+	  if (m_FilterType == Boxed) {
+	    RegionalBoxFilter<UBYTE>((UBYTE *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
+				     (UBYTE *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
+				     WidthOf(i),HeightOf(i),m_lX1,m_lY1,m_lX2,m_lY2);
+	  } else {
+	    RegionalBilinearFilter<UBYTE>((UBYTE *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
+					  (UBYTE *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
+					  WidthOf(i),HeightOf(i),m_lX1,m_lY1,m_lX2,m_lY2,
+					  0,UBYTE((1UL << BitsOf(i)) - 1));
+	  }
+	} else if (!isFloat(i) && BitsOf(i) <= 16) {
+	  if (m_FilterType == Boxed) {
+	    RegionalBoxFilter<UWORD>((UWORD *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
+				     (UWORD *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
+				     WidthOf(i),HeightOf(i),m_lX1,m_lY1,m_lX2,m_lY2);
+	  } else {
+	    RegionalBilinearFilter<UWORD>((UWORD *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
+					  (UWORD *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
+					  WidthOf(i),HeightOf(i),m_lX1,m_lY1,m_lX2,m_lY2,
+					  0,UWORD((1UL << BitsOf(i)) - 1));
+	  }
+	} else if (!isFloat(i) && BitsOf(i) <= 32) {
+	  if (m_FilterType == Boxed) {
+	    RegionalBoxFilter<ULONG>((ULONG *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
+				     (ULONG *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
+				     WidthOf(i),HeightOf(i),m_lX1,m_lY1,m_lX2,m_lY2);
+	  } else {
+	    RegionalBilinearFilter<ULONG>((ULONG *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
+					  (ULONG *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
+					  WidthOf(i),HeightOf(i),m_lX1,m_lY1,m_lX2,m_lY2,
+					  0,ULONG((1UL << BitsOf(i)) - 1));
+	  }
+	} else if (isFloat(i) && BitsOf(i) <= 32) {
+	  if (m_FilterType == Boxed) {
+	    RegionalBoxFilter<FLOAT>((FLOAT *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
+				     (FLOAT *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
+				     WidthOf(i),HeightOf(i),m_lX1,m_lY1,m_lX2,m_lY2);
+	  } else {
+	    RegionalBilinearFilter<FLOAT>((FLOAT *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
+					  (FLOAT *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
+					  WidthOf(i),HeightOf(i),m_lX1,m_lY1,m_lX2,m_lY2,
+					  0.0,HUGE_VAL);
+	  }
+	} else if (isFloat(i) && BitsOf(i) == 64) {
+	  if (m_FilterType == Boxed) {
+	    RegionalBoxFilter<DOUBLE>((DOUBLE *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
+				      (DOUBLE *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
+				      WidthOf(i),HeightOf(i),m_lX1,m_lY1,m_lX2,m_lY2);
+	  } else {
+	    RegionalBilinearFilter<DOUBLE>((DOUBLE *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
+					   (DOUBLE *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
+					   WidthOf(i),HeightOf(i),m_lX1,m_lY1,m_lX2,m_lY2,
+					   0.0,HUGE_VAL);
+	  }
+	} else {
+	  throw "unsupported data type";
+	}
       }
-    } else {
-      if (BitsOf(i) <= 8) {
-	if (m_FilterType == Boxed) {
-	  BoxFilter<UBYTE>((UBYTE *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
-			   (UBYTE *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
-			   WidthOf(i),HeightOf(i),
-			   sx,sy);
-	} else {
-	  BilinearFilter<UBYTE>((UBYTE *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
-				(UBYTE *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
-				WidthOf(i),HeightOf(i),
-				0,UBYTE((1UL << BitsOf(i)) - 1),
-				sx,sy);
-	}
-      } else if (!isFloat(i) && BitsOf(i) <= 16) {
-	if (m_FilterType == Boxed) {
-	  BoxFilter<UWORD>((UWORD *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
-			   (UWORD *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
-			   WidthOf(i),HeightOf(i),
-			   sx,sy);
-	} else {
-	  BilinearFilter<UWORD>((UWORD *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
-				(UWORD *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
-				WidthOf(i),HeightOf(i),
-				0,UWORD((1UL << BitsOf(i)) - 1),
-				sx,sy);
-	}
-      } else if (!isFloat(i) && BitsOf(i) <= 32) {
-	if (m_FilterType == Boxed) {
-	  BoxFilter<ULONG>((ULONG *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
-			   (ULONG *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
-			   WidthOf(i),HeightOf(i),
-			   sx,sy);
-	} else {
-	  BilinearFilter<ULONG>((ULONG *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
-				(ULONG *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
-				WidthOf(i),HeightOf(i),
-				0,ULONG((1UL << BitsOf(i)) - 1),
-				sx,sy);
-	}
-      } else if (isFloat(i) && BitsOf(i) <= 32) {
-	if (m_FilterType == Boxed) {
-	  BoxFilter<FLOAT>((FLOAT *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
-			   (FLOAT *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
-			   WidthOf(i),HeightOf(i),
-			   sx,sy);
-	} else {
-	  BilinearFilter<FLOAT>((FLOAT *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
-				(FLOAT *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
-				WidthOf(i),HeightOf(i),
-				0.0,HUGE_VAL,
-				sx,sy);
-	}
-      } else if (isFloat(i) && BitsOf(i) == 64) {
-	if (m_FilterType == Boxed) {
-	  BoxFilter<DOUBLE>((DOUBLE *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
-			    (DOUBLE *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
+    } else { /* of regional filter */
+      if (isSigned(i)) {
+	if (BitsOf(i) <= 8) {
+	  if (m_FilterType == Boxed) {
+	    BoxFilter<BYTE>((BYTE *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
+			    (BYTE *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
 			    WidthOf(i),HeightOf(i),
 			    sx,sy);
-	} else {
-	  BilinearFilter<DOUBLE>((DOUBLE *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
-				 (DOUBLE *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
+	  } else {
+	    BilinearFilter<BYTE>((BYTE *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
+				 (BYTE *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
 				 WidthOf(i),HeightOf(i),
-				 0.0,HUGE_VAL,
+				 BYTE(-1UL << (BitsOf(i) - 1)),BYTE((1UL << (BitsOf(i) - 1)) - 1),
 				 sx,sy);
+	  }
+	} else if (!isFloat(i) && BitsOf(i) <= 16) {
+	  if (m_FilterType == Boxed) {
+	    BoxFilter<WORD>((WORD *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
+			    (WORD *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
+			    WidthOf(i),HeightOf(i),
+			    sx,sy);
+	  } else {
+	    BilinearFilter<WORD>((WORD *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
+				 (WORD *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
+				 WidthOf(i),HeightOf(i),
+				 WORD(-1UL << (BitsOf(i) - 1)),WORD((1UL << (BitsOf(i) - 1)) - 1),
+				 sx,sy);
+	  }
+	} else if (!isFloat(i) && BitsOf(i) <= 32) {
+	  if (m_FilterType == Boxed) {
+	    BoxFilter<LONG>((LONG *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
+			    (LONG *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
+			    WidthOf(i),HeightOf(i),
+			    sx,sy);
+	  } else {
+	    BilinearFilter<LONG>((LONG *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
+				 (LONG *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
+				 WidthOf(i),HeightOf(i),
+				 LONG(-1UL << (BitsOf(i) - 1)),LONG((1UL << (BitsOf(i) - 1)) - 1),
+				 sx,sy);
+	  }
+	} else if (isFloat(i) && BitsOf(i) <= 32) {
+	  if (m_FilterType == Boxed) {
+	    BoxFilter<FLOAT>((FLOAT *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
+			     (FLOAT *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
+			     WidthOf(i),HeightOf(i),
+			     sx,sy);
+	  } else {
+	    BilinearFilter<FLOAT>((FLOAT *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
+				  (FLOAT *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
+				  WidthOf(i),HeightOf(i),
+				  -HUGE_VAL,HUGE_VAL,
+				  sx,sy);
+	  }
+	} else if (isFloat(i) && BitsOf(i) == 64) {
+	  if (m_FilterType == Boxed) {
+	    BoxFilter<DOUBLE>((DOUBLE *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
+			      (DOUBLE *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
+			      WidthOf(i),HeightOf(i),
+			      sx,sy);
+	  } else {
+	    BilinearFilter<DOUBLE>((DOUBLE *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
+				   (DOUBLE *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
+				   WidthOf(i),HeightOf(i),
+				   -HUGE_VAL,HUGE_VAL,
+				   sx,sy);
+	  }
+	} else {
+	  throw "unsupported data type";
 	}
       } else {
-	throw "unsupported data type";
+	if (BitsOf(i) <= 8) {
+	  if (m_FilterType == Boxed) {
+	    BoxFilter<UBYTE>((UBYTE *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
+			     (UBYTE *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
+			     WidthOf(i),HeightOf(i),
+			     sx,sy);
+	  } else {
+	    BilinearFilter<UBYTE>((UBYTE *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
+				  (UBYTE *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
+				  WidthOf(i),HeightOf(i),
+				  0,UBYTE((1UL << BitsOf(i)) - 1),
+				  sx,sy);
+	  }
+	} else if (!isFloat(i) && BitsOf(i) <= 16) {
+	  if (m_FilterType == Boxed) {
+	    BoxFilter<UWORD>((UWORD *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
+			     (UWORD *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
+			     WidthOf(i),HeightOf(i),
+			     sx,sy);
+	  } else {
+	    BilinearFilter<UWORD>((UWORD *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
+				  (UWORD *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
+				  WidthOf(i),HeightOf(i),
+				  0,UWORD((1UL << BitsOf(i)) - 1),
+				  sx,sy);
+	  }
+	} else if (!isFloat(i) && BitsOf(i) <= 32) {
+	  if (m_FilterType == Boxed) {
+	    BoxFilter<ULONG>((ULONG *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
+			     (ULONG *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
+			     WidthOf(i),HeightOf(i),
+			     sx,sy);
+	  } else {
+	    BilinearFilter<ULONG>((ULONG *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
+				  (ULONG *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
+				  WidthOf(i),HeightOf(i),
+				  0,ULONG((1UL << BitsOf(i)) - 1),
+				  sx,sy);
+	  }
+	} else if (isFloat(i) && BitsOf(i) <= 32) {
+	  if (m_FilterType == Boxed) {
+	    BoxFilter<FLOAT>((FLOAT *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
+			     (FLOAT *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
+			     WidthOf(i),HeightOf(i),
+			     sx,sy);
+	  } else {
+	    BilinearFilter<FLOAT>((FLOAT *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
+				  (FLOAT *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
+				  WidthOf(i),HeightOf(i),
+				  0.0,HUGE_VAL,
+				  sx,sy);
+	  }
+	} else if (isFloat(i) && BitsOf(i) == 64) {
+	  if (m_FilterType == Boxed) {
+	    BoxFilter<DOUBLE>((DOUBLE *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
+			      (DOUBLE *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
+			      WidthOf(i),HeightOf(i),
+			      sx,sy);
+	  } else {
+	    BilinearFilter<DOUBLE>((DOUBLE *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
+				   (DOUBLE *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
+				   WidthOf(i),HeightOf(i),
+				   0.0,HUGE_VAL,
+				   sx,sy);
+	  }
+	} else {
+	  throw "unsupported data type";
+	}
       }
     }
   }
