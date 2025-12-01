@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: upsampler.hpp,v 1.9 2025/10/30 12:01:09 thor Exp $
+** $Id: upsampler.hpp,v 1.10 2025/12/01 09:06:43 thor Exp $
 **
 ** This class upsamples in the spatial domain
 */
@@ -152,6 +152,10 @@ public:
   {
     if (m_ucScaleX != 2 || m_ucScaleY != 2)
       throw "only upsampling factors 2,2 are supported for regional upscaling";
+    if (m_bChromaOnly)
+      throw "regional upsampling cannot be combined with chroma upsampling";
+    if (m_lX1 > m_lX2 || m_lY1 > m_lY2)
+      throw "start coordinate of --outside must be smaller than end coordinate";
     m_bRegional = true;
     m_lX1       = x1;
     m_lY1       = y1;

@@ -23,7 +23,7 @@ and conversion framework.
 
 /*
 **
-** $Id: downsampler.cpp,v 1.10 2020/09/15 10:20:32 thor Exp $
+** $Id: downsampler.cpp,v 1.11 2025/12/01 09:06:43 thor Exp $
 **
 ** This class downscales in the spatial domain
 */
@@ -34,7 +34,7 @@ and conversion framework.
 #include "std/math.hpp"
 ///
 
-/// Downsampler::Filter
+/// Downsampler::BoxFilter
 template<typename S>
 void Downsampler::BoxFilter(const S *org,ULONG obytesperpixel,ULONG obytesperrow,
 			    S *dest,ULONG tbytesperpixel,ULONG tbytesperrow,
@@ -88,6 +88,77 @@ void Downsampler::BoxFilter(const S *org,ULONG obytesperpixel,ULONG obytesperrow
 }
 ///
 
+/// Downsampler::RegionalBoxFilter
+template<typename S>
+void Downsampler::RegionalBoxFilter(const S *org,ULONG obytesperpixel,ULONG obytesperrow,
+				    S *dest,ULONG tbytesperpixel,ULONG tbytesperrow,
+				    ULONG w,ULONG h,LONG x1,LONG y1,LONG x2,LONG y2,
+				    S min,S max)
+{
+  ULONG x,y;
+  ULONG xo,yo;
+  ULONG xm,ym;
+
+  for(y = 0;y < h;) {
+    S *dstrow = dest;
+    const S *ssrow  = org;
+    for(x = 0;x < w;) {
+      const S *srcrow  = ssrow;
+      double sum = 0.0;
+      ULONG cnt = 0;
+
+      if (LONG(x) < x1) {
+	xm = x + 2;
+	if (LONG(xm) > x2)
+	  xm = x2;
+      } else if (LONG(x) >= x2) {
+	xm = x + 2;
+	if (xm > w)
+	  xm = w;
+      } else {
+	xm = x + 1;
+      }
+      
+      if (LONG(y) < y1) {
+	ym = y + 2;
+	if (LONG(ym) > y2)
+	  ym = y2;
+      } else if (LONG(y) >= y2) {
+	ym = y + 2;
+	if (ym > h)
+	  ym = h;
+      } else {
+	ym = y + 1;
+      }
+
+      for(yo = y;yo < ym;yo++) {
+	const S *src = srcrow;
+	for(xo = x;xo < xm;xo++) {
+	  sum += *src;
+	  src  = (const S *)(((const UBYTE *)src) + obytesperpixel);
+	  cnt++;
+	}
+	srcrow = (const S *)(((const UBYTE *)srcrow) + obytesperrow);
+      }
+      
+      if (cnt > 0)
+	sum = sum / cnt;
+      if (sum > max)
+	sum = max;
+      if (sum < min)
+	sum = min;
+      *dstrow = S(sum);
+      dstrow  = (S *)(((UBYTE *)dstrow) + tbytesperpixel);
+      ssrow   = (const S *)(((const UBYTE *)ssrow ) + obytesperpixel * (xm - x));
+      x       = xm;
+    }
+    dest  = (S *)(((UBYTE *)dest) + tbytesperrow);
+    org   = (const S *)(((const UBYTE *)org)  + obytesperrow * (ym - y));
+    y     = ym;
+  }
+}
+///
+
 /// Downsampler::~Downsampler
 Downsampler::~Downsampler(void)
 {
@@ -127,8 +198,8 @@ void Downsampler::Downsample(UBYTE **&data,class ImageLayout *src)
     m_ulWidth     = src->WidthOf();
     m_ulHeight    = src->HeightOf();
   } else { 
-    m_ulWidth     = (src->WidthOf()  + m_ucScaleX - 1) / m_ucScaleX;
-    m_ulHeight    = (src->HeightOf() + m_ucScaleY - 1) / m_ucScaleY;
+    m_ulWidth     = DownsampledWidth(src->WidthOf());
+    m_ulHeight    = DownsampledHeight(src->HeightOf());
   }
   //
   m_usDepth     = src->DepthOf();
@@ -136,9 +207,9 @@ void Downsampler::Downsample(UBYTE **&data,class ImageLayout *src)
   //
   // Initialize component dimensions.
   for(i = 0; i < m_usDepth; i++) {
-    if (m_bChromaOnly == false || i > 0) { 
-      m_pComponent[i].m_ulWidth  = (src->WidthOf(i)  + m_ucScaleX - 1) / m_ucScaleX;
-      m_pComponent[i].m_ulHeight = (src->HeightOf(i) + m_ucScaleY - 1) / m_ucScaleY;
+    if (m_bChromaOnly == false || i > 0) {
+      m_pComponent[i].m_ulWidth  = DownsampledWidth(src->WidthOf(i));
+      m_pComponent[i].m_ulHeight = DownsampledHeight(src->HeightOf(i));
     } else {
       m_pComponent[i].m_ulWidth  = src->WidthOf(i);
       m_pComponent[i].m_ulHeight = src->HeightOf(i);
@@ -179,73 +250,135 @@ void Downsampler::Downsample(UBYTE **&data,class ImageLayout *src)
       sy = 1;
     }
     //
-    if (isSigned(i)) {
-      if (BitsOf(i) <= 8) {
-	BoxFilter<BYTE>((BYTE *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
-			(BYTE *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
-			src->WidthOf(i),src->HeightOf(i),
-			BYTE(-1UL << (BitsOf(i) - 1)),BYTE((1UL << (BitsOf(i) - 1)) - 1),
-			sx,sy);
-      } else if (!isFloat(i) && BitsOf(i) <= 16) {
-	BoxFilter<WORD>((WORD *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
-			(WORD *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
-			src->WidthOf(i),src->HeightOf(i),
-			WORD(-1UL << (BitsOf(i) - 1)),WORD((1UL << (BitsOf(i) - 1)) - 1),
-			sx,sy);
-      } else if (!isFloat(i) && BitsOf(i) <= 32) {
-	BoxFilter<LONG>((LONG *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
-			(LONG *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
-			src->WidthOf(i),src->HeightOf(i),
-			LONG(-1UL << (BitsOf(i) - 1)),LONG((1UL << (BitsOf(i) - 1)) - 1),
-			sx,sy);
-      } else if (isFloat(i) && BitsOf(i) <= 32) {
-	BoxFilter<FLOAT>((FLOAT *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
-			(FLOAT *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
-			 src->WidthOf(i),src->HeightOf(i),
-			 -HUGE_VAL,HUGE_VAL,
-			 sx,sy);
-      } else if (isFloat(i) && BitsOf(i) == 64) {
-	BoxFilter<DOUBLE>((DOUBLE *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
-			  (DOUBLE *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
-			  src->WidthOf(i),src->HeightOf(i),
-			  -HUGE_VAL,HUGE_VAL,
-			  sx,sy);
+    if (m_bRegional) {
+      if (isSigned(i)) {
+	if (BitsOf(i) <= 8) {
+	  RegionalBoxFilter<BYTE>((BYTE *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
+				  (BYTE *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
+				  src->WidthOf(i),src->HeightOf(i),m_lX1,m_lY1,m_lX2,m_lY2,
+				  BYTE(-1UL << (BitsOf(i) - 1)),BYTE((1UL << (BitsOf(i) - 1)) - 1));
+	} else if (!isFloat(i) && BitsOf(i) <= 16) {
+	  RegionalBoxFilter<WORD>((WORD *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
+				  (WORD *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
+				  src->WidthOf(i),src->HeightOf(i),m_lX1,m_lY1,m_lX2,m_lY2,
+				  WORD(-1UL << (BitsOf(i) - 1)),WORD((1UL << (BitsOf(i) - 1)) - 1));
+	} else if (!isFloat(i) && BitsOf(i) <= 32) {
+	  RegionalBoxFilter<LONG>((LONG *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
+				  (LONG *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
+				  src->WidthOf(i),src->HeightOf(i),m_lX1,m_lY1,m_lX2,m_lY2,
+				  LONG(-1UL << (BitsOf(i) - 1)),LONG((1UL << (BitsOf(i) - 1)) - 1));
+	} else if (isFloat(i) && BitsOf(i) <= 32) {
+	  RegionalBoxFilter<FLOAT>((FLOAT *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
+				   (FLOAT *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
+				   src->WidthOf(i),src->HeightOf(i),m_lX1,m_lY1,m_lX2,m_lY2,
+				   -HUGE_VAL,HUGE_VAL);
+	} else if (isFloat(i) && BitsOf(i) == 64) {
+	  RegionalBoxFilter<DOUBLE>((DOUBLE *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
+				    (DOUBLE *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
+				    src->WidthOf(i),src->HeightOf(i),m_lX1,m_lY1,m_lX2,m_lY2,
+				    -HUGE_VAL,HUGE_VAL);
+	} else {
+	  throw "unsupported data type";
+	}
       } else {
-	throw "unsupported data type";
+	if (BitsOf(i) <= 8) {
+	  RegionalBoxFilter<UBYTE>((UBYTE *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
+				   (UBYTE *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
+				   src->WidthOf(i),src->HeightOf(i),m_lX1,m_lY1,m_lX2,m_lY2,
+				   0,UBYTE((1UL << BitsOf(i)) - 1));
+	} else if (!isFloat(i) && BitsOf(i) <= 16) {
+	  RegionalBoxFilter<UWORD>((UWORD *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
+				   (UWORD *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
+				   src->WidthOf(i),src->HeightOf(i),m_lX1,m_lY1,m_lX2,m_lY2,
+				   0,UWORD((1UL << BitsOf(i)) - 1));
+	} else if (!isFloat(i) && BitsOf(i) <= 32) {
+	  RegionalBoxFilter<ULONG>((ULONG *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
+				   (ULONG *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
+				   src->WidthOf(i),src->HeightOf(i),m_lX1,m_lY1,m_lX2,m_lY2,
+				   0,LONG((1UL << BitsOf(i)) - 1));
+	} else if (isFloat(i) && BitsOf(i) <= 32) {
+	  RegionalBoxFilter<FLOAT>((FLOAT *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
+				   (FLOAT *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
+				   src->WidthOf(i),src->HeightOf(i),m_lX1,m_lY1,m_lX2,m_lY2,
+				   0.0,HUGE_VAL);
+	} else if (isFloat(i) && BitsOf(i) == 64) {
+	  RegionalBoxFilter<DOUBLE>((DOUBLE *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
+				    (DOUBLE *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
+				    src->WidthOf(i),src->HeightOf(i),m_lX1,m_lY1,m_lX2,m_lY2,
+				    0.0,HUGE_VAL);
+	} else {
+	  throw "unsupported data type";
+	}
       }
-    } else {
-      if (BitsOf(i) <= 8) {
-	BoxFilter<UBYTE>((UBYTE *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
-			(UBYTE *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
-			 src->WidthOf(i),src->HeightOf(i),
-			 0,UBYTE((1UL << BitsOf(i)) - 1),
-			 sx,sy);
-      } else if (!isFloat(i) && BitsOf(i) <= 16) {
-	BoxFilter<UWORD>((UWORD *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
-			 (UWORD *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
-			 src->WidthOf(i),src->HeightOf(i),
-			 0,UWORD((1UL << BitsOf(i)) - 1),
-			 sx,sy);
-      } else if (!isFloat(i) && BitsOf(i) <= 32) {
-	BoxFilter<ULONG>((ULONG *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
-			 (ULONG *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
-			 src->WidthOf(i),src->HeightOf(i),
-			 0,LONG((1UL << BitsOf(i)) - 1),
-			 sx,sy);
-      } else if (isFloat(i) && BitsOf(i) <= 32) {
-	BoxFilter<FLOAT>((FLOAT *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
-			(FLOAT *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
-			 src->WidthOf(i),src->HeightOf(i),
-			 0.0,HUGE_VAL,
-			 sx,sy);
-      } else if (isFloat(i) && BitsOf(i) == 64) {
-	BoxFilter<DOUBLE>((DOUBLE *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
-			  (DOUBLE *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
+    } else { // of is regional, else part
+      if (isSigned(i)) {
+	if (BitsOf(i) <= 8) {
+	  BoxFilter<BYTE>((BYTE *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
+			  (BYTE *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
 			  src->WidthOf(i),src->HeightOf(i),
-			  0.0,HUGE_VAL,
+			  BYTE(-1UL << (BitsOf(i) - 1)),BYTE((1UL << (BitsOf(i) - 1)) - 1),
 			  sx,sy);
+	} else if (!isFloat(i) && BitsOf(i) <= 16) {
+	  BoxFilter<WORD>((WORD *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
+			  (WORD *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
+			  src->WidthOf(i),src->HeightOf(i),
+			  WORD(-1UL << (BitsOf(i) - 1)),WORD((1UL << (BitsOf(i) - 1)) - 1),
+			  sx,sy);
+	} else if (!isFloat(i) && BitsOf(i) <= 32) {
+	  BoxFilter<LONG>((LONG *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
+			  (LONG *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
+			  src->WidthOf(i),src->HeightOf(i),
+			  LONG(-1UL << (BitsOf(i) - 1)),LONG((1UL << (BitsOf(i) - 1)) - 1),
+			  sx,sy);
+	} else if (isFloat(i) && BitsOf(i) <= 32) {
+	  BoxFilter<FLOAT>((FLOAT *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
+			   (FLOAT *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
+			 src->WidthOf(i),src->HeightOf(i),
+			   -HUGE_VAL,HUGE_VAL,
+			   sx,sy);
+	} else if (isFloat(i) && BitsOf(i) == 64) {
+	  BoxFilter<DOUBLE>((DOUBLE *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
+			    (DOUBLE *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
+			    src->WidthOf(i),src->HeightOf(i),
+			    -HUGE_VAL,HUGE_VAL,
+			    sx,sy);
+	} else {
+	  throw "unsupported data type";
+	}
       } else {
-	throw "unsupported data type";
+	if (BitsOf(i) <= 8) {
+	  BoxFilter<UBYTE>((UBYTE *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
+			   (UBYTE *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
+			   src->WidthOf(i),src->HeightOf(i),
+			   0,UBYTE((1UL << BitsOf(i)) - 1),
+			   sx,sy);
+	} else if (!isFloat(i) && BitsOf(i) <= 16) {
+	  BoxFilter<UWORD>((UWORD *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
+			   (UWORD *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
+			   src->WidthOf(i),src->HeightOf(i),
+			   0,UWORD((1UL << BitsOf(i)) - 1),
+			   sx,sy);
+	} else if (!isFloat(i) && BitsOf(i) <= 32) {
+	  BoxFilter<ULONG>((ULONG *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
+			   (ULONG *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
+			   src->WidthOf(i),src->HeightOf(i),
+			   0,LONG((1UL << BitsOf(i)) - 1),
+			   sx,sy);
+	} else if (isFloat(i) && BitsOf(i) <= 32) {
+	  BoxFilter<FLOAT>((FLOAT *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
+			   (FLOAT *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
+			   src->WidthOf(i),src->HeightOf(i),
+			   0.0,HUGE_VAL,
+			   sx,sy);
+	} else if (isFloat(i) && BitsOf(i) == 64) {
+	  BoxFilter<DOUBLE>((DOUBLE *)src->DataOf(i),src->BytesPerPixel(i),src->BytesPerRow(i),
+			    (DOUBLE *)DataOf(i),BytesPerPixel(i),BytesPerRow(i),
+			    src->WidthOf(i),src->HeightOf(i),
+			    0.0,HUGE_VAL,
+			    sx,sy);
+	} else {
+	  throw "unsupported data type";
+	}
       }
     }
   }
