@@ -23,7 +23,7 @@ and conversion framework.
 /*
  * Main program
  * 
- * $Id: main.cpp,v 1.123 2025/12/01 09:06:38 thor Exp $
+ * $Id: main.cpp,v 1.124 2026/06/18 08:38:13 thor Exp $
  *
  * This class defines the main program and argument parsing.
  */
@@ -80,6 +80,7 @@ and conversion framework.
 #include "diff/butterfly.hpp"
 #include "diff/extractfield.hpp"
 #include "diff/mergefields.hpp"
+#include "diff/noise.hpp"
 #include "img/imglayout.hpp"
 #include "img/imgspecs.hpp"
 #include <new>
@@ -280,6 +281,8 @@ void Usage(const char *progname)
 	  "--rgbtobayer  agmnt: create a 1 component Bayer pattern from an RGB image\n"
 	  "--fill r,g,b,...   : fill the source image with the given color\n"
 	  "--paste x y        : paste the distorted image at the given position into the source\n"
+	  "--addnoise sigma   : add Gaussian noise to image whose variance is given by sigma\n"
+	  "--shotnoise        : add photon shot noise to image\n"
 	  "--raw              : encode output in raw if applicable\n"
 	  "--ascii            : encode output in ascii if applicable\n"
 	  "--interleaved      : encode output in interleaved samples if applicable\n"
@@ -1236,6 +1239,16 @@ class Meter *ParseTransferFunctions(int &argc,char **&argv,struct ImgSpecs &spec
     m     = new class WhiteBalance(WhiteBalance::Shift,argv[2]);
     argc -= 1;
     argv += 1;
+  } else if (!strcmp(arg,"--addnoise")) {
+    double sigma;
+    if (argc < 3)
+      throw "--addnoise requires a variance as argument";
+    sigma = ParseDouble(argv[2]);
+    m     = new class Noise(false,sigma);
+    argc -= 1;
+    argv += 1;
+  } else if (!strcmp(arg,"--shotnoise")) {
+    m     = new class Noise(true,0.0);
   }
 
   return m;
